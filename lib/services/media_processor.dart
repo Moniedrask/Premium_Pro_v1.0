@@ -1,91 +1,172 @@
 import 'dart:async';
-import 'dart:isolate';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:ffmpeg_kit_flutter/statistics.dart';
 import 'package:flutter/foundation.dart';
 
-/// Gestor principal de procesamiento multimedia.
-/// Diseñado para estabilidad en dispositivos con <4GB RAM.
+/// Gestor principal de procesamiento multimedia
+/// Diseñado para estabilidad en dispositivos con <4GB RAM
 class MediaProcessor extends ChangeNotifier {
   bool _isProcessing = false;
   double _progress = 0.0;
   String _statusMessage = "Listo";
-  bool _aiEnabled = false; // Por defecto apagado para estabilidad
+  bool _aiEnabled = false;
+  String? _lastError;
+  DateTime? _startTime;
+  DateTime? _endTime;
 
+  // Getters
   bool get isProcessing => _isProcessing;
   double get progress => _progress;
   String get statusMessage => _statusMessage;
   bool get aiEnabled => _aiEnabled;
+  String? get lastError => _lastError;
+  Duration? get processingTime => 
+      (_startTime != null && _endTime != null) 
+          ? _endTime!.difference(_startTime!) 
+          : null;
 
-  /// Configuración de IA (Fallback automático a algoritmos matemáticos)
+  /// Alternar estado de IA
   void toggleAI(bool value) {
     _aiEnabled = value;
     notifyListeners();
   }
 
-  /// Procesa video usando FFmpeg en un Isolate separado para no bloquear UI
-  Future<void> processVideo({
+  /// Procesar video usando FFmpeg
+  Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
-    required String codec, // h264, hevc, vp9
-    required int bitrate,  // en kbps
-    required String preset, // ultrafast, slow, etc.
+    String codec = 'libx264',
+    int bitrate = 2500,
+    String preset = 'medium',
+    int crf = 23,
   }) async {
-    if (_isProcessing) return;
-
+    if (_isProcessing) {
+      _lastError = "Ya hay un proceso en ejecución";
+      notifyListeners();
+      return false;
+    }
     _isProcessing = true;
     _progress = 0.0;
     _statusMessage = "Iniciando motor de renderizado...";
+    _lastError = null;
+    _startTime = DateTime.now();
+    _endTime = null;
     notifyListeners();
 
-    // Comando base de FFmpeg optimizado
-    // -movflags +faststart: Permite streaming web
-    // -preset: Controla velocidad vs compresión
-    String command = '-i "$inputPath" -c:v $codec -b:v ${bitrate}k -preset $preset -movflags +faststart "$outputPath"';
+    // Construir comando FFmpeg seguro
+    String command = _buildFFmpegCommand(
+      inputPath: inputPath,
+      outputPath: outputPath,
+      codec: codec,
+      bitrate: bitrate,
+      preset: preset,
+      crf: crf,
+    );
 
-    // Lógica de IA (Simulada para v1.0 estable sin descargas pesadas)
-    if (_aiEnabled) {
-      _statusMessage = "Modo IA activado (Upscaling simulado para v1.0)...";
-      // En una versión futura, aquí se inyectaría el modelo ONNX/TFLite
-      // Por ahora, aplicamos un sharpening agresivo como fallback
-      command = '-i "$inputPath" -vf unsharp=5:5:1.0:5:5:0.0 -c:v $codec -b:v ${bitrate}k -preset $preset "$outputPath"';
-    }
+    debugPrint('🎬 Comando FFmpeg: $command');
 
     try {
-      await FFmpegKit.execute(command).then((session) async {
-        final returnCode = await session.getReturnCode();
+      // Ejecutar FFmpeg con sesión completa
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
 
-        if (ReturnCode.isSuccess(returnCode)) {
-          _statusMessage = "Exportación completada con éxito.";
-          _progress = 1.0;
-        } else if (ReturnCode.isCancel(returnCode)) {
-          _statusMessage = "Proceso cancelado por el usuario.";
-        } else {
-          _statusMessage = "Error en el procesamiento. Revisa los logs.";
-        }
-      });
+      _endTime = DateTime.now();
+
+      if (ReturnCode.isSuccess(returnCode)) {
+        _statusMessage = "✅ Exportación completada con éxito";
+        _progress = 1.0;
+        debugPrint('✅ Procesamiento completado en ${processingTime?.inSeconds}s');
+        notifyListeners();
+        return true;
+      } else if (ReturnCode.isCancel(returnCode)) {
+        _statusMessage = "❌ Proceso cancelado por el usuario";
+        _lastError = "Cancelado";
+        debugPrint('❌ Proceso cancelado');
+        notifyListeners();
+        return false;
+      } else {
+        _statusMessage = "❌ Error en el procesamiento";
+        _lastError = await session.getOutput();
+        debugPrint('❌ Error FFmpeg: ${_lastError}');
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
-      _statusMessage = "Error crítico del sistema: $e";
-      // Fallback de emergencia: intentar con configuración de baja calidad
-      _statusMessage = "Intentando recuperación con baja calidad...";
-      // Lógica de reintento omitida por brevedad
-    } finally {
       _isProcessing = false;
+      _endTime = DateTime.now();
+      _statusMessage = "❌ Error crítico: $e";      _lastError = e.toString();
+      debugPrint('❌ Excepción: $e');
       notifyListeners();
-
+      return false;
     }
   }
 
-  /// Callback para estadísticas en tiempo real (Barra de progreso)
-  void _statisticsCallback(Statistics statistics) {
-    // Calculamos progreso basado en tiempo
-    if (statistics.getTime() > 0) {
-      // La lógica real requiere conocer la duración total del video input
-      // Aquí simplificamos para el ejemplo
-      _progress = statistics.getTime() / 1000; 
+  /// Construir comando FFmpeg seguro y validado
+  String _buildFFmpegCommand({
+    required String inputPath,
+    required String outputPath,
+    required String codec,
+    required int bitrate,
+    required String preset,
+    required int crf,
+  }) {
+    // Sanitizar rutas para evitar inyección de comandos
+    final safeInput = _sanitizePath(inputPath);
+    final safeOutput = _sanitizePath(outputPath);
+
+    final StringBuffer cmd = StringBuffer();
+    
+    // Entrada
+    cmd.write('-i "$safeInput"');
+    
+    // Video
+    cmd.write(' -c:v $codec');
+    
+    if (codec == 'libx264' || codec == 'libx265') {
+      cmd.write(' -preset $preset');
+      cmd.write(' -crf $crf');
+    } else {
+      cmd.write(' -b:v ${bitrate}k');
+    }
+    
+    // Audio (AAC por defecto)
+    cmd.write(' -c:a aac -b:a 128k');
+    
+    // Optimizaciones
+    cmd.write(' -movflags +faststart'); // Streaming web
+    cmd.write(' -y'); // Sobrescribir sin preguntar
+    
+    // Salida
+    cmd.write(' "$safeOutput"');
+    
+    return cmd.toString();
+  }
+
+  /// Limpiar ruta para evitar inyección de comandos
+  String _sanitizePath(String path) {    // Eliminar caracteres peligrosos
+    return path.replaceAll(RegExp(r'[;&|`$\\]'), '');
+  }
+
+  /// Cancelar proceso actual
+  Future<void> cancel() async {
+    if (_isProcessing) {
+      await FFmpegKit.cancel();
+      _statusMessage = "Proceso cancelado";
+      _isProcessing = false;
       notifyListeners();
     }
+  }
+
+  /// Obtener estadísticas de procesamiento
+  Map<String, dynamic> getStats() {
+    return {
+      'isProcessing': _isProcessing,
+      'progress': _progress,
+      'statusMessage': _statusMessage,
+      'processingTime': processingTime?.inSeconds ?? 0,
+      'aiEnabled': _aiEnabled,
+    };
   }
 }
