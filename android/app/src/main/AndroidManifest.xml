@@ -1,26 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- ==================== PERMISOS DE ALMACENAMIENTO ==================== -->
-    <!-- Android 12 y anteriores -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    
-    <!-- Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-
-    <!-- ==================== PERMISOS DE SISTEMA ==================== -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_PROCESSING"/>
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
-
-    <!-- ==================== CARACTERÍSTICAS DE HARDWARE ==================== -->
-    <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
 
     <application
         android:label="Premium Pro"
@@ -31,11 +20,8 @@
         android:hardwareAccelerated="true"
         android:theme="@style/LaunchTheme"
         android:enableOnBackInvokedCallback="true"
-        android:usesCleartextTraffic="true"
-        android:allowBackup="true"
-        android:fullBackupContent="true">
+        android:usesCleartextTraffic="true">
 
-        <!-- ==================== ACTIVIDAD PRINCIPAL ==================== -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -44,10 +30,10 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize"
-            android:screenOrientation="portrait"
-            android:turnScreenOn="true">
+            android:screenOrientation="portrait">
 
-            <meta-data              android:name="io.flutter.embedding.android.NormalTheme"
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
 
@@ -56,36 +42,19 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Intent para abrir archivos de video -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="video/*" />
             </intent-filter>
-
-            <!-- Intent para abrir archivos de audio -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="audio/*" />
-            </intent-filter>
-
-            <!-- Intent para abrir archivos de imagen -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="image/*" />
-            </intent-filter>
         </activity>
 
-        <!-- ==================== SERVICIO FFmpeg EN SEGUNDO PLANO ==================== -->
         <service
             android:name="com.arthenica.ffmpegkit.FFmpegKitService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataProcessing"/>
 
-        <!-- ==================== FILEPROVIDER PARA COMPARTIR ARCHIVOS ==================== -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -96,7 +65,7 @@
                 android:resource="@xml/file_paths"/>
         </provider>
 
-        <!-- ==================== METADATA FLUTTER ==================== -->        <meta-data
+        <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
 
