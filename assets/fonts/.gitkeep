@@ -1,0 +1,3 @@
+# Este archivo permite que la carpeta assets/fonts/ exista en Git
+# aunque esté vacía. Flutter requiere esta carpeta si se referencia
+# en pubspec.yaml.
