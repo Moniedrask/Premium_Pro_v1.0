@@ -1,29 +1,15 @@
-name: premium_pro
-description: Editor Multimedia Profesional v1.0
-publish_to: 'none'
-version: 1.0.0+1
-
-environment:
-  sdk: ">=3.0.0 <4.0.0"
-
-dependencies:
-  flutter:
-    sdk: flutter
-  
-  # ✅ CORREGIDO: Versión válida sin sufijo .LTS
-  ffmpeg_kit_flutter: ^6.0.3
-  
-  # Gestión de estado y utilidades
-  provider: ^6.0.5
-  path_provider: ^2.1.1
-  file_picker: ^6.1.1
-  shared_preferences: ^2.2.2
-  http: ^1.1.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^2.0.0
-
 flutter:
   uses-material-design: true
+  
+  # Assets vacíos pero válidos
+  assets:
+    - assets/fonts/
+    - assets/icons/
+  
+  # Fuentes (opcional - descomentar si usas fuentes personalizadas)
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700
