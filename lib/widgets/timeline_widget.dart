@@ -15,9 +15,6 @@ class TimelineWidget extends StatefulWidget {
 class _TimelineWidgetState extends State<TimelineWidget> {
   String? _selectedVideoPath;
   String _codec = 'libx264';
-  int _bitrate = 2500;
-  String _preset = 'medium';
-  int _crf = 23;
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +44,10 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         Expanded(
           flex: 2,
           child: Container(
-            padding: const EdgeInsets.all(16),            color: const Color(0xFF000000),
+            padding: const EdgeInsets.all(16),
+            color: const Color(0xFF000000),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              crossAxisAlignment: CrossAxisAlignment.start,              children: [
                 const Text("CONFIGURACIÓN", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
@@ -96,18 +93,15 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
   Future<void> _exportVideo(MediaProcessor processor) async {
     if (_selectedVideoPath == null) return;
-    final directory = await getExternalStorageDirectory();    final outputFolder = '${directory!.path}/PremiumPro';
+    final directory = await getExternalStorageDirectory();
+    final outputFolder = '${directory!.path}/PremiumPro';
     await Directory(outputFolder).create(recursive: true);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final outputPath = '$outputFolder/export_$timestamp.mp4';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;    final outputPath = '$outputFolder/export_$timestamp.mp4';
 
     final success = await processor.processVideo(
       inputPath: _selectedVideoPath!,
       outputPath: outputPath,
       codec: _codec,
-      bitrate: _bitrate,
-      preset: _preset,
-      crf: _crf,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
