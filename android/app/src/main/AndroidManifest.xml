@@ -1,27 +1,14 @@
- 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.premiumpro.editor">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- PERMISOS DE ALMACENAMIENTO -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-
-    <!-- PERMISOS DE PROCESAMIENTO -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    
-    <!-- PERMISOS DE RENDIMIENTO -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-
-    <!-- CARACTERÍSTICAS DE HARDWARE -->
-    <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
 
     <application
         android:label="Premium Pro"
@@ -33,7 +20,6 @@
         android:theme="@style/LaunchTheme"
         android:enableOnBackInvokedCallback="true">
 
-        <!-- ACTIVIDAD PRINCIPAL -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -54,7 +40,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- INTENT PARA ABRIR ARCHIVOS -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -62,22 +47,9 @@
             </intent-filter>
         </activity>
 
-        <!-- SERVICIO EN SEGUNDO PLANO PARA PROCESAMIENTO -->
-        <service
-            android:name="com.arthenica.ffmpegkit.FFmpegKitService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataProcessing"/>
-
-        <!-- METADATOS DE FLUTTER -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-            
-        <!-- DESACTIVAR CHECK DE PLAY STORE (Para versiones no publicadas) -->
-        <meta-data
-            android:name="io.flutter.embedded_views_preview"
-            android:value="true" />
 
     </application>
 </manifest>
