@@ -2,9 +2,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Repositorio Arthenica para FFmpeg Kit
         maven { url "https://arthenica.com/maven" }
-        // Repositorio JitPack para dependencias adicionales
         maven { url "https://jitpack.io" }
     }
 }
