@@ -1,31 +1,39 @@
-name: premium_pro
-description: Editor Multimedia Profesional v1.0 - Estable y Optimizado.
-publish_to: 'none'
-version: 1.0.0+1
+name: Build Premium Pro APK
 
-environment:
-  sdk: ">=3.0.0 <4.0.0"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-dependencies:
-  flutter:
-    sdk: flutter
-  ffmpeg_kit_flutter: ^6.0.3
-  provider: ^6.0.5
-  path_provider: ^2.1.1
-  file_picker: ^6.1.1
-  flutter_colorpicker: ^1.0.3
-  cached_network_image: ^3.3.0
-  audioplayers: ^5.2.0
-  shared_preferences: ^2.2.2
-  http: ^1.1.0
-  device_info_plus: ^9.1.1
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^2.0.0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/fonts/
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release --split-per-abi
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: premium-pro-apk
+          path: build/app/outputs/flutter-apk/*.apk
