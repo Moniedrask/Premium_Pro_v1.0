@@ -1,5 +1,7 @@
 # 🎬 Premium Pro v1.0 - Editor Multimedia Profesional
 
+Editor y compresor profesional de Video, Audio e Imagen.
+
 [![Build Status](https://github.com/usuario/premium-pro-v1/actions/workflows/build.yml/badge.svg)](https://github.com/usuario/premium-pro-v1/actions)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
@@ -13,6 +15,11 @@ Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android
 | 🎵 Audio | Waveform OpenGL, Ecualizador 10 bandas, Reducción de ruido |
 | 🖼️ Imagen | HDR por capas, Escalado Lanczos4, Filtros profesionales |
 | 🗜️ Compresión | H.264/H.265/VP9/AV1, Control CRF, Hardware Acceleration |
+
+- ✅ Modo Oscuro OLED
+- ✅ Sin Publicidad
+- ✅ Sin IA por defecto
+- ✅ FFmpeg integrado
 
 # 📋 REQUISITOS COMPLETOS - PREMIUM PRO v1.0
 
@@ -143,6 +150,13 @@ Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android
 3. Descarga el APK de **Artifacts**
 4. Instala en tu dispositivo (permitir fuentes desconocidas)
 
+## Instalación
+
+1. Ve a **Actions** en GitHub
+2. Descarga el APK de **Artifacts**
+3. Instala en tu dispositivo
+
+
 ### Compilación Local
 ```bash
 flutter pub get
@@ -234,6 +248,12 @@ premium-pro-v1/
     └── 📁 widgets/
         ├── 📄 timeline_widget.dart
         └── 📄 settings_panel.dart
+
+
+
+## Licencia
+
+GPL-3.0
 
 
 
