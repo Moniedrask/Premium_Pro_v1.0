@@ -1,79 +1,52 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'services/media_processor.dart';
-import 'services/ai_manager.dart';
-import 'widgets/timeline_widget.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+import 'package:flutter/foundation.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const PremiumProApp());
-}
+class MediaProcessor extends ChangeNotifier {
+  bool _isProcessing = false;
+  double _progress = 0.0;
+  String _statusMessage = "Listo";
 
-class PremiumProApp extends StatelessWidget {
-  const PremiumProApp({super.key});
+  bool get isProcessing => _isProcessing;
+  double get progress => _progress;
+  String get statusMessage => _statusMessage;
 
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => MediaProcessor()),
-        ChangeNotifierProvider(create: (_) => AIManager()),
-      ],
-      child: MaterialApp(
-        title: 'Premium Pro v1.0',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF000000),
-          primaryColor: const Color(0xFF000000),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF000000),
-            elevation: 0,
-            iconTheme: IconThemeData(color: Colors.white),
-          ),
-        ),
-        home: const HomeScreen(),
-      ),
-    );
-  }
-}
+  Future<bool> processVideo({
+    required String inputPath,
+    required String outputPath,
+    String codec = 'libx264',
+    int bitrate = 2500,
+    String preset = 'medium',
+    int crf = 23,
+  }) async {
+    if (_isProcessing) return false;
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+    _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Iniciando...";
+    notifyListeners();
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+    String command = '-i "$inputPath" -c:v $codec -preset $preset -crf $crf -c:a aac -movflags +faststart -y "$outputPath"';
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+    try {
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Premium Pro v1.0'),
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          TimelineWidget(),
-          Center(child: Text('Audio - Próximamente', style: TextStyle(color: Colors.grey))),
-          Center(child: Text('Imagen - Próximamente', style: TextStyle(color: Colors.grey))),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFF000000),
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.video_library), label: 'Video'),
-          BottomNavigationBarItem(icon: Icon(Icons.music_note), label: 'Audio'),
-          BottomNavigationBarItem(icon: Icon(Icons.image), label: 'Imagen'),
-        ],
-      ),
-    );
+      if (ReturnCode.isSuccess(returnCode)) {
+        _statusMessage = "Completado";
+        _progress = 1.0;
+        notifyListeners();
+        return true;
+      } else {
+        _statusMessage = "Error en procesamiento";
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _isProcessing = false;
+      _statusMessage = "Error: $e";
+      notifyListeners();
+      return false;
+    }
   }
 }
