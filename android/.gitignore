@@ -1,0 +1,12 @@
+.gradle/
+local.properties
+.cxx/
+*.keystore
+*.jks
+*.pfx
+build/
+app/build/
+app/release/
+app/debug/
+app/proguard/
+*.log
