@@ -1,15 +1,86 @@
-flutter:
-  uses-material-design: true
+name: premium_pro
+description: Editor Multimedia Profesional v1.0 - Estable, Sin Publicidad, OLED.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ==================== MULTIMEDIA ====================
+  # FFmpeg Kit - Motor de procesamiento de video/audio
+  # Versión 6.0.3 estable con soporte para códecs H.264/H.265/VP9
+  ffmpeg_kit_flutter: ^6.0.3
+
+  # ==================== ESTADO Y UTILIDADES ====================
+  # Gestión de estado reactiva para UI
+  provider: ^6.0.5
   
-  # Assets vacíos pero válidos
+  # Acceso a rutas de almacenamiento
+  path_provider: ^2.1.1
+  
+  # Selección de archivos multimedia
+  file_picker: ^6.1.1
+  
+  # Persistencia de preferencias del usuario
+  shared_preferences: ^2.2.2
+  
+  # Peticiones HTTP para descarga de modelos IA
+  http: ^1.1.0
+  
+  # Información del dispositivo para optimización
+  device_info_plus: ^9.1.1
+
+  # ==================== UI Y GRÁFICOS ====================
+  # Selector de colores para ajustes de imagen
+  flutter_colorpicker: ^1.0.3
+  
+  # Carga eficiente de imágenes con caché
+  cached_network_image: ^3.3.0
+  
+  # Reproducción de audio para previsualización
+  audioplayers: ^5.2.1
+
+  # ==================== UTILIDADES ADICIONALES ====================
+  # Manipulación de rutas de archivo multiplataforma
+  path: ^1.8.3
+  
+  # Colecciones y utilidades de Dart
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Reglas de linting para código limpio
+  flutter_lints: ^2.0.3
+
+# ==================== CONFIGURACIÓN FLUTTER ====================
+flutter:
+  # Usar Material Design para componentes base
+  uses-material-design: true
+
+  # Assets - Carpetas para recursos estáticos
+  # (Deben existir aunque estén vacías para evitar warnings)
   assets:
     - assets/fonts/
     - assets/icons/
-  
-  # Fuentes (opcional - descomentar si usas fuentes personalizadas)
+    - assets/luts/
+    - assets/models/
+
+  # Fuentes personalizadas (opcional - descomentar si usas)
   # fonts:
   #   - family: Roboto
   #     fonts:
   #       - asset: assets/fonts/Roboto-Regular.ttf
   #       - asset: assets/fonts/Roboto-Bold.ttf
   #         weight: 700
+  #   - family: Mono
+  #     fonts:
+  #       - asset: assets/fonts/JetBrainsMono-Regular.ttf
+
+  # Configuración de generación de código (si usas build_runner)
+  # generate: true
