@@ -47,9 +47,8 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         
-        ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
-        }
+        # ✅ CORREGIDO: Eliminado ndk { abiFilters } para evitar conflicto con --split-per-abi
+        # Flutter maneja los ABI splits automáticamente
         
         multiDexEnabled true
     }
@@ -75,14 +74,8 @@ android {
         }
     }
     
-    packagingOptions {
-        pickFirst 'lib/**/libffmpegkit.so'
-        pickFirst 'lib/**/libavcodec.so'
-        pickFirst 'lib/**/libavformat.so'
-        pickFirst 'lib/**/libavutil.so'
-        pickFirst 'lib/**/libswresample.so'
-        pickFirst 'lib/**/libswscale.so'
-    }
+    # ✅ CORREGIDO: Eliminado packagingOptions pickFirst para librerías nativas
+    # FFmpeg Kit maneja esto internamente
 }
 
 flutter {
