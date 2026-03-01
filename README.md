@@ -50,6 +50,31 @@ La aplicación funciona completamente sin modelos de IA para garantizar:
 
 ## 📁 Estructura del Proyecto
 
+premium-pro-v1/
+├── .github/
+│   └── workflows/
+│       └── build.yml          <-- (El motor que compila la app en la nube)
+├── android/
+│   └── app/
+│       └── src/
+│           └── main/
+│               └── AndroidManifest.xml
+├── lib/
+│   ├── main.dart              <-- (Punto de entrada y configuración OLED)
+│   ├── models/
+│   │   ├── compression_settings.dart
+│   │   └── project_config.dart
+│   ├── services/
+│   │   ├── media_processor.dart
+│   │   └── ai_manager.dart
+│   └── widgets/
+│       ├── timeline_widget.dart
+│       └── settings_panel.dart
+├── pubspec.yaml               <-- (Dependencias y metadatos)
+└── README.md
+
+
+
 ## 🛠️ Tecnologías
 
 - **Framework:** Flutter 3.16+
