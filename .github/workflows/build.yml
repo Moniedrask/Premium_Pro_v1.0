@@ -6,15 +6,10 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  # ✅ Aumentar memoria para Gradle
-  GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
-  # ✅ Aumentar memoria para heap de Flutter
-  JAVA_OPTS: "-Xmx4g"
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
