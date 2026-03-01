@@ -27,9 +27,10 @@ jobs:
           flutter-version: '3.16.0'
           channel: 'stable'
 
-      - name: Install Dependencies
+      - name: Clean and Install Dependencies
         run: |
           flutter clean
+          rm -rf android/.gradle
           flutter pub get
 
       - name: Accept Android Licenses
