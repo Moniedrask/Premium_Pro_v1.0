@@ -1,57 +1,9 @@
-# Flutter/Dart
 .dart_tool/
 .flutter-plugins
-.flutter-plugins-dependencies
 .packages
 .pub/
 build/
-
-# Android
 android/.gradle/
-android/app/.cxx/
-android/app/build/
-android/gradlew
-android/gradlew.bat
 android/local.properties
-android/key.properties
-**/*.keystore
-**/*.jks
-
-# IDE
-.idea/
-*.iml
-*.ipr
-*.iws
-.vscode/
-*.swp
-*.swo
-
-# System files
+*.log
 .DS_Store
-Thumbs.db
-ehthumbs.db
-
-# Logs
-*.log
-logs/
-
-# Environment
-.env
-*.env
-.env.local
-.env.*.local
-
-# Secrets
-*.pem
-*.p12
-*.pfx
-google-services.json
-GoogleService-Info.plist
-
-# FFmpeg temporary files
-*.tmp
-*.temp
-*.log
-
-# User settings
-*.userprefs
