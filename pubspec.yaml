@@ -1,5 +1,5 @@
 name: premium_pro
-description: Editor Multimedia Profesional v1.0
+description: Editor Multimedia Profesional v1.0 - Estable y Optimizado.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,12 +9,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  ffmpeg_kit_flutter_min: 6.0.3
+  
+  # ✅ CORRECCIÓN: Usar ffmpeg_kit_flutter (sucesor oficial)
+  # La versión 6.0.3 es estable y compatible con Android 13/14
+  ffmpeg_kit_flutter: 6.0.3
+  
   provider: 6.0.5
   path_provider: 2.1.1
   file_picker: 6.1.1
   shared_preferences: 2.2.2
   http: 1.1.0
+  path: 1.8.3
 
 dev_dependencies:
   flutter_test:
