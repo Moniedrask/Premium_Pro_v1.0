@@ -1,5 +1,5 @@
 name: premium_pro
-description: Editor Multimedia Profesional v1.0 - Estable y Optimizado.
+description: Editor Multimedia Profesional v1.0
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,18 +9,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Motor FFmpeg principal (Soporte amplio de códecs)
   ffmpeg_kit_flutter: ^6.0.3
-  # Gestión de estado y arquitectura
   provider: ^6.0.5
-  # Utilidades para archivos y rutas
   path_provider: ^2.1.1
   file_picker: ^6.1.1
-  # Gráficos y UI
-  flutter_colorpicker: ^1.0.3
-  cached_network_image: ^3.3.0
-  # Audio visualization
-  audioplayers: ^5.2.0
+  shared_preferences: ^2.2.2
+  http: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -29,5 +23,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/fonts/
