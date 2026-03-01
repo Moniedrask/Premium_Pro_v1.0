@@ -1,40 +1,25 @@
-/// Configuración de compresión para Video, Audio e Imagen
-/// Todos los valores están optimizados para estabilidad en dispositivos con <4GB RAM
 class CompressionSettings {
-  // ==================== VIDEO ====================
-  String videoCodec;          // h264, hevc, vp9, av1
-  int videoBitrate;           // kbps (500 - 50000)
-  String preset;              // ultrafast, fast, medium, slow, veryslow
-  int crf;                    // 0-51 (0 = sin pérdida, 51 = máxima compresión)
-  int keyframeInterval;       // GOP (Group of Pictures) en frames
-  String profile;             // baseline, main, high
-  int level;                  // 3.0, 4.0, 5.0, etc.
-  bool hardwareAcceleration;  // Usar MediaCodec/DXVA2
-  
-  // ==================== AUDIO ====================
-  String audioCodec;          // aac, mp3, opus, flac, pcm
-  int audioBitrate;           // kbps (32 - 320, o 0 para lossless)
-  int sampleRate;             // Hz (8000 - 192000)
-  String audioChannels;       // mono, stereo, 5.1, 7.1
-  
-  // ==================== IMAGEN ====================
-  String imageFormat;         // jpeg, png, webp, avif
-  int imageQuality;           // 1-100 (jpeg/webp), 0-9 (png compresión)
-  bool stripMetadata;         // Eliminar EXIF/IPTC
-  int maxWidth;               // Límite de ancho (0 = sin límite)
-  int maxHeight;              // Límite de alto (0 = sin límite)
-  
-  // ==================== IA ====================
-  bool aiEnabled;             // Activar mejora por IA
-  String aiModel;             // real-esrgan, rife, dain
-  int aiScale;                // 2x, 4x, 8x, 16x
-  
-  // ==================== METADATOS ====================
-  String outputFileName;      // Nombre del archivo de salida
-  String outputFolder;        // Carpeta de destino
+  String videoCodec;
+  int videoBitrate;
+  String preset;
+  int crf;
 
-  /// Constructor con valores predeterminados ESTABLES
   CompressionSettings({
+    this.videoCodec = 'libx264',
+    this.videoBitrate = 2500,
+    this.preset = 'medium',
+    this.crf = 23,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'videoCodec': videoCodec,
+      'videoBitrate': videoBitrate,
+      'preset': preset,
+      'crf': crf,
+    };
+  }
+}  CompressionSettings({
     this.videoCodec = 'libx264',
     this.videoBitrate = 2500,
     this.preset = 'medium',
