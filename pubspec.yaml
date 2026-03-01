@@ -13,19 +13,25 @@ dependencies:
   # ==================== MULTIMEDIA ====================
   ffmpeg_kit_flutter: ^6.0.3
 
-  # ==================== ESTADO Y UTILIDADES ====================
+  # ==================== ESTADO ====================
   provider: ^6.0.5
+
+  # ==================== ARCHIVOS Y ALMACENAMIENTO ====================
   path_provider: ^2.1.1
   file_picker: ^6.1.1
   shared_preferences: ^2.2.2
+
+  # ==================== RED ====================
   http: ^1.1.0
-  device_info_plus: ^9.1.1
 
   # ==================== UI ====================
   flutter_colorpicker: ^1.0.3
   cached_network_image: ^3.3.0
 
-  # ==================== UTILIDADES DART ====================
+  # ==================== AUDIO ====================
+  audioplayers: ^5.2.1
+
+  # ==================== UTILIDADES ====================
   path: ^1.8.3
   collection: ^1.18.0
 
@@ -37,7 +43,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # ✅ SOLO ASSETS QUE EXISTEN REALMENTE
   assets:
     - assets/fonts/
     - assets/icons/
+    - assets/luts/
+    - assets/models/
