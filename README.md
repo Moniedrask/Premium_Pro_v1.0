@@ -50,7 +50,7 @@ Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android
 
 ---
 
-## 🖥️ WINDOWS
+## 🖥️ WINDOWS (Cuando esté disponible)
 
 ### Requisitos Mínimos
 | Componente | Requisito |
