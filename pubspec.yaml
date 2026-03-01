@@ -10,8 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # ✅ FFmpeg Kit - Versión LTS con soporte HTTPS (más estable)
-  ffmpeg_kit_flutter: ^6.0.3.LTS
+  # ✅ CORREGIDO: Versión válida sin sufijo .LTS
+  ffmpeg_kit_flutter: ^6.0.3
   
   # Gestión de estado y utilidades
   provider: ^6.0.5
