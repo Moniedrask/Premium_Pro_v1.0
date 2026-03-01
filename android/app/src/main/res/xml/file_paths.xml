@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Carpeta de salida de la app -->
+    <external-path
+        name="premium_pro_output"
+        path="PremiumPro/" />
+    
+    <!-- Carpeta de caché -->
+    <cache-path
+        name="cache"
+        path="/" />
+    
+    <!-- Archivos temporales -->
+    <external-cache-path
+        name="external_cache"
+        path="/" />
+</paths>
