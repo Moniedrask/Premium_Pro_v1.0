@@ -31,10 +31,9 @@ jobs:
         run: |
           rm -rf ~/.gradle/caches/
           rm -rf android/.gradle/
-          rm -rf ~/.pub-cache/
-
+          
       - name: Install Dependencies
-        run: |
+        run: flutter pub get
           flutter clean
           flutter pub get
 
