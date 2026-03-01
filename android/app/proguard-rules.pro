@@ -5,6 +5,8 @@
 -keep class io.flutter.view.** { *; }
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
+-keep class com.arthenica.ffmpegkit.** { *; }
+-dontwarn com.arthenica.ffmpegkit.**
 
 # FFmpeg Kit - Mantener clases nativas
 -keep class com.arthenica.ffmpegkit.** { *; }
