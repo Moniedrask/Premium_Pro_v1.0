@@ -46,10 +46,6 @@ android {
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        
-        # ✅ CORREGIDO: Eliminado ndk { abiFilters } para evitar conflicto con --split-per-abi
-        # Flutter maneja los ABI splits automáticamente
-        
         multiDexEnabled true
     }
 
@@ -73,9 +69,6 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
-    
-    # ✅ CORREGIDO: Eliminado packagingOptions pickFirst para librerías nativas
-    # FFmpeg Kit maneja esto internamente
 }
 
 flutter {
