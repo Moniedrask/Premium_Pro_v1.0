@@ -27,10 +27,15 @@ jobs:
           flutter-version: '3.16.0'
           channel: 'stable'
 
-      - name: Clean and Install Dependencies
+      - name: Clean Gradle Cache
+        run: |
+          rm -rf ~/.gradle/caches/
+          rm -rf android/.gradle/
+          rm -rf ~/.pub-cache/
+
+      - name: Install Dependencies
         run: |
           flutter clean
-          rm -rf android/.gradle
           flutter pub get
 
       - name: Accept Android Licenses
