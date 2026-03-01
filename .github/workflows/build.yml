@@ -21,11 +21,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
+          flutter-version: '3.35.1'  # Incluye Dart 3.9.0
           channel: 'stable'
+          cache: true
 
       - name: Clean and Install Dependencies
         run: |
