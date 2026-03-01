@@ -1,54 +1,54 @@
-# 馃幀 Premium Pro v1.0 - Editor Multimedia Profesional
+# 🎬 Premium Pro v1.0 - Editor Multimedia Profesional
 
 [![Build Status](https://github.com/usuario/premium-pro-v1/actions/workflows/build.yml/badge.svg)](https://github.com/usuario/premium-pro-v1/actions)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android/Windows), optimizado para dispositivos de bajos recursos.
 
-## 鉁� Caracter铆sticas Principales
+## ✨ Características Principales
 
-| M贸dulo | Funciones |
+| Módulo | Funciones |
 |--------|-----------|
-| 馃帴 Video | Corte preciso, Speed Ramp, Color Grading, LUTs, Estabilizaci贸n |
-| 馃幍 Audio | Waveform OpenGL, Ecualizador 10 bandas, Reducci贸n de ruido |
-| 馃柤锔� Imagen | HDR por capas, Escalado Lanczos4, Filtros profesionales |
-| 馃棞锔� Compresi贸n | H.264/H.265/VP9/AV1, Control CRF, Hardware Acceleration |
+| 🎥 Video | Corte preciso, Speed Ramp, Color Grading, LUTs, Estabilización |
+| 🎵 Audio | Waveform OpenGL, Ecualizador 10 bandas, Reducción de ruido |
+| 🖼️ Imagen | HDR por capas, Escalado Lanczos4, Filtros profesionales |
+| 🗜️ Compresión | H.264/H.265/VP9/AV1, Control CRF, Hardware Acceleration |
 
-## 馃搵 Requisitos M铆nimos
+## 📋 Requisitos Mínimos
 
 - **Android:** 8.0 (API 26) o superior
-- **RAM:** 2GB m铆nimo (4GB recomendado)
-- **Almacenamiento:** 250MB para instalaci贸n + espacio para proyectos
+- **RAM:** 2GB mínimo (4GB recomendado)
+- **Almacenamiento:** 250MB para instalación + espacio para proyectos
 - **Sin Internet:** Funciona completamente offline (IA es opcional)
 
-## 馃殌 Instalaci贸n
+## 🚀 Instalación
 
 ### Desde GitHub Actions (Recomendado)
-1. Ve a la pesta帽a **Actions** en este repositorio
-2. Selecciona el 煤ltimo workflow exitoso
+1. Ve a la pestaña **Actions** en este repositorio
+2. Selecciona el último workflow exitoso
 3. Descarga el APK de **Artifacts**
 4. Instala en tu dispositivo (permitir fuentes desconocidas)
 
-### Compilaci贸n Local
+### Compilación Local
 ```bash
 flutter pub get
 flutter build apk --release --split-per-abi
 ```
 
-## 鈿欙笍 Configuraci贸n
+## ⚙️ Configuración
 
 ### Modo Sin IA (Por Defecto)
-La aplicaci贸n funciona completamente sin modelos de IA para garantizar:
-- 鉁� Compatibilidad universal
-- 鉁� Sin descargas adicionales
-- 鉁� M谩xima estabilidad
+La aplicación funciona completamente sin modelos de IA para garantizar:
+- ✅ Compatibilidad universal
+- ✅ Sin descargas adicionales
+- ✅ Máxima estabilidad
 
 ### Activar IA (Opcional)
 1. Ve a Ajustes > Inteligencia Artificial
 2. Descarga el modelo deseado (1GB - 8GB)
-3. Activa "Mejora IA" en exportaci贸n
+3. Activa "Mejora IA" en exportación
 
-## 馃搧 Estructura del Proyecto
+## 📁 Estructura del Proyecto
 
 ## 🛠️ Tecnologías
 
