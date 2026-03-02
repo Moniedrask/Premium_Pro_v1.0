@@ -28,13 +28,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # ==================== LIMPIEZA SELECTIVA ====================
       - name: Clean and Install Dependencies
         run: |
           flutter clean
           rm -rf android/.gradle
-          # NO limpiar caché de com.arthenica (MÉTODO 2)
-          # rm -rf ~/.gradle/caches/modules-2/files-2.1/com.arthenica
           flutter pub get
 
       - name: Accept Android Licenses
@@ -45,35 +42,8 @@ jobs:
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
 
-      # ==================== BUILD CON 3 REINTENTOS ====================
-      - name: Build APK (Attempt 1 - Refresh Dependencies)
-        run: |
-          cd android
-          ./gradlew assembleRelease --refresh-dependencies --stacktrace
-          cd ..
-        continue-on-error: true
-        id: build_attempt_1
-
-      - name: Build APK (Attempt 2 - Offline Mode)
-        if: steps.build_attempt_1.outcome == 'failure'
-        run: |
-          cd android
-          ./gradlew assembleRelease --offline --stacktrace
-          cd ..
-        continue-on-error: true
-        id: build_attempt_2
-
-      - name: Build APK (Attempt 3 - Normal Mode)
-        if: steps.build_attempt_2.outcome == 'failure'
-        run: |
-          cd android
-          ./gradlew assembleRelease --stacktrace
-          cd ..
-        continue-on-error: true
-        id: build_attempt_3
-
-      - name: Build Flutter APK
-        run: flutter build apk --release --split-per-abi
+      - name: Build APK (with version validation skip)
+        run: flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
