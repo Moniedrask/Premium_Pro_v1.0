@@ -4,34 +4,57 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   
-  # Multimedia - Actualizado Marzo 2026
-  ffmpeg_kit_flutter: 7.0.0
+  # ==================== MULTIMEDIA ====================
+  # FFmpeg Kit - Última versión estable (Febrero 2026) [[1]]
+  ffmpeg_kit_flutter: 6.0.3
   
-  # Estado y Utilidades
-  provider: 6.1.5
-  path_provider: 2.1.5
-  file_picker: 8.1.7
+  # ==================== ESTADO ====================
+  provider: 6.1.2
+  
+  # ==================== ARCHIVOS ====================
+  # File Picker - Última versión (Enero 2026) [[30]]
+  file_picker: 10.3.9
+  
+  # Path Provider - Versión estable
+  path_provider: 2.1.4
+  
+  # ==================== PERSISTENCIA ====================
+  # Shared Preferences - Última versión [[42]]
   shared_preferences: 2.5.3
+  
+  # ==================== RED ====================
   http: 1.4.0
   
-  # UI y Gráficos
+  # ==================== UI ====================
   flutter_colorpicker: 1.1.0
+  
+  # Imágenes con caché
   cached_network_image: 3.4.1
-  audioplayers: 6.5.1
+  
+  # ==================== AUDIO ====================
+  audioplayers: 6.1.0
+  
+  # ==================== UTILIDADES ====================
+  path: 1.9.0
+  collection: 1.19.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: 5.0.0
+  
+  # Linting - Versión estable
+  flutter_lints: 4.0.0
 
 flutter:
   uses-material-design: true
+  
+  # Assets requeridos
   assets:
     - assets/fonts/
     - assets/icons/
