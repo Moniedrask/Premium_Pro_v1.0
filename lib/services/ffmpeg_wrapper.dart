@@ -88,7 +88,8 @@ class FFmpegWrapper {
     try {
       final session = await FFmpegKit.execute('-codecs');
       final output = await session.getOutput();
-      return output.split('\n').where((line) => line.contains('V.....')).map((e) => e.trim()).toList();
+      // ✅ CORREGIDO: Null safety con ?? para string vacío
+      return (output ?? '').split('\n').where((line) => line.contains('V.....')).map((e) => e.trim()).toList();
     } catch (e) {
       debugPrint('❌ Error al obtener códecs: $e');
       return [];
