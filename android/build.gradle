@@ -9,12 +9,12 @@ allprojects {
         google()
         mavenCentral()
         
-        // ==================== PRIORIDAD 3: ARTHENICA (MÚLTIPLES URLs) ====================
+        // ==================== PRIORIDAD 3: ARTHENICA (URLs VÁLIDAS) ====================
         maven { url 'https://arthenica.com/maven' }
         maven { url 'https://arthenica.github.io/ffmpeg-kit/maven' }
         maven { url 'https://github.com/arthenica/ffmpeg-kit/releases/download/v6.0/maven' }
         maven { url 'https://raw.githubusercontent.com/arthenica/ffmpeg-kit/v6.0/maven' }
-        maven { url 'https://arthenica.bintray.com/maven' }
+        // ❌ ELIMINADO: arthenica.bintray.com (certificado SSL inválido)
         
         // ==================== PRIORIDAD 4: FALLBACKS ====================
         maven { url 'https://repo.maven.apache.org/maven2' }
