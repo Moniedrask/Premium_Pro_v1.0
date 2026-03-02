@@ -1,71 +1,28 @@
-name: Build Premium Pro APK
+pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkProperty = properties.getProperty("flutter.sdk")
+        assert flutterSdkProperty != null, "flutter.sdk not set in local.properties"
+        return flutterSdkProperty
+    }()
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+        maven { url 'https://arthenica.com/maven' }
+        maven { url 'https://jitpack.io' }
+        maven { url 'https://maven.google.com' }
+    }
+}
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.1.4" apply false
+    id "org.jetbrains.kotlin.android" version "2.1.0" apply false
+}
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.1'
-          channel: 'stable'
-          cache: true
-
-      - name: Clean and Install Dependencies
-        run: |
-          flutter clean
-          rm -rf android/.gradle
-          flutter pub get
-
-      # ==================== PATCH: Agregar namespace a ffmpeg_kit_flutter ====================
-      - name: Patch ffmpeg_kit_flutter namespace
-        run: |
-          # Agregar namespace al build.gradle de ffmpeg_kit_flutter
-          FFMPEG_BUILD_GRADLE="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-5.1.0/android/build.gradle"
-          if [ -f "$FFMPEG_BUILD_GRADLE" ]; then
-            # Agregar namespace después de la línea que contiene 'android {'
-            sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_BUILD_GRADLE"
-            echo "✅ Namespace agregado a ffmpeg_kit_flutter"
-          else
-            echo "⚠️ Archivo no encontrado, intentando otra ruta..."
-            FFMPEG_BUILD_GRADLE="$(flutter pub cache path)/hosted/pub.dev/ffmpeg_kit_flutter-5.1.0/android/build.gradle"
-            if [ -f "$FFMPEG_BUILD_GRADLE" ]; then
-              sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_BUILD_GRADLE"
-              echo "✅ Namespace agregado a ffmpeg_kit_flutter"
-            fi
-          fi
-
-      - name: Accept Android Licenses
-        run: |
-          mkdir -p $HOME/.android
-          echo "count=0" > $HOME/.android/android-sdk-licenses
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.android/android-sdk-licenses
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
-
-      - name: Build APK
-        run: flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: premium-pro-apk
-          path: build/app/outputs/flutter-apk/*.apk
-          retention-days: 7
+include ":app"
