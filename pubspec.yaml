@@ -14,7 +14,7 @@ dependencies:
   ffmpeg_kit_flutter:
     git:
       url: https://github.com/arthenica/ffmpeg-kit.git
-      ref: v6.0.R2
+      ref: v6.0
 
   # ==================== OPCIÓN 2: ALTERNATIVA (COMENTADA - ACTIVAR SI FALLA OPCIÓN 1) ====================
   # Si la opción 1 falla, comenta la línea de arriba y descomenta UNA de estas:
