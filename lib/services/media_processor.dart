@@ -1,8 +1,8 @@
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:flutter/foundation.dart';
+import 'ffmpeg_wrapper.dart';
 
 class MediaProcessor extends ChangeNotifier {
+  final FFmpegWrapper _ffmpeg = FFmpegWrapper();
   bool _isProcessing = false;
   double _progress = 0.0;
   String _statusMessage = "Listo";
@@ -10,6 +10,10 @@ class MediaProcessor extends ChangeNotifier {
   bool get isProcessing => _isProcessing;
   double get progress => _progress;
   String get statusMessage => _statusMessage;
+
+  Future<void> init() async {
+    await _ffmpeg.init();
+  }
 
   Future<bool> processVideo({
     required String inputPath,
@@ -19,34 +23,20 @@ class MediaProcessor extends ChangeNotifier {
     String preset = 'medium',
     int crf = 23,
   }) async {
-    if (_isProcessing) return false;
-
     _isProcessing = true;
-    _progress = 0.0;
-    _statusMessage = "Iniciando...";
     notifyListeners();
 
-    String command = '-i "$inputPath" -c:v $codec -preset $preset -crf $crf -c:a aac -movflags +faststart -y "$outputPath"';
+    final success = await _ffmpeg.processVideo(
+      inputPath: inputPath,
+      outputPath: outputPath,
+      codec: codec,
+      bitrate: bitrate,
+      preset: preset,
+      crf: crf,
+    );
 
-    try {
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
-
-      if (ReturnCode.isSuccess(returnCode)) {
-        _statusMessage = "Completado";
-        _progress = 1.0;
-        notifyListeners();
-        return true;
-      } else {
-        _statusMessage = "Error en procesamiento";
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      _isProcessing = false;
-      _statusMessage = "Error: $e";
-      notifyListeners();
-      return false;
-    }
+    _isProcessing = false;
+    notifyListeners();
+    return success;
   }
 }
