@@ -9,50 +9,24 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # ==================== MULTIMEDIA ====================
-  # FFmpeg Kit - Última versión estable (Febrero 2026) [[1]]
+
   ffmpeg_kit_flutter: 6.0.3
-  
-  # ==================== ESTADO ====================
   provider: 6.1.2
-  
-  # ==================== ARCHIVOS ====================
-  # File Picker - Última versión (Enero 2026) [[30]]
   file_picker: 8.1.7
-  
-  # Path Provider - Versión estable
   path_provider: 2.1.4
-  
-  # ==================== PERSISTENCIA ====================
-  # Shared Preferences - Última versión [[42]]
   shared_preferences: 2.5.3
-  
-  # ==================== RED ====================
   http: 1.4.0
-  
-  # ==================== UI ====================
   flutter_colorpicker: 1.1.0
-  
-  # Imágenes con caché
   cached_network_image: 3.4.1
-  
-  # ==================== AUDIO ====================
   audioplayers: 6.1.0
-  
-  # ==================== UTILIDADES ====================
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
-  # Linting - Versión estable
   flutter_lints: 4.0.0
 
 flutter:
   uses-material-design: true
-  
-  # Assets requeridos
   assets:
     - assets/fonts/
     - assets/icons/
