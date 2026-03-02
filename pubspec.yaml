@@ -11,17 +11,11 @@ dependencies:
     sdk: flutter
 
   ffmpeg_kit_flutter:
-  git:
-    url: https://github.com/arthenica/ffmpeg-kit.git      # Repositorio
-    ref: v6.0                                              # Tag/versión
-    path: flutter/ffmpeg_kit_flutter                       # Subdirectorio del paquete
+    git:
+      url: https://github.com/arthenica/ffmpeg-kit.git
+      ref: v6.0
+      path: flutter/ffmpeg_kit_flutter
 
-  # ==================== OPCIÓN 2: ALTERNATIVA (COMENTADA - ACTIVAR SI FALLA OPCIÓN 1) ====================
-  # Si la opción 1 falla, comenta la línea de arriba y descomenta UNA de estas:
-  # ffmpeg_kit_flutter_min: 6.0.2
-  # ffmpeg_kit_flutter_audio: 6.0.2
-  # flutter_ffmpeg: 0.4.0
-  
   provider: 6.1.2
   file_picker: 8.1.7
   path_provider: 2.1.4
