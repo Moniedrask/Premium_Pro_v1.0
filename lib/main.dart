@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
 import 'services/media_processor.dart';
 import 'services/ai_manager.dart';
 import 'widgets/timeline_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FFmpegKitConfig.enableLogs();
+  
+  // Inicializar MediaProcessor antes de ejecutar la app
+  final processor = MediaProcessor();
+  await processor.init();
+  
   runApp(const PremiumProApp());
 }
 
@@ -18,7 +21,7 @@ class PremiumProApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => MediaProcessor()),
+        ChangeNotifierProvider.value(value: MediaProcessor()),
         ChangeNotifierProvider(create: (_) => AIManager()),
       ],
       child: MaterialApp(
