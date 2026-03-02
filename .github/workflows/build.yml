@@ -34,7 +34,6 @@ jobs:
           rm -rf android/.gradle
           flutter pub get
 
-      # ==================== PATCH COMPLETO: ffmpeg_kit_flutter para AGP 8.x ====================
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
         run: |
           FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-5.1.0/android"
@@ -42,13 +41,11 @@ jobs:
           MANIFEST="$FFMPEG_DIR/src/main/AndroidManifest.xml"
           
           if [ -f "$BUILD_GRADLE" ]; then
-            # Agregar namespace después de 'android {'
             sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$BUILD_GRADLE"
             echo "✅ Namespace agregado a build.gradle"
           fi
           
           if [ -f "$MANIFEST" ]; then
-            # Eliminar atributo package del manifest
             sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' "$MANIFEST"
             echo "✅ Package attribute eliminado de AndroidManifest.xml"
           fi
