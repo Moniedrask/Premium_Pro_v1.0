@@ -39,7 +39,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
             ),
           ),
         ),
-        
+
         // ==================== CONTROLES Y CONFIGURACIÓN ====================
         Expanded(
           flex: 2,
@@ -100,27 +100,27 @@ class _TimelineWidgetState extends State<TimelineWidget> {
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 10),
-          
+
           // Selector de Códec
           _buildCodecDropdown(processor),
-          
+
           const SizedBox(height: 10),
-          
+
           // Slider de Bitrate
           _buildBitrateSlider(processor),
-          
+
           const SizedBox(height: 10),
-          
+
           // Slider CRF
           _buildCRFSlider(processor),
-          
+
           const SizedBox(height: 10),
-          
+
           // Selector de Preset
           _buildPresetDropdown(processor),
-          
+
           const SizedBox(height: 16),
-          
+
           // Botones de acción
           _buildActionButtons(processor),
         ],
@@ -231,7 +231,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     );
   }
 
-  // ✅ API CLÁSICA - file_picker 8.1.7
+  // ✅ API file_picker 8.1.7 - CON .platform
   Future<void> _selectVideo() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -239,12 +239,12 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         allowMultiple: false,
         withData: false,
       );
-      
+
       if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
         setState(() {
           _selectedVideoPath = result.files.single.path;
           _selectedVideoName = result.files.single.name;        });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -291,25 +291,25 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     }
 
     try {
-      // ✅ Obtener carpeta de salida (CORREGIDO)
-      final Directory? directory = await getExternalStorageDirectory();      
+      // ✅ Obtener carpeta de salida
+      final Directory? directory = await getExternalStorageDirectory();
       if (directory == null) {
         throw Exception('No se pudo acceder al almacenamiento');
       }
-      
+
       final String outputFolder = '${directory.path}/PremiumPro';
-      
+
       // Crear carpeta si no existe
       await Directory(outputFolder).create(recursive: true);
-      
+
       // Generar nombre de archivo de salida
       final int timestamp = DateTime.now().millisecondsSinceEpoch;
       final String outputPath = '$outputFolder/premium_export_$timestamp.mp4';
-      
+
       debugPrint('📁 Input: $_selectedVideoPath');
       debugPrint('📁 Output: $outputPath');
       debugPrint('⚙️ Config: $_codec | $_bitrate kbps | $_preset | CRF $_crf');
-      
+
       // Iniciar procesamiento
       final bool success = await processor.processVideo(
         inputPath: _selectedVideoPath!,
@@ -319,7 +319,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         preset: _preset,
         crf: _crf,
       );
-      
+
       // Mostrar resultado
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -330,7 +330,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           ),
         );
       }
-      
+
       if (success) {
         debugPrint('✅ Exportación exitosa: $outputPath');
         setState(() {
@@ -338,11 +338,10 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           _selectedVideoName = 'Ninguno';
         });
       }
-      
     } catch (e) {
       debugPrint('❌ Error en exportación: $e');
-      if (mounted) {        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(          SnackBar(
             content: Text('❌ Error crítico: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
