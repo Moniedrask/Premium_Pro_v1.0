@@ -4,6 +4,8 @@ allprojects {
         mavenCentral()
         maven { url 'https://arthenica.com/maven' }
         maven { url 'https://jitpack.io' }
+        maven { url 'https://maven.google.com' }
+        maven { url 'https://repo.maven.apache.org/maven2' }
     }
 }
 
