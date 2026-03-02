@@ -1,11 +1,25 @@
+// ==================== MÉTODO 1 + 5: TODOS LOS REPOSITORIOS ====================
 allprojects {
     repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://arthenica.com/maven' }
+        // JitPack primero (mirror de Arthenica) - MÉTODO 5
         maven { url 'https://jitpack.io' }
+        
+        // Google - Principal
+        google()
+        
+        // Maven Central - Principal
+        mavenCentral()
+        
+        // Múltiples URLs de Arthenica - MÉTODO 1
+        maven { url 'https://arthenica.com/maven' }
+        maven { url 'https://arthenica.github.io/ffmpeg-kit/maven' }
+        maven { url 'https://github.com/arthenica/ffmpeg-kit/releases/download/v6.0/maven' }
+        maven { url 'https://raw.githubusercontent.com/arthenica/ffmpeg-kit/v6.0/maven' }
+        
+        // Fallbacks adicionales
         maven { url 'https://maven.google.com' }
         maven { url 'https://repo.maven.apache.org/maven2' }
+        maven { url 'https://storage.googleapis.com/download.flutter.io' }
     }
 }
 
