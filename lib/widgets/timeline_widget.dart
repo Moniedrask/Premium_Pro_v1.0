@@ -232,10 +232,8 @@ class _TimelineWidgetState extends State<TimelineWidget> {
   }
 
   // ✅ API CLÁSICA - file_picker 8.1.7
-  // Usa FilePicker.platform.pickFiles()
   Future<void> _selectVideo() async {
     try {
-      // ✅ API CLÁSICA con .platform
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.video,
         allowMultiple: false,
@@ -243,9 +241,9 @@ class _TimelineWidgetState extends State<TimelineWidget> {
       );
       
       if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
-        setState(() {          _selectedVideoPath = result.files.single.path;
-          _selectedVideoName = result.files.single.name;
-        });
+        setState(() {
+          _selectedVideoPath = result.files.single.path;
+          _selectedVideoName = result.files.single.name;        });
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -280,6 +278,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     }
   }
 
+  // ✅ CORREGIDO - Variable directory definida correctamente
   Future<void> _exportVideo(MediaProcessor processor) async {
     if (_selectedVideoPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -292,26 +291,27 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     }
 
     try {
-      // Obtener carpeta de salida      final directory = await getExternalStorageDirectory();
+      // ✅ Obtener carpeta de salida (CORREGIDO)
+      final Directory? directory = await getExternalStorageDirectory();      
       if (directory == null) {
         throw Exception('No se pudo acceder al almacenamiento');
       }
       
-      final outputFolder = '${directory.path}/PremiumPro';
+      final String outputFolder = '${directory.path}/PremiumPro';
       
       // Crear carpeta si no existe
       await Directory(outputFolder).create(recursive: true);
       
       // Generar nombre de archivo de salida
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '$outputFolder/premium_export_$timestamp.mp4';
+      final int timestamp = DateTime.now().millisecondsSinceEpoch;
+      final String outputPath = '$outputFolder/premium_export_$timestamp.mp4';
       
       debugPrint('📁 Input: $_selectedVideoPath');
       debugPrint('📁 Output: $outputPath');
       debugPrint('⚙️ Config: $_codec | $_bitrate kbps | $_preset | CRF $_crf');
       
       // Iniciar procesamiento
-      final success = await processor.processVideo(
+      final bool success = await processor.processVideo(
         inputPath: _selectedVideoPath!,
         outputPath: outputPath,
         codec: _codec,
