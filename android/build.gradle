@@ -1,24 +1,22 @@
-// ==================== TODOS LOS REPOSITORIOS DISPONIBLES ====================
 allprojects {
     repositories {
-        // ==================== PRIORIDAD 1: MIRRORS ====================
-        maven { url 'https://jitpack.io' }
+        // ==================== PRIORIDAD 1: GOOGLE (Flutter artifacts) ====================
+        google()
         maven { url 'https://maven.google.com' }
         
-        // ==================== PRIORIDAD 2: PRINCIPALES ====================
-        google()
-        mavenCentral()
+        // ==================== PRIORIDAD 2: FLUTTER ====================
+        maven { url 'https://storage.googleapis.com/download.flutter.io' }
         
-        // ==================== PRIORIDAD 3: ARTHENICA (URLs VÁLIDAS) ====================
+        // ==================== PRIORIDAD 3: MAVEN CENTRAL ====================
+        mavenCentral()
+        maven { url 'https://repo.maven.apache.org/maven2' }
+        
+        // ==================== PRIORIDAD 4: ARTHENICA (solo ffmpeg) ====================
         maven { url 'https://arthenica.com/maven' }
         maven { url 'https://arthenica.github.io/ffmpeg-kit/maven' }
-        maven { url 'https://github.com/arthenica/ffmpeg-kit/releases/download/v6.0/maven' }
-        maven { url 'https://raw.githubusercontent.com/arthenica/ffmpeg-kit/v6.0/maven' }
-        // ❌ ELIMINADO: arthenica.bintray.com (certificado SSL inválido)
         
-        // ==================== PRIORIDAD 4: FALLBACKS ====================
-        maven { url 'https://repo.maven.apache.org/maven2' }
-        maven { url 'https://storage.googleapis.com/download.flutter.io' }
+        // ==================== PRIORIDAD 5: JITPACK (fallback) ====================
+        maven { url 'https://jitpack.io' }
     }
 }
 
