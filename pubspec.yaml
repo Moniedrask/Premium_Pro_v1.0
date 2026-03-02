@@ -41,7 +41,6 @@ dependencies:
   audioplayers: 6.1.0
   
   # ==================== UTILIDADES ====================
-  collection: 1.19.0
 
 dev_dependencies:
   flutter_test:
