@@ -7,7 +7,7 @@ import 'widgets/timeline_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FFmpegKitConfig.enableLogs(true);
+  FFmpegKitConfig.enableLogs();
   runApp(const PremiumProApp());
 }
 
