@@ -19,7 +19,7 @@ dependencies:
   
   # ==================== ARCHIVOS ====================
   # File Picker - Última versión (Enero 2026) [[30]]
-  file_picker: 10.3.9
+  file_picker: 8.1.7
   
   # Path Provider - Versión estable
   path_provider: 2.1.4
