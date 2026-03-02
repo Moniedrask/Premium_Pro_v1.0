@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -28,11 +28,13 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # ==================== MÉTODO 2: CACHÉ OPTIMIZADO ====================
       - name: Clean and Install Dependencies
         run: |
           flutter clean
           rm -rf android/.gradle
-          rm -rf ~/.gradle/caches/modules-2/files-2.1/com.arthenica
+          # NO limpiar caché de com.arthenica (MÉTODO 2)
+          # rm -rf ~/.gradle/caches/modules-2/files-2.1/com.arthenica
           flutter pub get
 
       - name: Accept Android Licenses
@@ -43,8 +45,18 @@ jobs:
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
 
-      - name: Build APK
-        run: flutter build apk --release --split-per-abi
+      # ==================== MÉTODO 2: BUILD CON REINTENTOS ====================
+      - name: Build APK (with retry)
+        run: |
+          cd android
+          # Intento 1 con refresh-dependencies
+          ./gradlew assembleRelease --refresh-dependencies || \
+          # Intento 2 offline
+          ./gradlew assembleRelease --offline || \
+          # Intento 3 normal
+          ./gradlew assembleRelease
+          cd ..
+          flutter build apk --release --split-per-abi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
