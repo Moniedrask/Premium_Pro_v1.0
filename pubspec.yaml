@@ -10,11 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # ==================== FFmpeg Kit desde Git (NO Maven) ====================
   ffmpeg_kit_flutter:
-    git:
-      url: https://github.com/arthenica/ffmpeg-kit.git
-      ref: v6.0
+  git:
+    url: https://github.com/arthenica/ffmpeg-kit.git      # Repositorio
+    ref: v6.0                                              # Tag/versión
+    path: flutter/ffmpeg_kit_flutter                       # Subdirectorio del paquete
 
   # ==================== OPCIÓN 2: ALTERNATIVA (COMENTADA - ACTIVAR SI FALLA OPCIÓN 1) ====================
   # Si la opción 1 falla, comenta la línea de arriba y descomenta UNA de estas:
