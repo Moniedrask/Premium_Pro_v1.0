@@ -1,37 +1,40 @@
 class ImageSettings {
   String format;          // jpeg, png, webp, avif
   int quality;            // 1-100 (para lossy)
+  int compressionLevel;   // 0-9 (para png)
+  bool preserveMetadata;  // conservar EXIF
   int maxWidth;           // 0 = original
   int maxHeight;          // 0 = original
-  bool stripMetadata;     // eliminar EXIF
-  double brightness;      // -1.0 a 1.0
-  double contrast;        // -1.0 a 1.0
-  double saturation;      // -1.0 a 1.0
-  bool autoEnhance;       // placeholder
+  bool aiUpscale;         // usar IA para escalado
+  int aiScale;            // 2, 4, 8, 16
+  String filter;          // 'lanczos', 'bicubic', 'nearest'
+  bool aiEnabled;
 
   ImageSettings({
     this.format = 'jpeg',
     this.quality = 85,
+    this.compressionLevel = 6,
+    this.preserveMetadata = false,
     this.maxWidth = 0,
     this.maxHeight = 0,
-    this.stripMetadata = false,
-    this.brightness = 0.0,
-    this.contrast = 0.0,
-    this.saturation = 0.0,
-    this.autoEnhance = false,
+    this.aiUpscale = false,
+    this.aiScale = 2,
+    this.filter = 'lanczos',
+    this.aiEnabled = false,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'format': format,
       'quality': quality,
+      'compressionLevel': compressionLevel,
+      'preserveMetadata': preserveMetadata,
       'maxWidth': maxWidth,
       'maxHeight': maxHeight,
-      'stripMetadata': stripMetadata,
-      'brightness': brightness,
-      'contrast': contrast,
-      'saturation': saturation,
-      'autoEnhance': autoEnhance,
+      'aiUpscale': aiUpscale,
+      'aiScale': aiScale,
+      'filter': filter,
+      'aiEnabled': aiEnabled,
     };
   }
 
@@ -39,13 +42,14 @@ class ImageSettings {
     return ImageSettings(
       format: json['format'] ?? 'jpeg',
       quality: json['quality'] ?? 85,
+      compressionLevel: json['compressionLevel'] ?? 6,
+      preserveMetadata: json['preserveMetadata'] ?? false,
       maxWidth: json['maxWidth'] ?? 0,
       maxHeight: json['maxHeight'] ?? 0,
-      stripMetadata: json['stripMetadata'] ?? false,
-      brightness: json['brightness']?.toDouble() ?? 0.0,
-      contrast: json['contrast']?.toDouble() ?? 0.0,
-      saturation: json['saturation']?.toDouble() ?? 0.0,
-      autoEnhance: json['autoEnhance'] ?? false,
+      aiUpscale: json['aiUpscale'] ?? false,
+      aiScale: json['aiScale'] ?? 2,
+      filter: json['filter'] ?? 'lanczos',
+      aiEnabled: json['aiEnabled'] ?? false,
     );
   }
 }
