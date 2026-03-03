@@ -4,8 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../services/media_processor.dart';
-import '../models/compression_settings.dart';
-import '../utils/helpers.dart'; // Para obtener duración del video
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -17,8 +15,10 @@ class TimelineWidget extends StatefulWidget {
 class _TimelineWidgetState extends State<TimelineWidget> {
   String? _selectedVideoPath;
   String _selectedVideoName = 'Ninguno';
-  CompressionSettings _settings = CompressionSettings();
-  int? _videoDurationMs; // Duración del video seleccionado
+  String _codec = 'libx264';
+  int _bitrate = 2500;
+  String _preset = 'medium';
+  int _crf = 23;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +26,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
     return Column(
       children: [
-        // Visor de previsualización (placeholder)
         Expanded(
           flex: 3,
           child: Container(
@@ -39,8 +38,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
             ),
           ),
         ),
-
-        // Controles y configuración
         Expanded(
           flex: 2,
           child: Container(
@@ -57,25 +54,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Barra de progreso determinada
-        Container(
-          width: 200,
-          height: 8,
-          decoration: BoxDecoration(
-            color: Colors.grey[800],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: processor.progress,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.blueAccent,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-        ),
+        const CircularProgressIndicator(color: Colors.blueAccent),
         const SizedBox(height: 20),
         Text(
           processor.statusMessage,
@@ -88,16 +67,13 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           style: const TextStyle(color: Colors.grey, fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        // Botón de cancelar
-        ElevatedButton.icon(
-          onPressed: () {
-            processor.cancelProcessing();
-          },
-          icon: const Icon(Icons.cancel),
-          label: const Text('CANCELAR'),
+        ElevatedButton(
+          onPressed: () => processor.cancelProcessing(),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent,
+            backgroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           ),
+          child: const Text('CANCELAR', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );
@@ -132,28 +108,14 @@ class _TimelineWidgetState extends State<TimelineWidget> {
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 10),
-
-          // Selector de Códec
           _buildCodecDropdown(processor),
-
           const SizedBox(height: 10),
-
-          // Slider de Bitrate
           _buildBitrateSlider(processor),
-
           const SizedBox(height: 10),
-
-          // Slider CRF
           _buildCRFSlider(processor),
-
           const SizedBox(height: 10),
-
-          // Selector de Preset
           _buildPresetDropdown(processor),
-
           const SizedBox(height: 16),
-
-          // Botones de acción
           _buildActionButtons(processor),
         ],
       ),
@@ -162,16 +124,14 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
   Widget _buildCodecDropdown(MediaProcessor processor) {
     return DropdownButtonFormField<String>(
-      value: _settings.videoCodec,
+      value: _codec,
       dropdownColor: const Color(0xFF111111),
       items: const [
         DropdownMenuItem(value: 'libx264', child: Text('H.264 (Compatible)', style: TextStyle(color: Colors.white))),
         DropdownMenuItem(value: 'libx265', child: Text('H.265 (Eficiente)', style: TextStyle(color: Colors.white))),
         DropdownMenuItem(value: 'libvpx-vp9', child: Text('VP9 (Web)', style: TextStyle(color: Colors.white))),
       ],
-      onChanged: processor.isProcessing ? null : (val) {
-        setState(() => _settings.videoCodec = val!);
-      },
+      onChanged: processor.isProcessing ? null : (val) => setState(() => _codec = val!),
       decoration: const InputDecoration(
         labelText: 'Códec de Video',
         labelStyle: TextStyle(color: Colors.grey),
@@ -184,20 +144,16 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Bitrate: ${_settings.videoBitrate} kbps',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        Text('Bitrate: $_bitrate kbps', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         Slider(
-          value: _settings.videoBitrate.toDouble(),
+          value: _bitrate.toDouble(),
           min: 500,
           max: 10000,
           divisions: 38,
           activeColor: Colors.blueAccent,
-          onChanged: processor.isProcessing ? null : (val) {
-            setState(() => _settings.videoBitrate = val.round());
-          },
+          onChanged: processor.isProcessing ? null : (val) => setState(() => _bitrate = val.round()),
         ),
-        const Text('1000= Baja | 2500= Media | 5000+= Alta',
-            style: TextStyle(color: Colors.grey, fontSize: 12)),
+        const Text('1000= Baja | 2500= Media | 5000+= Alta', style: TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }
@@ -206,27 +162,23 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('CRF (Calidad): ${_settings.crf}',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        Text('CRF (Calidad): $_crf', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         Slider(
-          value: _settings.crf.toDouble(),
+          value: _crf.toDouble(),
           min: 0,
           max: 51,
           divisions: 51,
           activeColor: Colors.blueAccent,
-          onChanged: processor.isProcessing ? null : (val) {
-            setState(() => _settings.crf = val.round());
-          },
+          onChanged: processor.isProcessing ? null : (val) => setState(() => _crf = val.round()),
         ),
-        const Text('18-23= Alta | 24-28= Media | 29-51= Baja',
-            style: TextStyle(color: Colors.grey, fontSize: 12)),
+        const Text('18-23= Alta | 24-28= Media | 29-51= Baja', style: TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }
 
   Widget _buildPresetDropdown(MediaProcessor processor) {
     return DropdownButtonFormField<String>(
-      value: _settings.preset,
+      value: _preset,
       dropdownColor: const Color(0xFF111111),
       items: const [
         DropdownMenuItem(value: 'ultrafast', child: Text('Ultra Rápido', style: TextStyle(color: Colors.white))),
@@ -235,9 +187,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         DropdownMenuItem(value: 'slow', child: Text('Lento', style: TextStyle(color: Colors.white))),
         DropdownMenuItem(value: 'veryslow', child: Text('Muy Lento', style: TextStyle(color: Colors.white))),
       ],
-      onChanged: processor.isProcessing ? null : (val) {
-        setState(() => _settings.preset = val!);
-      },
+      onChanged: processor.isProcessing ? null : (val) => setState(() => _preset = val!),
       decoration: const InputDecoration(
         labelText: 'Velocidad de Codificación',
         labelStyle: TextStyle(color: Colors.grey),
@@ -277,6 +227,17 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     );
   }
 
+  String _getExtensionForCodec(String codec) {
+    switch (codec) {
+      case 'libvpx-vp9':
+        return 'webm';
+      case 'libx265':
+        return 'mp4';
+      default:
+        return 'mp4';
+    }
+  }
+
   Future<void> _selectVideo() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -286,13 +247,9 @@ class _TimelineWidgetState extends State<TimelineWidget> {
       );
 
       if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        // Obtener duración del video (implementar en helpers)
-        final duration = await getVideoDuration(path);
         setState(() {
-          _selectedVideoPath = path;
+          _selectedVideoPath = result.files.single.path;
           _selectedVideoName = result.files.single.name;
-          _videoDurationMs = duration;
         });
 
         if (mounted) {
@@ -339,29 +296,30 @@ class _TimelineWidgetState extends State<TimelineWidget> {
       return;
     }
 
-    // Usar FilePicker para elegir dónde guardar
-    String? outputPath = await FilePicker.platform.saveFile(
-      dialogTitle: 'Guardar video exportado',
-      fileName: 'premium_export_${DateTime.now().millisecondsSinceEpoch}.${_getExtensionForCodec(_settings.videoCodec)}',
-    );
-
-    if (outputPath == null) {
-      return; // Usuario canceló
-    }
-
     try {
+      final Directory? directory = await getExternalStorageDirectory();
+      if (directory == null) {
+        throw Exception('No se pudo acceder al almacenamiento');
+      }
+
+      final String outputFolder = '${directory.path}/PremiumPro';
+      await Directory(outputFolder).create(recursive: true);
+
+      final int timestamp = DateTime.now().millisecondsSinceEpoch;
+      final ext = _getExtensionForCodec(_codec);
+      final String outputPath = '$outputFolder/premium_export_$timestamp.$ext';
+
       debugPrint('📁 Input: $_selectedVideoPath');
       debugPrint('📁 Output: $outputPath');
-      debugPrint('⚙️ Config: ${_settings.videoCodec} | ${_settings.videoBitrate} kbps | ${_settings.preset} | CRF ${_settings.crf}');
+      debugPrint('⚙️ Config: $_codec | $_bitrate kbps | $_preset | CRF $_crf');
 
       final bool success = await processor.processVideo(
         inputPath: _selectedVideoPath!,
         outputPath: outputPath,
-        codec: _settings.videoCodec,
-        bitrate: _settings.videoBitrate,
-        preset: _settings.preset,
-        crf: _settings.crf,
-        videoDurationMs: _videoDurationMs ?? 60000,
+        codec: _codec,
+        bitrate: _bitrate,
+        preset: _preset,
+        crf: _crf,
       );
 
       if (mounted) {
@@ -376,11 +334,10 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
       if (success) {
         debugPrint('✅ Exportación exitosa: $outputPath');
-        // Opcional: resetear selección
-        // setState(() {
-        //   _selectedVideoPath = null;
-        //   _selectedVideoName = 'Ninguno';
-        // });
+        setState(() {
+          _selectedVideoPath = null;
+          _selectedVideoName = 'Ninguno';
+        });
       }
     } catch (e) {
       debugPrint('❌ Error en exportación: $e');
@@ -393,17 +350,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           ),
         );
       }
-    }
-  }
-
-  String _getExtensionForCodec(String codec) {
-    switch (codec) {
-      case 'libvpx-vp9':
-        return 'webm';
-      case 'libx265':
-        return 'mp4';
-      default:
-        return 'mp4';
     }
   }
 }
