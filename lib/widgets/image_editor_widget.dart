@@ -6,7 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import '../services/image_processor.dart';
 import '../services/ai_manager.dart';
 import '../models/image_settings.dart';
-import 'package:image_picker/image_picker.dart'; // si se quiere usar cámara
 
 class ImageEditorWidget extends StatefulWidget {
   const ImageEditorWidget({super.key});
@@ -27,7 +26,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
 
     return Column(
       children: [
-        // Visor de imagen
         Expanded(
           flex: 2,
           child: Container(
@@ -35,7 +33,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             child: _buildImageView(processor),
           ),
         ),
-        // Controles
         Expanded(
           flex: 3,
           child: Container(
@@ -86,7 +83,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
               style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
 
-          // Formato
           DropdownButtonFormField<String>(
             value: _settings.format,
             items: const [
@@ -100,7 +96,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           ),
 
           const SizedBox(height: 10),
-          // Calidad (si aplica)
           if (_settings.format == 'jpeg' || _settings.format == 'webp')
             Column(
               children: [
@@ -130,7 +125,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             ),
 
           const SizedBox(height: 10),
-          // Tamaño máximo
           Row(
             children: [
               Expanded(
@@ -152,7 +146,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           ),
 
           const SizedBox(height: 10),
-          // Algoritmo de escalado
           DropdownButtonFormField<String>(
             value: _settings.filter,
             items: const [
@@ -165,7 +158,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           ),
 
           const SizedBox(height: 10),
-          // Conservar metadatos
           Row(
             children: [
               Checkbox(
@@ -176,7 +168,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             ],
           ),
 
-          // IA Upscale (si modelo disponible)
           if (aiManager.isModelAvailable)
             Row(
               children: [
@@ -189,7 +180,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             ),
 
           const SizedBox(height: 20),
-          // Botones
           Row(
             children: [
               Expanded(
