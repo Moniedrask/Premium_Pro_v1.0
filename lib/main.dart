@@ -1,29 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/media_processor.dart';
+import 'services/audio_processor.dart';      // nuevo
+import 'services/image_processor.dart';      // nuevo
 import 'services/ai_manager.dart';
 import 'widgets/timeline_widget.dart';
-import 'screens/settings_screen.dart'; // Para acceso a configuración (nuevo)
+import 'widgets/audio_timeline_widget.dart'; // nuevo
+import 'widgets/image_editor_widget.dart';   // nuevo
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Crear UNA SOLA instancia e inicializarla
-  final processor = MediaProcessor();
-  await processor.init();
-
-  runApp(PremiumProApp(processor: processor));
+  
+  final videoProcessor = MediaProcessor();
+  final audioProcessor = AudioProcessor();
+  final imageProcessor = ImageProcessor();
+  
+  await Future.wait([
+    videoProcessor.init(),
+    audioProcessor.init(),
+    imageProcessor.init(),
+  ]);
+  
+  runApp(PremiumProApp(
+    videoProcessor: videoProcessor,
+    audioProcessor: audioProcessor,
+    imageProcessor: imageProcessor,
+  ));
 }
 
 class PremiumProApp extends StatelessWidget {
-  final MediaProcessor processor;
-  const PremiumProApp({super.key, required this.processor});
+  final MediaProcessor videoProcessor;
+  final AudioProcessor audioProcessor;
+  final ImageProcessor imageProcessor;
+
+  const PremiumProApp({
+    super.key,
+    required this.videoProcessor,
+    required this.audioProcessor,
+    required this.imageProcessor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<MediaProcessor>.value(value: processor),
+        ChangeNotifierProvider<MediaProcessor>.value(value: videoProcessor),
+        ChangeNotifierProvider<AudioProcessor>.value(value: audioProcessor),
+        ChangeNotifierProvider<ImageProcessor>.value(value: imageProcessor),
         ChangeNotifierProvider(create: (_) => AIManager()),
       ],
       child: MaterialApp(
@@ -55,30 +78,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
+  final List<Widget> _pages = const [
+    TimelineWidget(),
+    AudioTimelineWidget(),
+    ImageEditorWidget(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Premium Pro v1.0'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
-            },
-          ),
-        ],
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          TimelineWidget(),
-          Center(child: Text('Audio - Próximamente', style: TextStyle(color: Colors.grey))),
-          Center(child: Text('Imagen - Próximamente', style: TextStyle(color: Colors.grey))),
-        ],
+        children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF000000),
