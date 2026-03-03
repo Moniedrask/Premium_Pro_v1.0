@@ -47,7 +47,6 @@ class CompressionSettings {
     this.outputFolder = '/storage/emulated/0/PremiumPro',
   });
 
-  /// Genera comando FFmpeg para VIDEO
   String toFFmpegVideoCommand(String inputPath, String outputPath) {
     final safeInput = _sanitizePath(inputPath);
     final safeOutput = _sanitizePath(outputPath);
@@ -92,7 +91,6 @@ class CompressionSettings {
     return buffer.toString();
   }
 
-  /// Genera comando FFmpeg para IMAGEN
   String toFFmpegImageCommand(String inputPath, String outputPath) {
     final safeInput = _sanitizePath(inputPath);
     final safeOutput = _sanitizePath(outputPath);
@@ -101,7 +99,7 @@ class CompressionSettings {
     buffer.write('-i "$safeInput"');
     
     if (maxWidth > 0 || maxHeight > 0) {
-      String scale = '';
+      String scale;
       if (maxWidth > 0 && maxHeight > 0) {
         scale = 'scale=$maxWidth:$maxHeight';
       } else if (maxWidth > 0) {
@@ -136,7 +134,6 @@ class CompressionSettings {
     return buffer.toString();
   }
 
-  /// Calcula estimación de tamaño de salida en MB
   double estimateOutputSizeMB(int durationSeconds) {
     int totalBitrate = videoBitrate + audioBitrate;
     double sizeBits = totalBitrate * 1000 * durationSeconds;
@@ -145,7 +142,6 @@ class CompressionSettings {
     return sizeMB;
   }
 
-  /// Guarda configuración como JSON
   Map<String, dynamic> toJson() {
     return {
       'videoCodec': videoCodec,
@@ -161,7 +157,6 @@ class CompressionSettings {
     };
   }
 
-  /// Carga configuración desde JSON
   factory CompressionSettings.fromJson(Map<String, dynamic> json) {
     return CompressionSettings(
       videoCodec: json['videoCodec'] ?? 'libx264',
@@ -177,7 +172,6 @@ class CompressionSettings {
     );
   }
 
-  /// Limpia rutas para evitar inyección de comandos
   String _sanitizePath(String path) {
     return path.replaceAll(RegExp(r'[;&|`$]'), '');
   }
