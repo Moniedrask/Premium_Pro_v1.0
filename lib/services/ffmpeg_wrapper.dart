@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
@@ -12,7 +11,7 @@ class FFmpegWrapper {
   bool _isProcessing = false;
   double _progress = 0.0;
   String _statusMessage = "Listo";
-  dynamic _currentSession; // Usamos dynamic para evitar problemas de tipo
+  FFmpegSession? _currentSession;
 
   bool get isProcessing => _isProcessing;
   double get progress => _progress;
