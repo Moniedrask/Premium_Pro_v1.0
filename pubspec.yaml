@@ -18,7 +18,7 @@ dependencies:
   flutter_colorpicker: 1.1.0
   cached_network_image: 3.4.1
   audioplayers: 6.1.0
-  flutter_waveform: ^0.1.0  # o la última versión
+  flutter_waveform: ^1.0.0  # o la última versión
 
 dev_dependencies:
   flutter_test:
