@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
@@ -56,44 +57,28 @@ class FFmpegWrapper {
     try {
       debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
-      // Usar executeWithArguments con callbacks opcionales
-      final completer = Completer<bool>();
-      
-      _currentSession = await FFmpegKit.executeWithArguments(
-        arguments,
-        completeCallback: (session) async {
-          final returnCode = await session.getReturnCode();
-          final success = ReturnCode.isSuccess(returnCode);
-          if (success) {
-            _statusMessage = "✅ Completado";
-            _progress = 1.0;
-            onProgress?.call(1.0);
-            debugPrint('✅ Procesamiento exitoso: $outputPath');
-          } else {
-            _statusMessage = "❌ Error en procesamiento";
-            final output = await session.getOutput();
-            debugPrint('❌ Error FFmpeg: $output');
-          }
-          _isProcessing = false;
-          _currentSession = null;
-          completer.complete(success);
-        },
-        logCallback: (log) {
-          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
-          onLog?.call(log.getMessage());
-        },
-        statisticsCallback: (statistics) {
-          final time = statistics.getTime(); // en microsegundos
-          if (time > 0) {
-            double estimated = time / 60000000.0; // asume 1 min total
-            if (estimated > 1.0) estimated = 1.0;
-            _progress = estimated;
-            onProgress?.call(_progress);
-          }
-        },
-      );
+      // Ejecutar sin callbacks (más simple y evita problemas de firma)
+      final session = await FFmpegKit.executeWithArguments(arguments);
+      _currentSession = session;
 
-      return await completer.future;
+      // Esperar a que termine y obtener el código de retorno
+      final returnCode = await session.getReturnCode();
+      final success = ReturnCode.isSuccess(returnCode);
+
+      if (success) {
+        _statusMessage = "✅ Completado";
+        _progress = 1.0;
+        onProgress?.call(1.0);
+        debugPrint('✅ Procesamiento exitoso: $outputPath');
+      } else {
+        _statusMessage = "❌ Error en procesamiento";
+        final output = await session.getOutput();
+        debugPrint('❌ Error FFmpeg: $output');
+      }
+
+      _isProcessing = false;
+      _currentSession = null;
+      return success;
     } catch (e) {
       _isProcessing = false;
       _currentSession = null;
@@ -103,7 +88,6 @@ class FFmpegWrapper {
     }
   }
 
-  /// Ejecuta un comando FFmpeg con lista de argumentos (seguro)
   Future<bool> executeCommandWithArgs(List<String> arguments) async {
     try {
       final session = await FFmpegKit.executeWithArguments(arguments);
