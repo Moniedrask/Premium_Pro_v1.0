@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
-import 'package:ffmpeg_kit_flutter/statistics.dart';
 import 'package:flutter/foundation.dart';
 
 class FFmpegWrapper {
@@ -13,7 +12,7 @@ class FFmpegWrapper {
   bool _isProcessing = false;
   double _progress = 0.0;
   String _statusMessage = "Listo";
-  FFmpegSession? _currentSession;
+  dynamic _currentSession; // Usamos dynamic para evitar problemas de tipo
 
   bool get isProcessing => _isProcessing;
   double get progress => _progress;
@@ -57,11 +56,9 @@ class FFmpegWrapper {
     try {
       debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
-      // Ejecutar sin callbacks (más simple y evita problemas de firma)
       final session = await FFmpegKit.executeWithArguments(arguments);
       _currentSession = session;
 
-      // Esperar a que termine y obtener el código de retorno
       final returnCode = await session.getReturnCode();
       final success = ReturnCode.isSuccess(returnCode);
 
