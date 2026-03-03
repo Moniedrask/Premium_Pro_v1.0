@@ -7,11 +7,17 @@ class ProjectConfig {
 
   static Future<ProjectConfig> load() async {
     final prefs = await SharedPreferences.getInstance();
-    return ProjectConfig();
+    final config = ProjectConfig();
+    config.language = prefs.getString('language') ?? 'es';
+    config.darkMode = prefs.getBool('darkMode') ?? true;
+    config.defaultOutputFolder = prefs.getString('outputFolder') ?? '/storage/emulated/0/PremiumPro';
+    return config;
   }
 
   Future<void> save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language', language);
+    await prefs.setBool('darkMode', darkMode);
+    await prefs.setString('outputFolder', defaultOutputFolder);
   }
 }
