@@ -34,20 +34,24 @@ jobs:
           rm -rf android/.gradle
           flutter pub get
 
+      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
+      - name: Download ffmpeg-kit-fix.aar from Google Drive
+        run: |
+          mkdir -p android/app/libs
+          # Usar gdown para descargar desde Google Drive (enlace directo)
+          pip install gdown
+          gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O /tmp/ffmpeg-kit-fix.aar --folder
+          # Mover el archivo descargado a la carpeta libs (asumiendo que se descarga como ffmpeg-kit-fix.aar)
+          find /tmp -name "*.aar" -exec mv {} android/app/libs/ffmpeg-kit-fix.aar \;
+
+      # (Opcional) Parche para ffmpeg_kit_flutter (ya no es necesario con AAR local, pero se deja por si acaso)
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
         run: |
-          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-5.1.0/android"
-          BUILD_GRADLE="$FFMPEG_DIR/build.gradle"
-          MANIFEST="$FFMPEG_DIR/src/main/AndroidManifest.xml"
-          
-          if [ -f "$BUILD_GRADLE" ]; then
-            sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$BUILD_GRADLE"
-            echo "✅ Namespace agregado a build.gradle"
-          fi
-          
-          if [ -f "$MANIFEST" ]; then
-            sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' "$MANIFEST"
-            echo "✅ Package attribute eliminado de AndroidManifest.xml"
+          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
+          if [ -d "$FFMPEG_DIR" ]; then
+            sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_DIR/build.gradle" || true
+            sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' "$FFMPEG_DIR/src/main/AndroidManifest.xml" || true
+            echo "✅ Parche aplicado"
           fi
 
       - name: Accept Android Licenses
