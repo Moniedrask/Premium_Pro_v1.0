@@ -76,6 +76,19 @@ flutter {
 }
 
 dependencies {
+    // Excluir cualquier dependencia remota de Arthenica (por si acaso)
+    configurations.implementation {
+        exclude group: "com.arthenica"
+    }
+
+    // --- DEPENDENCIAS LOCALES ---
+    // Archivo AAR descargado en el workflow (ffmpeg-kit-fix.aar)
+    implementation(files("libs/ffmpeg-kit-fix.aar"))
+
+    // Dependencia obligatoria para FFmpegKit (stack traces)
+    implementation 'com.arthenica:smart-exception-java:0.2.1'
+
+    // --- TUS OTRAS DEPENDENCIAS ---
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
