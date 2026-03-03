@@ -1,12 +1,8 @@
 allprojects {
     repositories {
         google()
-        maven { url 'https://maven.google.com' }
-        maven { url 'https://storage.googleapis.com/download.flutter.io' }
         mavenCentral()
-        maven { url 'https://repo.maven.apache.org/maven2' }
-        maven { url 'https://arthenica.com/maven' }
-        maven { url 'https://arthenica.github.io/ffmpeg-kit/maven' }
+        // Opcional: JitPack si alguna otra dependencia lo requiere
         maven { url 'https://jitpack.io' }
     }
 }
