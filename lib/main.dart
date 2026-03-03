@@ -3,14 +3,15 @@ import 'package:provider/provider.dart';
 import 'services/media_processor.dart';
 import 'services/ai_manager.dart';
 import 'widgets/timeline_widget.dart';
+import 'screens/settings_screen.dart'; // Para acceso a configuración (nuevo)
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Crear UNA SOLA instancia e inicializarla
   final processor = MediaProcessor();
   await processor.init();
-  
+
   runApp(PremiumProApp(processor: processor));
 }
 
@@ -22,7 +23,6 @@ class PremiumProApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Usar la misma instancia inicializada
         ChangeNotifierProvider<MediaProcessor>.value(value: processor),
         ChangeNotifierProvider(create: (_) => AIManager()),
       ],
@@ -60,6 +60,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Premium Pro v1.0'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: IndexedStack(
         index: _currentIndex,
