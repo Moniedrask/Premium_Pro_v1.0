@@ -7,6 +7,7 @@ class AudioSettings {
   double normalizeTarget; // LUFS o pico
   bool removeNoise;      // reducción de ruido (requiere IA)
   bool aiEnabled;        // si IA está activa
+  int compressionLevel;  // 0-9 para FLAC
 
   AudioSettings({
     this.codec = 'aac',
@@ -17,6 +18,7 @@ class AudioSettings {
     this.normalizeTarget = -16.0,
     this.removeNoise = false,
     this.aiEnabled = false,
+    this.compressionLevel = 5,
   });
 
   Map<String, dynamic> toJson() {
@@ -29,6 +31,7 @@ class AudioSettings {
       'normalizeTarget': normalizeTarget,
       'removeNoise': removeNoise,
       'aiEnabled': aiEnabled,
+      'compressionLevel': compressionLevel,
     };
   }
 
@@ -42,6 +45,7 @@ class AudioSettings {
       normalizeTarget: json['normalizeTarget'] ?? -16.0,
       removeNoise: json['removeNoise'] ?? false,
       aiEnabled: json['aiEnabled'] ?? false,
+      compressionLevel: json['compressionLevel'] ?? 5,
     );
   }
 }
