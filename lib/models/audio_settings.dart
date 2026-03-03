@@ -1,12 +1,12 @@
 class AudioSettings {
-  String codec;           // aac, mp3, opus, flac, wav
-  int bitrate;            // kbps (excepto flac/wav)
-  int sampleRate;         // Hz
-  String channels;        // mono, stereo
-  bool normalize;         // aplicar normalización de pico
-  double fadeInDuration;  // segundos
-  double fadeOutDuration; // segundos
-  bool reduceNoise;       // placeholder (requiere IA)
+  String codec;          // aac, mp3, opus, flac, wav
+  int bitrate;           // kbps (solo para lossy)
+  int sampleRate;        // Hz (44100, 48000, 96000, 192000)
+  String channels;       // mono, stereo, 5.1, 7.1
+  bool normalize;        // normalizar volumen
+  double normalizeTarget; // LUFS o pico
+  bool removeNoise;      // reducción de ruido (requiere IA)
+  bool aiEnabled;        // si IA está activa
 
   AudioSettings({
     this.codec = 'aac',
@@ -14,9 +14,9 @@ class AudioSettings {
     this.sampleRate = 48000,
     this.channels = 'stereo',
     this.normalize = false,
-    this.fadeInDuration = 0.0,
-    this.fadeOutDuration = 0.0,
-    this.reduceNoise = false,
+    this.normalizeTarget = -16.0,
+    this.removeNoise = false,
+    this.aiEnabled = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -26,9 +26,9 @@ class AudioSettings {
       'sampleRate': sampleRate,
       'channels': channels,
       'normalize': normalize,
-      'fadeIn': fadeInDuration,
-      'fadeOut': fadeOutDuration,
-      'reduceNoise': reduceNoise,
+      'normalizeTarget': normalizeTarget,
+      'removeNoise': removeNoise,
+      'aiEnabled': aiEnabled,
     };
   }
 
@@ -39,9 +39,9 @@ class AudioSettings {
       sampleRate: json['sampleRate'] ?? 48000,
       channels: json['channels'] ?? 'stereo',
       normalize: json['normalize'] ?? false,
-      fadeInDuration: json['fadeIn']?.toDouble() ?? 0.0,
-      fadeOutDuration: json['fadeOut']?.toDouble() ?? 0.0,
-      reduceNoise: json['reduceNoise'] ?? false,
+      normalizeTarget: json['normalizeTarget'] ?? -16.0,
+      removeNoise: json['removeNoise'] ?? false,
+      aiEnabled: json['aiEnabled'] ?? false,
     );
   }
 }
