@@ -1,21 +1,12 @@
 allprojects {
     repositories {
-        // ==================== PRIORIDAD 1: GOOGLE (Flutter artifacts) ====================
         google()
         maven { url 'https://maven.google.com' }
-        
-        // ==================== PRIORIDAD 2: FLUTTER ====================
         maven { url 'https://storage.googleapis.com/download.flutter.io' }
-        
-        // ==================== PRIORIDAD 3: MAVEN CENTRAL ====================
         mavenCentral()
         maven { url 'https://repo.maven.apache.org/maven2' }
-        
-        // ==================== PRIORIDAD 4: ARTHENICA (solo ffmpeg) ====================
         maven { url 'https://arthenica.com/maven' }
         maven { url 'https://arthenica.github.io/ffmpeg-kit/maven' }
-        
-        // ==================== PRIORIDAD 5: JITPACK (fallback) ====================
         maven { url 'https://jitpack.io' }
     }
 }
