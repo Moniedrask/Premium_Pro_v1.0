@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/media_processor.dart';
-import 'services/audio_processor.dart';      // nuevo
-import 'services/image_processor.dart';      // nuevo
+import 'services/audio_processor.dart';
+import 'services/image_processor.dart';
 import 'services/ai_manager.dart';
 import 'widgets/timeline_widget.dart';
-import 'widgets/audio_timeline_widget.dart'; // nuevo
-import 'widgets/image_editor_widget.dart';   // nuevo
+import 'widgets/audio_timeline_widget.dart';
+import 'widgets/image_editor_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
