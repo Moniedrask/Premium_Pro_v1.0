@@ -1,5 +1,6 @@
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter/statistics.dart';
 import 'package:flutter/foundation.dart';
 
@@ -18,7 +19,7 @@ class FFmpegWrapper {
   String get statusMessage => _statusMessage;
 
   Future<void> init() async {
-    // No es necesario habilitar logs explícitamente, pero se puede
+    await FFmpegKitConfig.enableLogs();
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
@@ -29,7 +30,6 @@ class FFmpegWrapper {
     int bitrate = 2500,
     String preset = 'medium',
     int crf = 23,
-    int videoDurationMs = 60000, // Duración estimada para progreso
     Function(double progress)? onProgress,
     Function(String log)? onLog,
   }) async {
@@ -42,7 +42,6 @@ class FFmpegWrapper {
     _progress = 0.0;
     _statusMessage = "Iniciando...";
 
-    // Lista de argumentos (segura contra espacios)
     List<String> arguments = [
       '-i', inputPath,
       '-c:v', codec,
@@ -79,11 +78,10 @@ class FFmpegWrapper {
           onLog?.call(log.getMessage());
         },
         (statistics) {
-          // Calcular progreso basado en el tiempo procesado
           final time = statistics.getTime(); // en microsegundos
-          if (time > 0 && videoDurationMs > 0) {
-            // Convertir microsegundos a milisegundos y estimar
-            double estimated = time / 1000.0 / videoDurationMs;
+          if (time > 0) {
+            // Estimación simple (mejorar en futuras versiones)
+            double estimated = time / 60000000.0; // asume 1 min total
             if (estimated > 1.0) estimated = 1.0;
             _progress = estimated;
             onProgress?.call(_progress);
@@ -92,7 +90,7 @@ class FFmpegWrapper {
       );
 
       await _currentSession?.await();
-      return true; // El resultado real se maneja en el callback
+      return true;
     } catch (e) {
       _isProcessing = false;
       _currentSession = null;
@@ -125,15 +123,9 @@ class FFmpegWrapper {
     try {
       final session = await FFmpegKit.execute('-codecs');
       final output = await session.getOutput() ?? '';
-      // Filtrar líneas que contengan 'V' (video) y 'DEV' (codificadores)
       return output.split('\n')
           .where((line) => line.contains('V') && line.contains('DEV'))
-          .map((line) {
-            // Extraer el nombre del códec (última columna)
-            final parts = line.split(RegExp(r'\s+'));
-            return parts.isNotEmpty ? parts.last : '';
-          })
-          .where((name) => name.isNotEmpty)
+          .map((line) => line.split(' ').last.trim())
           .toList();
     } catch (e) {
       debugPrint('❌ Error al obtener códecs: $e');
