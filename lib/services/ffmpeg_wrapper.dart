@@ -1,157 +1,146 @@
-// Dentro de la clase FFmpegWrapper
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/return_code.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
+import 'package:ffmpeg_kit_flutter/statistics.dart';
+import 'package:flutter/foundation.dart';
 
-Future<bool> processAudio({
-  required String inputPath,
-  required String outputPath,
-  required AudioSettings settings,
-  Function(double progress)? onProgress,
-}) async {
-  if (_isProcessing) return false;
-  _isProcessing = true;
-  _progress = 0.0;
+class FFmpegWrapper {
+  static final FFmpegWrapper _instance = FFmpegWrapper._internal();
+  factory FFmpegWrapper() => _instance;
+  FFmpegWrapper._internal();
 
-  // Construir argumentos
-  List<String> args = ['-i', inputPath];
+  bool _isProcessing = false;
+  double _progress = 0.0;
+  String _statusMessage = "Listo";
+  FFmpegSession? _currentSession;
 
-  // Codec
-  String codec = settings.codec;
-  if (codec == 'aac') args.addAll(['-c:a', 'aac']);
-  else if (codec == 'mp3') args.addAll(['-c:a', 'libmp3lame']);
-  else if (codec == 'opus') args.addAll(['-c:a', 'libopus']);
-  else if (codec == 'flac') args.addAll(['-c:a', 'flac']);
-  else if (codec == 'wav') args.addAll(['-c:a', 'pcm_s16le']);
+  bool get isProcessing => _isProcessing;
+  double get progress => _progress;
+  String get statusMessage => _statusMessage;
 
-  // Bitrate (si aplica)
-  if (codec != 'flac' && codec != 'wav') {
-    args.addAll(['-b:a', '${settings.bitrate}k']);
+  Future<void> init() async {
+    await FFmpegKitConfig.enableLogs();
+    debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
-  // Sample rate
-  args.addAll(['-ar', settings.sampleRate.toString()]);
-
-  // Canales
-  if (settings.channels == 'mono') args.addAll(['-ac', '1']);
-  else if (settings.channels == 'stereo') args.addAll(['-ac', '2']);
-
-  // Normalización (usar filtro loudnorm o volume)
-  if (settings.normalize) {
-    args.addAll(['-af', 'loudnorm=I=-16:LRA=11:TP=-1.5']);
-  }
-
-  // Fades
-  if (settings.fadeInDuration > 0) {
-    args.addAll(['-af', 'fade=t=in:st=0:d=${settings.fadeInDuration}']);
-  }
-  if (settings.fadeOutDuration > 0) {
-    // Nota: necesitaríamos duración total para fade out; se omite por simplicidad
-  }
-
-  args.addAll(['-y', outputPath]);
-
-  return _executeWithProgress(args, onProgress);
-}
-
-Future<bool> executeCommandWithArgs(List<String> arguments) async {
-  try {
-    final session = await FFmpegKit.executeWithArguments(arguments);
-    final returnCode = await session.getReturnCode();
-    return ReturnCode.isSuccess(returnCode);
-  } catch (e) {
-    debugPrint('❌ Error en comando con args: $e');
-    return false;
-  }
-}
-
-Future<bool> processImage({
-  required String inputPath,
-  required String outputPath,
-  required ImageSettings settings,
-  Function(double progress)? onProgress,
-}) async {
-  if (_isProcessing) return false;
-  _isProcessing = true;
-  _progress = 0.0;
-
-  List<String> args = ['-i', inputPath];
-
-  // Redimensionar si es necesario
-  if (settings.maxWidth > 0 || settings.maxHeight > 0) {
-    String scale = '';
-    if (settings.maxWidth > 0 && settings.maxHeight > 0) {
-      scale = 'scale=$settings.maxWidth:$settings.maxHeight';
-    } else if (settings.maxWidth > 0) {
-      scale = 'scale=$settings.maxWidth:-1';
-    } else {
-      scale = 'scale=-1:$settings.maxHeight';
+  Future<bool> processVideo({
+    required String inputPath,
+    required String outputPath,
+    String codec = 'libx264',
+    int bitrate = 2500,
+    String preset = 'medium',
+    int crf = 23,
+    Function(double progress)? onProgress,
+    Function(String log)? onLog,
+  }) async {
+    if (_isProcessing) {
+      debugPrint('❌ Ya hay un procesamiento en curso');
+      return false;
     }
-    args.addAll(['-vf', scale]);
+
+    _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Iniciando...";
+
+    List<String> arguments = [
+      '-i', inputPath,
+      '-c:v', codec,
+      '-preset', preset,
+      '-crf', crf.toString(),
+      '-b:v', '${bitrate}k',
+      '-c:a', 'aac',
+      '-movflags', '+faststart',
+      '-y', outputPath,
+    ];
+
+    try {
+      debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
+
+      _currentSession = await FFmpegKit.executeWithArguments(
+        arguments,
+        (session) async {
+          final returnCode = await session.getReturnCode();
+          if (ReturnCode.isSuccess(returnCode)) {
+            _statusMessage = "✅ Completado";
+            _progress = 1.0;
+            onProgress?.call(1.0);
+            debugPrint('✅ Procesamiento exitoso: $outputPath');
+          } else {
+            _statusMessage = "❌ Error en procesamiento";
+            final output = await session.getOutput();
+            debugPrint('❌ Error FFmpeg: $output');
+          }
+          _isProcessing = false;
+          _currentSession = null;
+        },
+        (log) {
+          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
+          onLog?.call(log.getMessage());
+        },
+        (statistics) {
+          final time = statistics.getTime(); // en microsegundos
+          if (time > 0) {
+            double estimated = time / 60000000.0; // asume 1 min total
+            if (estimated > 1.0) estimated = 1.0;
+            _progress = estimated;
+            onProgress?.call(_progress);
+          }
+        },
+      );
+
+      await _currentSession?.await();
+      return true;
+    } catch (e) {
+      _isProcessing = false;
+      _currentSession = null;
+      _statusMessage = "❌ Error: $e";
+      debugPrint('❌ Excepción: $e');
+      return false;
+    }
   }
 
-  // Formato y calidad
-  switch (settings.format) {
-    case 'jpeg':
-      args.addAll(['-c:v', 'mjpeg', '-q:v', settings.quality.toString()]);
-      break;
-    case 'png':
-      args.addAll(['-c:v', 'png', '-compression_level', settings.quality.toString()]);
-      break;
-    case 'webp':
-      args.addAll(['-c:v', 'libwebp', '-quality', settings.quality.toString()]);
-      break;
-    case 'avif':
-      args.addAll(['-c:v', 'libaom-av1', '-crf', '30']); // simplificado
-      break;
+  /// Ejecuta un comando FFmpeg con lista de argumentos (seguro)
+  Future<bool> executeCommandWithArgs(List<String> arguments) async {
+    try {
+      final session = await FFmpegKit.executeWithArguments(arguments);
+      final returnCode = await session.getReturnCode();
+      return ReturnCode.isSuccess(returnCode);
+    } catch (e) {
+      debugPrint('❌ Error en comando con args: $e');
+      return false;
+    }
   }
 
-  if (settings.stripMetadata) {
-    args.addAll(['-map_metadata', '-1']);
-  }
-
-  // Ajustes de brillo/contraste/saturación con filtros eq
-  if (settings.brightness != 0.0 || settings.contrast != 0.0 || settings.saturation != 0.0) {
-    String eq = 'eq=';
-    if (settings.brightness != 0.0) eq += 'brightness=${settings.brightness}:';
-    if (settings.contrast != 0.0) eq += 'contrast=${1.0 + settings.contrast}:';
-    if (settings.saturation != 0.0) eq += 'saturation=${1.0 + settings.saturation}';
-    args.addAll(['-vf', eq]);
-  }
-
-  args.addAll(['-y', outputPath]);
-
-  return _executeWithProgress(args, onProgress);
-}
-
-// Método auxiliar para ejecutar con progreso
-Future<bool> _executeWithProgress(List<String> args, Function(double)? onProgress) async {
-  try {
-    _currentSession = await FFmpegKit.executeWithArguments(
-      args,
-      (session) async {
-        final rc = await session.getReturnCode();
-        _isProcessing = false;
-        _currentSession = null;
-        if (ReturnCode.isSuccess(rc)) {
-          _progress = 1.0;
-          onProgress?.call(1.0);
-        }
-      },
-      (log) {},
-      (statistics) {
-        // Estimación simple
-        final time = statistics.getTime();
-        if (time > 0) {
-          double estimated = time / 1000000; // asume 1 segundo por cada 1e6 microseg?
-          if (estimated > 1.0) estimated = 1.0;
-          _progress = estimated;
-          onProgress?.call(_progress);
-        }
-      },
-    );
-    await _currentSession?.await();
-    return true;
-  } catch (e) {
+  void cancel() {
+    _currentSession?.cancel();
     _isProcessing = false;
     _currentSession = null;
-    return false;
+    _statusMessage = "Cancelado";
+    debugPrint('⛔ Procesamiento cancelado por el usuario');
+  }
+
+  Future<bool> executeCommand(String command) async {
+    try {
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+      return ReturnCode.isSuccess(returnCode);
+    } catch (e) {
+      debugPrint('❌ Error en comando personalizado: $e');
+      return false;
+    }
+  }
+
+  Future<List<String>> getAvailableCodecs() async {
+    try {
+      final session = await FFmpegKit.execute('-codecs');
+      final output = await session.getOutput() ?? '';
+      return output.split('\n')
+          .where((line) => line.contains('V') && line.contains('DEV'))
+          .map((line) => line.split(' ').last.trim())
+          .toList();
+    } catch (e) {
+      debugPrint('❌ Error al obtener códecs: $e');
+      return [];
+    }
   }
 }
