@@ -16,7 +16,6 @@ class AudioProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
-  /// Procesa un archivo de audio según configuración
   Future<bool> processAudio({
     required String inputPath,
     required String outputPath,
@@ -27,12 +26,10 @@ class AudioProcessor extends ChangeNotifier {
     _statusMessage = "Procesando audio...";
     notifyListeners();
 
-    // Construir comando FFmpeg
     final List<String> args = [
       '-i', inputPath,
     ];
 
-    // Codec de audio
     switch (settings.codec) {
       case 'aac':
         args.addAll(['-c:a', 'aac', '-b:a', '${settings.bitrate}k']);
@@ -51,28 +48,22 @@ class AudioProcessor extends ChangeNotifier {
         break;
     }
 
-    // Frecuencia de muestreo
     args.addAll(['-ar', settings.sampleRate.toString()]);
 
-    // Canales
     if (settings.channels == 'mono') {
       args.addAll(['-ac', '1']);
     } else if (settings.channels == 'stereo') {
       args.addAll(['-ac', '2']);
-    } // 5.1 y 7.1 requerirían filtros complejos, se omiten en v1.0
+    }
 
-    // Normalización (simple: peak)
     if (settings.normalize) {
       args.addAll(['-af', 'volume=${settings.normalizeTarget}dB']);
     }
 
-    // Reducción de ruido (solo si IA activa)
     if (settings.removeNoise && settings.aiEnabled) {
-      // Placeholder: usar filtro afftdn de FFmpeg
       args.addAll(['-af', 'afftdn']);
     }
 
-    // Sobrescribir
     args.add('-y');
     args.add(outputPath);
 
