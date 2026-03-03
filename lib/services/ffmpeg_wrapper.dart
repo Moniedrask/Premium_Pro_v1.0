@@ -56,11 +56,15 @@ class FFmpegWrapper {
     try {
       debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
+      // Usar executeWithArguments con callbacks opcionales
+      final completer = Completer<bool>();
+      
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
-        (session) async {
+        completeCallback: (session) async {
           final returnCode = await session.getReturnCode();
-          if (ReturnCode.isSuccess(returnCode)) {
+          final success = ReturnCode.isSuccess(returnCode);
+          if (success) {
             _statusMessage = "✅ Completado";
             _progress = 1.0;
             onProgress?.call(1.0);
@@ -72,12 +76,13 @@ class FFmpegWrapper {
           }
           _isProcessing = false;
           _currentSession = null;
+          completer.complete(success);
         },
-        (log) {
+        logCallback: (log) {
           debugPrint('📝 FFmpeg log: ${log.getMessage()}');
           onLog?.call(log.getMessage());
         },
-        (statistics) {
+        statisticsCallback: (statistics) {
           final time = statistics.getTime(); // en microsegundos
           if (time > 0) {
             double estimated = time / 60000000.0; // asume 1 min total
@@ -88,8 +93,7 @@ class FFmpegWrapper {
         },
       );
 
-      await _currentSession?.await();
-      return true;
+      return await completer.future;
     } catch (e) {
       _isProcessing = false;
       _currentSession = null;
