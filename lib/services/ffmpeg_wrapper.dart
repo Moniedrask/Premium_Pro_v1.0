@@ -51,6 +51,17 @@ Future<bool> processAudio({
   return _executeWithProgress(args, onProgress);
 }
 
+Future<bool> executeCommandWithArgs(List<String> arguments) async {
+  try {
+    final session = await FFmpegKit.executeWithArguments(arguments);
+    final returnCode = await session.getReturnCode();
+    return ReturnCode.isSuccess(returnCode);
+  } catch (e) {
+    debugPrint('❌ Error en comando con args: $e');
+    return false;
+  }
+}
+
 Future<bool> processImage({
   required String inputPath,
   required String outputPath,
