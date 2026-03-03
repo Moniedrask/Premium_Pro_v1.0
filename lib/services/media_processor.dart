@@ -24,6 +24,8 @@ class MediaProcessor extends ChangeNotifier {
     int crf = 23,
   }) async {
     _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Procesando...";
     notifyListeners();
 
     final success = await _ffmpeg.processVideo(
@@ -33,10 +35,29 @@ class MediaProcessor extends ChangeNotifier {
       bitrate: bitrate,
       preset: preset,
       crf: crf,
+      onProgress: (progress) {
+        _progress = progress;
+        _statusMessage = "Procesando ${(progress * 100).toStringAsFixed(0)}%";
+        notifyListeners();
+      },
     );
 
     _isProcessing = false;
+    if (success) {
+      _statusMessage = "Completado";
+    } else {
+      _statusMessage = "Error";
+    }
     notifyListeners();
     return success;
+  }
+
+  void cancelProcessing() {
+    if (_isProcessing) {
+      _ffmpeg.cancel();
+      _isProcessing = false;
+      _statusMessage = "Cancelado";
+      notifyListeners();
+    }
   }
 }
