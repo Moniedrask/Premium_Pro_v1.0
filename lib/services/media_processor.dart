@@ -22,7 +22,6 @@ class MediaProcessor extends ChangeNotifier {
     int bitrate = 2500,
     String preset = 'medium',
     int crf = 23,
-    int videoDurationMs = 60000, // Se puede obtener del archivo
   }) async {
     _isProcessing = true;
     _progress = 0.0;
@@ -36,7 +35,6 @@ class MediaProcessor extends ChangeNotifier {
       bitrate: bitrate,
       preset: preset,
       crf: crf,
-      videoDurationMs: videoDurationMs,
       onProgress: (progress) {
         _progress = progress;
         _statusMessage = "Procesando ${(progress * 100).toStringAsFixed(0)}%";
