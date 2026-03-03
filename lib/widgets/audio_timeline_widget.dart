@@ -45,7 +45,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
 
     return Column(
       children: [
-        // Waveform / visualizador
         Expanded(
           flex: 2,
           child: Container(
@@ -53,7 +52,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             child: _buildWaveform(processor),
           ),
         ),
-        // Controles y configuración
         Expanded(
           flex: 3,
           child: Container(
@@ -86,7 +84,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
         ),
       );
     }
-    // Placeholder de waveform (mejorar con paquete real)
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -122,7 +119,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
               style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
 
-          // Selector de códec
           DropdownButtonFormField<String>(
             value: _settings.codec,
             items: const [
@@ -136,7 +132,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             decoration: const InputDecoration(labelText: 'Códec'),
           ),
 
-          // Bitrate (si aplica)
           if (_settings.codec != 'flac' && _settings.codec != 'wav')
             Column(
               children: [
@@ -152,8 +147,22 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
               ],
             ),
 
+          if (_settings.codec == 'flac')
+            Column(
+              children: [
+                const SizedBox(height: 10),
+                Text('Nivel de compresión: ${_settings.compressionLevel}'),
+                Slider(
+                  value: _settings.compressionLevel.toDouble(),
+                  min: 0,
+                  max: 9,
+                  divisions: 9,
+                  onChanged: (val) => setState(() => _settings.compressionLevel = val.round()),
+                ),
+              ],
+            ),
+
           const SizedBox(height: 10),
-          // Frecuencia de muestreo
           DropdownButtonFormField<int>(
             value: _settings.sampleRate,
             items: const [
@@ -167,7 +176,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
           ),
 
           const SizedBox(height: 10),
-          // Canales
           DropdownButtonFormField<String>(
             value: _settings.channels,
             items: const [
@@ -179,7 +187,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
           ),
 
           const SizedBox(height: 10),
-          // Normalización
           Row(
             children: [
               Checkbox(
@@ -190,7 +197,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             ],
           ),
 
-          // Reducción de ruido (solo si IA disponible)
           if (aiManager.isModelAvailable)
             Row(
               children: [
@@ -203,7 +209,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             ),
 
           const SizedBox(height: 20),
-          // Botones de acción
           Row(
             children: [
               Expanded(
@@ -249,10 +254,15 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
           _selectedAudioPath = result.files.single.path;
           _selectedAudioName = result.files.single.name;
         });
-        _player.setSourceDeviceFile(_selectedAudioPath!);
+        await _player.setSourceDeviceFile(_selectedAudioPath!);
       }
     } catch (e) {
       debugPrint('Error seleccionando audio: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -261,7 +271,7 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
 
     try {
       final dir = await getExternalStorageDirectory();
-      if (dir == null) throw Exception('No storage');
+      if (dir == null) throw Exception('No se pudo acceder al almacenamiento');
       final outputDir = '${dir.path}/PremiumPro/Audio';
       await Directory(outputDir).create(recursive: true);
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -277,9 +287,18 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ Audio exportado'), backgroundColor: Colors.green),
         );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Error al exportar'), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       debugPrint('Error exportando audio: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
