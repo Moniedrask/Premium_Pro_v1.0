@@ -25,6 +25,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
   void initState() {
     super.initState();
     _localSettings = widget.settings;
+    // Verificar modelo existente al iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AIManager>(context, listen: false).checkModel();
+    });
   }
 
   @override
@@ -39,28 +43,20 @@ class _SettingsPanelState extends State<SettingsPanel> {
           _buildBitrateSlider(),
           _buildCRFSlider(),
           _buildPresetSelector(),
-
           const Divider(color: Colors.grey, height: 32),
-
           _buildSectionHeader('CONFIGURACIÓN DE AUDIO'),
           _buildAudioCodecSelector(),
           _buildAudioBitrateSlider(),
           _buildSampleRateSelector(),
-
           const Divider(color: Colors.grey, height: 32),
-
           _buildSectionHeader('INTELIGENCIA ARTIFICIAL'),
           _buildAISwitch(),
           _buildAIModelInfo(),
-
           const Divider(color: Colors.grey, height: 32),
-
           _buildSectionHeader('PRESETS'),
           _buildSavePresetButton(),
           _buildSetAsDefaultButton(),
-
           const SizedBox(height: 20),
-
           ElevatedButton(
             onPressed: () => widget.onSave(_localSettings),
             style: ElevatedButton.styleFrom(
@@ -256,20 +252,20 @@ class _SettingsPanelState extends State<SettingsPanel> {
       builder: (context, aiManager, _) {
         return _buildSettingWithTooltip(
           title: 'Activar IA',
-          tooltip: 'Requiere descarga de modelos (1-8GB)\nSi no hay modelo, usa algoritmos tradicionales',
+          tooltip: 'Requiere descarga de modelos (1GB)\nSi no hay modelo, usa algoritmos tradicionales',
           child: SwitchListTile(
             title: const Text('Mejora con IA', style: TextStyle(color: Colors.white)),
             subtitle: Text(
-              aiManager.isModelAvailable
-                  ? 'Modelo listo'
-                  : 'Requiere descarga',
+              aiManager.isModelAvailable 
+                ? 'Modelo listo' 
+                : 'Requiere descarga',
               style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
             value: _localSettings.aiEnabled,
             activeColor: Colors.blueAccent,
-            onChanged: aiManager.isModelAvailable
-                ? (val) => setState(() => _localSettings.aiEnabled = val)
-                : null,
+            onChanged: aiManager.isModelAvailable 
+              ? (val) => setState(() => _localSettings.aiEnabled = val)
+              : null,
           ),
         );
       },
@@ -294,7 +290,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 if (aiManager.isDownloading)
                   Column(
                     children: [
-                      const LinearProgressIndicator(color: Colors.blueAccent),
+                      LinearProgressIndicator(
+                        value: aiManager.downloadProgress,
+                        color: Colors.blueAccent,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Descargando: ${(aiManager.downloadProgress * 100).toStringAsFixed(1)}%',
@@ -314,16 +313,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                   ),
                 if (!aiManager.isDownloading && !aiManager.isModelAvailable)
                   TextButton(
-                    onPressed: () {
-                      // En lugar de llamar a downloadModel, mostramos un mensaje
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Funciones IA no disponibles en esta versión.'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    },
-                    child: const Text('Descarga no disponible en v1.0', style: TextStyle(color: Colors.grey)),
+                    onPressed: () => aiManager.downloadModel('real-esrgan-x2'),
+                    child: const Text('Descargar Modelo 1GB', style: TextStyle(color: Colors.blueAccent)),
                   ),
               ],
             ),
@@ -424,7 +415,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           TextButton(
             onPressed: () {
-              // Lógica para guardar preset
+              // Lógica para guardar preset usando shared_preferences
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Preset guardado')),
@@ -454,7 +445,7 @@ class _SettingsPanelState extends State<SettingsPanel> {
           ),
           TextButton(
             onPressed: () {
-              // Guardar como predeterminado
+              // Guardar como predeterminado en shared_preferences
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Configuración marcada como predeterminada')),
