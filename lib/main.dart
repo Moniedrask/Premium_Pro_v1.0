@@ -7,21 +7,23 @@ import 'widgets/timeline_widget.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializar MediaProcessor antes de ejecutar la app
+  // Crear UNA SOLA instancia e inicializarla
   final processor = MediaProcessor();
   await processor.init();
   
-  runApp(const PremiumProApp());
+  runApp(PremiumProApp(processor: processor));
 }
 
 class PremiumProApp extends StatelessWidget {
-  const PremiumProApp({super.key});
+  final MediaProcessor processor;
+  const PremiumProApp({super.key, required this.processor});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: MediaProcessor()),
+        // Usar la misma instancia inicializada
+        ChangeNotifierProvider<MediaProcessor>.value(value: processor),
         ChangeNotifierProvider(create: (_) => AIManager()),
       ],
       child: MaterialApp(
