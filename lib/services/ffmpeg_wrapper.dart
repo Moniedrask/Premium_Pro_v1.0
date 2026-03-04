@@ -25,6 +25,7 @@ class FFmpegWrapper {
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
+  /// Obtiene la duración de un video en microsegundos usando FFprobe
   Future<int?> getVideoDuration(String path) async {
     try {
       final session = await FFprobeKit.getMediaInformation(path);
@@ -87,31 +88,37 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
-      // ✅ Callbacks posicionales (sin nombres)
+      // ✅ Usar parámetros con nombre para los callbacks
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
-        (session) async {
-          final returnCode = await session.getReturnCode();
-          final success = ReturnCode.isSuccess(returnCode);
-          if (success) {
-            _statusMessage = "✅ Completado";
-            _progress = 1.0;
-            onProgress?.call(1.0);
-            debugPrint('✅ Procesamiento exitoso: $outputPath');
-          } else {
-            _statusMessage = "❌ Error en procesamiento";
-            final output = await session.getOutput();
-            debugPrint('❌ Error FFmpeg: $output');
-          }
-          _isProcessing = false;
-          _currentSession = null;
-          completer.complete(success);
+        completeCallback: (session) {
+          session.getReturnCode().then((returnCode) {
+            final success = ReturnCode.isSuccess(returnCode);
+            if (success) {
+              _statusMessage = "✅ Completado";
+              _progress = 1.0;
+              onProgress?.call(1.0);
+              debugPrint('✅ Procesamiento exitoso: $outputPath');
+            } else {
+              _statusMessage = "❌ Error en procesamiento";
+              session.getOutput().then((output) {
+                debugPrint('❌ Error FFmpeg: $output');
+              });
+            }
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(success);
+          }).catchError((error) {
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(false);
+          });
         },
-        (log) {
+        logCallback: (log) {
           debugPrint('📝 FFmpeg log: ${log.getMessage()}');
           onLog?.call(log.getMessage());
         },
-        (statistics) {
+        statisticsCallback: (statistics) {
           final time = statistics.getTime();
           if (time > 0) {
             double progress = time / effectiveDuration;
