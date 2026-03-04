@@ -31,7 +31,7 @@ class FFmpegWrapper {
       final session = await FFprobeKit.getMediaInformation(path);
       final information = await session.getMediaInformation();
       if (information != null) {
-        final durationSec = information.getDuration();
+        final durationSec = information.getDuration(); // double?
         if (durationSec != null && durationSec > 0) {
           return (durationSec * 1000000).round();
         }
@@ -49,7 +49,7 @@ class FFmpegWrapper {
     int bitrate = 2500,
     String preset = 'medium',
     int crf = 23,
-    int? totalDurationMicros, // si se pasa, se usa para progreso exacto
+    int? totalDurationMicros,
     Function(double progress)? onProgress,
     Function(String log)? onLog,
   }) async {
@@ -62,7 +62,6 @@ class FFmpegWrapper {
     _progress = 0.0;
     _statusMessage = "Iniciando...";
 
-    // Si no tenemos duración real, usamos un valor por defecto (60 segundos)
     const int defaultDurationMicros = 60 * 1000000; // 60 segundos
     final effectiveDuration = totalDurationMicros ?? defaultDurationMicros;
 
@@ -88,22 +87,29 @@ class FFmpegWrapper {
 
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
-        completeCallback: (session) async {
-          final returnCode = await session.getReturnCode();
-          final success = ReturnCode.isSuccess(returnCode);
-          if (success) {
-            _statusMessage = "✅ Completado";
-            _progress = 1.0;
-            onProgress?.call(1.0);
-            debugPrint('✅ Procesamiento exitoso: $outputPath');
-          } else {
-            _statusMessage = "❌ Error en procesamiento";
-            final output = await session.getOutput();
-            debugPrint('❌ Error FFmpeg: $output');
-          }
-          _isProcessing = false;
-          _currentSession = null;
-          completer.complete(success);
+        completeCallback: (session) {
+          // No usar async aquí; manejamos la future con .then
+          session.getReturnCode().then((returnCode) {
+            final success = ReturnCode.isSuccess(returnCode);
+            if (success) {
+              _statusMessage = "✅ Completado";
+              _progress = 1.0;
+              onProgress?.call(1.0);
+              debugPrint('✅ Procesamiento exitoso: $outputPath');
+            } else {
+              _statusMessage = "❌ Error en procesamiento";
+              session.getOutput().then((output) {
+                debugPrint('❌ Error FFmpeg: $output');
+              });
+            }
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(success);
+          }).catchError((error) {
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(false);
+          });
         },
         logCallback: (log) {
           debugPrint('📝 FFmpeg log: ${log.getMessage()}');
