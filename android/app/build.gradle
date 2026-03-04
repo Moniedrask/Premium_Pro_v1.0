@@ -75,12 +75,12 @@ flutter {
     source = "../.."
 }
 
-// --- ESTRATEGIA DE RESOLUCIÓN PARA FORZAR EL USO DEL AAR LOCAL ---
+// ✅ CORRECCIÓN: Apuntar al artefacto correcto (full_binary) o usar el nombre del AAR directamente
 configurations.all {
     resolutionStrategy {
         eachDependency { details ->
             if (details.requested.group == 'com.arthenica' && details.requested.name == 'ffmpeg-kit-https') {
-                // Redirige la dependencia remota al archivo local en libs/
+                // Redirige al archivo local (independientemente del nombre)
                 details.useTarget files('libs/ffmpeg-kit-fix.aar')
             }
         }
@@ -88,10 +88,13 @@ configurations.all {
 }
 
 dependencies {
+    // ✅ Usar el AAR local directamente
+    implementation files('libs/ffmpeg-kit-fix.aar')
+    
     // Dependencia obligatoria para FFmpegKit (stack traces)
     implementation 'com.arthenica:smart-exception-java:0.2.1'
 
-    // --- TUS OTRAS DEPENDENCIAS ---
+    // --- OTRAS DEPENDENCIAS ---
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
