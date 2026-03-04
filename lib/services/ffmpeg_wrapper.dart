@@ -12,7 +12,7 @@ class FFmpegWrapper {
   bool _isProcessing = false;
   double _progress = 0.0;
   String _statusMessage = "Listo";
-  dynamic _currentSession; // Usamos dynamic para evitar problemas de tipo
+  dynamic _currentSession;
 
   bool get isProcessing => _isProcessing;
   double get progress => _progress;
