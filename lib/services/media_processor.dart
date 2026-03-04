@@ -16,10 +16,16 @@ class MediaProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
+  /// Obtiene la duración del video a través del wrapper
+  Future<int?> getVideoDuration(String path) async {
+    return await _ffmpeg.getVideoDuration(path);
+  }
+
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
     required VideoSettings settings,
+    int? totalDurationMicros, // Nuevo parámetro
   }) async {
     _isProcessing = true;
     _progress = 0.0;
@@ -33,6 +39,7 @@ class MediaProcessor extends ChangeNotifier {
       bitrate: settings.videoBitrate,
       preset: settings.preset,
       crf: settings.crf,
+      totalDurationMicros: totalDurationMicros,
       onProgress: (progress) {
         _progress = progress;
         _statusMessage = "Procesando ${(progress * 100).toStringAsFixed(0)}%";
