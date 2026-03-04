@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
+import 'package:ffmpeg_kit_flutter/statistics.dart';
+import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 import 'package:flutter/foundation.dart';
 
 class FFmpegWrapper {
@@ -23,6 +25,23 @@ class FFmpegWrapper {
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
+  /// Obtiene la duración de un video en microsegundos usando FFprobe
+  Future<int?> getVideoDuration(String path) async {
+    try {
+      final session = await FFprobeKit.getMediaInformation(path);
+      final information = await session.getMediaInformation();
+      if (information != null) {
+        final durationSec = information.getDuration();
+        if (durationSec != null && durationSec > 0) {
+          return (durationSec * 1000000).round();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error obteniendo duración del video: $e');
+    }
+    return null;
+  }
+
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
@@ -30,6 +49,7 @@ class FFmpegWrapper {
     int bitrate = 2500,
     String preset = 'medium',
     int crf = 23,
+    int? totalDurationMicros, // si se pasa, se usa para progreso exacto
     Function(double progress)? onProgress,
     Function(String log)? onLog,
   }) async {
@@ -41,6 +61,14 @@ class FFmpegWrapper {
     _isProcessing = true;
     _progress = 0.0;
     _statusMessage = "Iniciando...";
+
+    // Si no tenemos duración real, usamos un valor por defecto (60 segundos)
+    const int defaultDurationMicros = 60 * 1000000; // 60 segundos
+    final effectiveDuration = totalDurationMicros ?? defaultDurationMicros;
+
+    if (totalDurationMicros == null) {
+      debugPrint('⚠️ No se pudo obtener la duración real del video. Se usará un progreso aproximado basado en 60 segundos.');
+    }
 
     List<String> arguments = [
       '-i', inputPath,
@@ -56,26 +84,43 @@ class FFmpegWrapper {
     try {
       debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
-      final session = await FFmpegKit.executeWithArguments(arguments);
-      _currentSession = session;
+      final completer = Completer<bool>();
 
-      final returnCode = await session.getReturnCode();
-      final success = ReturnCode.isSuccess(returnCode);
+      _currentSession = await FFmpegKit.executeWithArguments(
+        arguments,
+        completeCallback: (session) async {
+          final returnCode = await session.getReturnCode();
+          final success = ReturnCode.isSuccess(returnCode);
+          if (success) {
+            _statusMessage = "✅ Completado";
+            _progress = 1.0;
+            onProgress?.call(1.0);
+            debugPrint('✅ Procesamiento exitoso: $outputPath');
+          } else {
+            _statusMessage = "❌ Error en procesamiento";
+            final output = await session.getOutput();
+            debugPrint('❌ Error FFmpeg: $output');
+          }
+          _isProcessing = false;
+          _currentSession = null;
+          completer.complete(success);
+        },
+        logCallback: (log) {
+          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
+          onLog?.call(log.getMessage());
+        },
+        statisticsCallback: (statistics) {
+          final time = statistics.getTime(); // en microsegundos
+          if (time > 0) {
+            double progress = time / effectiveDuration;
+            if (progress > 1.0) progress = 1.0;
+            _progress = progress;
+            onProgress?.call(_progress);
+          }
+        },
+      );
 
-      if (success) {
-        _statusMessage = "✅ Completado";
-        _progress = 1.0;
-        onProgress?.call(1.0);
-        debugPrint('✅ Procesamiento exitoso: $outputPath');
-      } else {
-        _statusMessage = "❌ Error en procesamiento";
-        final output = await session.getOutput();
-        debugPrint('❌ Error FFmpeg: $output');
-      }
-
-      _isProcessing = false;
-      _currentSession = null;
-      return success;
+      return await completer.future;
     } catch (e) {
       _isProcessing = false;
       _currentSession = null;
