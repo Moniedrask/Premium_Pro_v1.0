@@ -16,12 +16,13 @@ class AppSettings {
 
   // Exportación
   String defaultOutputFolder;
-  String fileNameTemplate; // Ej: "{name}_premium", "{date}", etc.
+  String fileNameTemplate;
   DefaultQuality defaultVideoQuality;
   DefaultQuality defaultAudioQuality;
   DefaultQuality defaultImageQuality;
   bool deleteOriginalAfterExport;
   bool warnBeforeOverwrite;
+  bool keepOriginalName; // <-- AÑADIDO
 
   // Proyecto
   bool autoBackupProject;
@@ -33,9 +34,9 @@ class AppSettings {
   // Papelera
   bool trashEnabled;
   bool alwaysAskBeforeDelete;
-  bool dontShowDeleteWarning; // Aplica cuando trashEnabled = false y alwaysAskBeforeDelete = false
+  bool dontShowDeleteWarning;
 
-  // Defaults específicos de cada módulo (se guardan como JSON)
+  // Defaults específicos
   Map<String, dynamic> videoDefaults;
   Map<String, dynamic> audioDefaults;
   Map<String, dynamic> imageDefaults;
@@ -56,6 +57,7 @@ class AppSettings {
     this.defaultImageQuality = DefaultQuality.medium,
     this.deleteOriginalAfterExport = false,
     this.warnBeforeOverwrite = true,
+    this.keepOriginalName = false, // <-- AÑADIDO
 
     // Proyecto
     this.autoBackupProject = true,
@@ -69,7 +71,7 @@ class AppSettings {
     this.alwaysAskBeforeDelete = true,
     this.dontShowDeleteWarning = false,
 
-    // Defaults específicos
+    // Defaults
     Map<String, dynamic>? videoDefaults,
     Map<String, dynamic>? audioDefaults,
     Map<String, dynamic>? imageDefaults,
@@ -94,6 +96,7 @@ class AppSettings {
       defaultImageQuality: DefaultQuality.values[prefs.getInt('defaultImageQuality') ?? 1],
       deleteOriginalAfterExport: prefs.getBool('deleteOriginalAfterExport') ?? false,
       warnBeforeOverwrite: prefs.getBool('warnBeforeOverwrite') ?? true,
+      keepOriginalName: prefs.getBool('keepOriginalName') ?? false, // <-- AÑADIDO
 
       autoBackupProject: prefs.getBool('autoBackupProject') ?? true,
       keepLastLoadedFile: prefs.getBool('keepLastLoadedFile') ?? false,
@@ -126,6 +129,7 @@ class AppSettings {
     await prefs.setInt('defaultImageQuality', defaultImageQuality.index);
     await prefs.setBool('deleteOriginalAfterExport', deleteOriginalAfterExport);
     await prefs.setBool('warnBeforeOverwrite', warnBeforeOverwrite);
+    await prefs.setBool('keepOriginalName', keepOriginalName); // <-- AÑADIDO
 
     await prefs.setBool('autoBackupProject', autoBackupProject);
     await prefs.setBool('keepLastLoadedFile', keepLastLoadedFile);
