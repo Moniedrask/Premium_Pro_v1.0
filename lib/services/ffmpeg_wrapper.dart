@@ -89,7 +89,7 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
-      // ✅ CORRECCIÓN: usar callbacks posicionales (no con nombre)
+      // ✅ Callbacks posicionales (no con nombre)
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
         (session) async {
