@@ -36,7 +36,7 @@ class TrashManager {
       final file = File(filePath);
       if (await file.exists()) {
         await file.rename(destPath);
-        // Aquí se podría guardar metadatos en una base de datos (ej. usando sqflite)
+        // Aquí se podría guardar metadatos en una base de datos
         return true;
       }
     } catch (e) {
@@ -83,12 +83,18 @@ class TrashManager {
     }
   }
 
-  /// Obtiene la lista de archivos en la papelera
+  /// Obtiene la lista de archivos en la papelera (corregido)
   Future<List<File>> listTrash() async {
     final trashDir = await _getTrashDir();
     final dir = Directory(trashDir);
     if (await dir.exists()) {
-      return dir.list().whereType<File>().toList();
+      final List<File> files = [];
+      await for (var entity in dir.list()) {
+        if (entity is File) {
+          files.add(entity);
+        }
+      }
+      return files;
     }
     return [];
   }
