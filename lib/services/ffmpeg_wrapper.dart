@@ -25,7 +25,6 @@ class FFmpegWrapper {
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
-  /// Obtiene la duración de un video en microsegundos usando FFprobe
   Future<int?> getVideoDuration(String path) async {
     try {
       final session = await FFprobeKit.getMediaInformation(path);
@@ -88,7 +87,6 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
-      // ✅ Usar parámetros con nombre para los callbacks
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
         completeCallback: (session) {
