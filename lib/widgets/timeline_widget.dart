@@ -347,6 +347,15 @@ class _TimelineWidgetState extends State<TimelineWidget> {
             content: Text('❌ Error crítico: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
+
+VideoSettings _settings = VideoSettings();
+
+// Luego en _exportVideo:
+final success = await processor.processVideo(
+  inputPath: _selectedVideoPath!,
+  outputPath: outputPath,
+  settings: _settings,  // pasar el objeto completo
+);
           ),
         );
       }
