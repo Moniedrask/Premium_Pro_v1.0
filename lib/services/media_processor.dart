@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'ffmpeg_wrapper.dart';
-import '../models/video_settings.dart'; // <-- importar
+import '../models/video_settings.dart';
 
 class MediaProcessor extends ChangeNotifier {
   final FFmpegWrapper _ffmpeg = FFmpegWrapper();
@@ -16,11 +16,10 @@ class MediaProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
-  // Nuevo método que acepta VideoSettings
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
-    required VideoSettings settings,  // objeto completo
+    required VideoSettings settings,
   }) async {
     _isProcessing = true;
     _progress = 0.0;
