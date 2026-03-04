@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'ffmpeg_wrapper.dart';
+import '../models/video_settings.dart'; // <-- importar
 
 class MediaProcessor extends ChangeNotifier {
   final FFmpegWrapper _ffmpeg = FFmpegWrapper();
@@ -15,13 +16,11 @@ class MediaProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
+  // Nuevo método que acepta VideoSettings
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
-    String codec = 'libx264',
-    int bitrate = 2500,
-    String preset = 'medium',
-    int crf = 23,
+    required VideoSettings settings,  // objeto completo
   }) async {
     _isProcessing = true;
     _progress = 0.0;
@@ -31,10 +30,10 @@ class MediaProcessor extends ChangeNotifier {
     final success = await _ffmpeg.processVideo(
       inputPath: inputPath,
       outputPath: outputPath,
-      codec: codec,
-      bitrate: bitrate,
-      preset: preset,
-      crf: crf,
+      codec: settings.videoCodec,
+      bitrate: settings.videoBitrate,
+      preset: settings.preset,
+      crf: settings.crf,
       onProgress: (progress) {
         _progress = progress;
         _statusMessage = "Procesando ${(progress * 100).toStringAsFixed(0)}%";
