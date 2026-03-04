@@ -16,6 +16,7 @@ class VideoSettings {
   bool aiStabilization;
   bool preserveMetadata;
   bool aiEnabled;
+  bool saveAsDefault; // NUEVO
 
   VideoSettings({
     this.videoCodec = 'libx264',
@@ -35,6 +36,7 @@ class VideoSettings {
     this.aiStabilization = false,
     this.preserveMetadata = false,
     this.aiEnabled = false,
+    this.saveAsDefault = false, // NUEVO
   });
 
   Map<String, dynamic> toJson() {
@@ -56,6 +58,7 @@ class VideoSettings {
       'aiStabilization': aiStabilization,
       'preserveMetadata': preserveMetadata,
       'aiEnabled': aiEnabled,
+      // 'saveAsDefault' no se guarda en JSON porque es temporal
     };
   }
 
