@@ -25,7 +25,7 @@ class MediaProcessor extends ChangeNotifier {
     required String inputPath,
     required String outputPath,
     required VideoSettings settings,
-    int? totalDurationMicros, // Nuevo parámetro
+    int? totalDurationMicros,
   }) async {
     _isProcessing = true;
     _progress = 0.0;
