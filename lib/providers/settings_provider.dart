@@ -21,8 +21,7 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Métodos de conveniencia para cada propiedad
-
+  // Métodos de conveniencia
   Future<void> setAccentColor(Color color) async {
     _settings.accentColor = color;
     await _settings.save();
@@ -95,6 +94,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setKeepOriginalName(bool value) async { // <-- NUEVO
+    _settings.keepOriginalName = value;
+    await _settings.save();
+    notifyListeners();
+  }
+
   Future<void> setAutoBackupProject(bool value) async {
     _settings.autoBackupProject = value;
     await _settings.save();
@@ -149,7 +154,6 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Método para resetear la advertencia de borrado
   Future<void> resetDontShowDeleteWarning() async {
     _settings.dontShowDeleteWarning = false;
     await _settings.save();
