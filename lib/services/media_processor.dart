@@ -16,7 +16,7 @@ class MediaProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
-  /// Obtiene la duración del video a través del wrapper
+  /// Método público para obtener la duración del video (delega en FFmpegWrapper)
   Future<int?> getVideoDuration(String path) async {
     return await _ffmpeg.getVideoDuration(path);
   }
