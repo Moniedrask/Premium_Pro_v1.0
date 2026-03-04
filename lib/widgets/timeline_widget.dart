@@ -324,74 +324,75 @@ class _TimelineWidgetState extends State<TimelineWidget> {
   }
 
   Future<void> _exportVideo(MediaProcessor processor) async {
-  if (_selectedVideoPath == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('❌ Primero selecciona un video'),
-        backgroundColor: Colors.orange,
-      ),
-    );
-    return;
-  }
-
-  try {
-    // ✅ Usar el método público getVideoDuration de MediaProcessor
-    final durationMicros = await processor.getVideoDuration(_selectedVideoPath!);
-
-    if (durationMicros == null || durationMicros <= 0) {
-      debugPrint('⚠️ No se pudo obtener la duración del video, el progreso será aproximado');
-    }
-
-    final Directory? directory = await getExternalStorageDirectory();
-    if (directory == null) {
-      throw Exception('No se pudo acceder al almacenamiento');
-    }
-
-    final String outputFolder = '${directory.path}/PremiumPro';
-    await Directory(outputFolder).create(recursive: true);
-
-    final int timestamp = DateTime.now().millisecondsSinceEpoch;
-    final ext = _getExtensionForCodec(_settings.videoCodec);
-    final String outputPath = '$outputFolder/premium_export_$timestamp.$ext';
-
-    debugPrint('📁 Input: $_selectedVideoPath');
-    debugPrint('📁 Output: $outputPath');
-    debugPrint('⚙️ Config: ${_settings.videoCodec} | ${_settings.videoBitrate} kbps | ${_settings.preset} | CRF ${_settings.crf} | HW Accel: ${_settings.hardwareAcceleration}');
-
-    final bool success = await processor.processVideo(
-      inputPath: _selectedVideoPath!,
-      outputPath: outputPath,
-      settings: _settings,
-      totalDurationMicros: durationMicros,
-    );
-
-    if (mounted) {
+    if (_selectedVideoPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success ? '✅ Exportación completada' : '❌ Error en exportación'),
-          backgroundColor: success ? Colors.green : Colors.red,
-          duration: const Duration(seconds: 3),
+        const SnackBar(
+          content: Text('❌ Primero selecciona un video'),
+          backgroundColor: Colors.orange,
         ),
       );
+      return;
     }
 
-    if (success) {
-      debugPrint('✅ Exportación exitosa: $outputPath');
-      setState(() {
-        _selectedVideoPath = null;
-        _selectedVideoName = 'Ninguno';
-      });
-    }
-  } catch (e) {
-    debugPrint('❌ Error en exportación: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error crítico: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
+    try {
+      // ✅ Usar el método público getVideoDuration de MediaProcessor
+      final durationMicros = await processor.getVideoDuration(_selectedVideoPath!);
+
+      if (durationMicros == null || durationMicros <= 0) {
+        debugPrint('⚠️ No se pudo obtener la duración del video, el progreso será aproximado');
+      }
+
+      final Directory? directory = await getExternalStorageDirectory();
+      if (directory == null) {
+        throw Exception('No se pudo acceder al almacenamiento');
+      }
+
+      final String outputFolder = '${directory.path}/PremiumPro';
+      await Directory(outputFolder).create(recursive: true);
+
+      final int timestamp = DateTime.now().millisecondsSinceEpoch;
+      final ext = _getExtensionForCodec(_settings.videoCodec);
+      final String outputPath = '$outputFolder/premium_export_$timestamp.$ext';
+
+      debugPrint('📁 Input: $_selectedVideoPath');
+      debugPrint('📁 Output: $outputPath');
+      debugPrint('⚙️ Config: ${_settings.videoCodec} | ${_settings.videoBitrate} kbps | ${_settings.preset} | CRF ${_settings.crf} | HW Accel: ${_settings.hardwareAcceleration}');
+
+      final bool success = await processor.processVideo(
+        inputPath: _selectedVideoPath!,
+        outputPath: outputPath,
+        settings: _settings,
+        totalDurationMicros: durationMicros,
       );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '✅ Exportación completada' : '❌ Error en exportación'),
+            backgroundColor: success ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+      if (success) {
+        debugPrint('✅ Exportación exitosa: $outputPath');
+        setState(() {
+          _selectedVideoPath = null;
+          _selectedVideoName = 'Ninguno';
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error en exportación: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error crítico: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 }
