@@ -1,24 +1,75 @@
-import 'dart:convert'; // 👈 IMPORTANTE: añadir este import
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum InterfaceDensity { compact, normal, comfortable }
+enum CornerRoundness { square, light, rounded }
+enum DefaultQuality { high, medium, low }
+
 class AppSettings {
+  // Apariencia
   Color accentColor;
   Color textColor;
   double textScaleFactor;
-  bool keepOriginalName;
-  bool saveSettingsAsDefault;
+  InterfaceDensity density;
+  CornerRoundness roundness;
 
+  // Exportación
+  String defaultOutputFolder;
+  String fileNameTemplate; // Ej: "{name}_premium", "{date}", etc.
+  DefaultQuality defaultVideoQuality;
+  DefaultQuality defaultAudioQuality;
+  DefaultQuality defaultImageQuality;
+  bool deleteOriginalAfterExport;
+  bool warnBeforeOverwrite;
+
+  // Proyecto
+  bool autoBackupProject;
+  bool keepLastLoadedFile;
+
+  // Onboarding
+  bool onboardingCompleted;
+
+  // Papelera
+  bool trashEnabled;
+  bool alwaysAskBeforeDelete;
+  bool dontShowDeleteWarning; // Aplica cuando trashEnabled = false y alwaysAskBeforeDelete = false
+
+  // Defaults específicos de cada módulo (se guardan como JSON)
   Map<String, dynamic> videoDefaults;
   Map<String, dynamic> audioDefaults;
   Map<String, dynamic> imageDefaults;
 
   AppSettings({
+    // Apariencia
     this.accentColor = Colors.blueAccent,
     this.textColor = Colors.white,
     this.textScaleFactor = 1.0,
-    this.keepOriginalName = false,
-    this.saveSettingsAsDefault = false,
+    this.density = InterfaceDensity.normal,
+    this.roundness = CornerRoundness.light,
+
+    // Exportación
+    this.defaultOutputFolder = '/storage/emulated/0/PremiumPro',
+    this.fileNameTemplate = '{name}_premium',
+    this.defaultVideoQuality = DefaultQuality.medium,
+    this.defaultAudioQuality = DefaultQuality.medium,
+    this.defaultImageQuality = DefaultQuality.medium,
+    this.deleteOriginalAfterExport = false,
+    this.warnBeforeOverwrite = true,
+
+    // Proyecto
+    this.autoBackupProject = true,
+    this.keepLastLoadedFile = false,
+
+    // Onboarding
+    this.onboardingCompleted = false,
+
+    // Papelera
+    this.trashEnabled = true,
+    this.alwaysAskBeforeDelete = true,
+    this.dontShowDeleteWarning = false,
+
+    // Defaults específicos
     Map<String, dynamic>? videoDefaults,
     Map<String, dynamic>? audioDefaults,
     Map<String, dynamic>? imageDefaults,
@@ -29,39 +80,33 @@ class AppSettings {
   static Future<AppSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
 
-    int? accentColorValue = prefs.getInt('accentColor');
-    int? textColorValue = prefs.getInt('textColor');
-    double textScale = prefs.getDouble('textScaleFactor') ?? 1.0;
-    bool keepName = prefs.getBool('keepOriginalName') ?? false;
-    bool saveDefault = prefs.getBool('saveSettingsAsDefault') ?? false;
-
-    Map<String, dynamic> videoDefaults = {};
-    String? videoJson = prefs.getString('videoDefaults');
-    if (videoJson != null) {
-      videoDefaults = Map<String, dynamic>.from(jsonDecode(videoJson));
-    }
-
-    Map<String, dynamic> audioDefaults = {};
-    String? audioJson = prefs.getString('audioDefaults');
-    if (audioJson != null) {
-      audioDefaults = Map<String, dynamic>.from(jsonDecode(audioJson));
-    }
-
-    Map<String, dynamic> imageDefaults = {};
-    String? imageJson = prefs.getString('imageDefaults');
-    if (imageJson != null) {
-      imageDefaults = Map<String, dynamic>.from(jsonDecode(imageJson));
-    }
-
     return AppSettings(
-      accentColor: accentColorValue != null ? Color(accentColorValue) : Colors.blueAccent,
-      textColor: textColorValue != null ? Color(textColorValue) : Colors.white,
-      textScaleFactor: textScale,
-      keepOriginalName: keepName,
-      saveSettingsAsDefault: saveDefault,
-      videoDefaults: videoDefaults,
-      audioDefaults: audioDefaults,
-      imageDefaults: imageDefaults,
+      accentColor: Color(prefs.getInt('accentColor') ?? Colors.blueAccent.value),
+      textColor: Color(prefs.getInt('textColor') ?? Colors.white.value),
+      textScaleFactor: prefs.getDouble('textScaleFactor') ?? 1.0,
+      density: InterfaceDensity.values[prefs.getInt('density') ?? 1],
+      roundness: CornerRoundness.values[prefs.getInt('roundness') ?? 1],
+
+      defaultOutputFolder: prefs.getString('defaultOutputFolder') ?? '/storage/emulated/0/PremiumPro',
+      fileNameTemplate: prefs.getString('fileNameTemplate') ?? '{name}_premium',
+      defaultVideoQuality: DefaultQuality.values[prefs.getInt('defaultVideoQuality') ?? 1],
+      defaultAudioQuality: DefaultQuality.values[prefs.getInt('defaultAudioQuality') ?? 1],
+      defaultImageQuality: DefaultQuality.values[prefs.getInt('defaultImageQuality') ?? 1],
+      deleteOriginalAfterExport: prefs.getBool('deleteOriginalAfterExport') ?? false,
+      warnBeforeOverwrite: prefs.getBool('warnBeforeOverwrite') ?? true,
+
+      autoBackupProject: prefs.getBool('autoBackupProject') ?? true,
+      keepLastLoadedFile: prefs.getBool('keepLastLoadedFile') ?? false,
+
+      onboardingCompleted: prefs.getBool('onboardingCompleted') ?? false,
+
+      trashEnabled: prefs.getBool('trashEnabled') ?? true,
+      alwaysAskBeforeDelete: prefs.getBool('alwaysAskBeforeDelete') ?? true,
+      dontShowDeleteWarning: prefs.getBool('dontShowDeleteWarning') ?? false,
+
+      videoDefaults: Map.from(jsonDecode(prefs.getString('videoDefaults') ?? '{}')),
+      audioDefaults: Map.from(jsonDecode(prefs.getString('audioDefaults') ?? '{}')),
+      imageDefaults: Map.from(jsonDecode(prefs.getString('imageDefaults') ?? '{}')),
     );
   }
 
@@ -71,8 +116,25 @@ class AppSettings {
     await prefs.setInt('accentColor', accentColor.value);
     await prefs.setInt('textColor', textColor.value);
     await prefs.setDouble('textScaleFactor', textScaleFactor);
-    await prefs.setBool('keepOriginalName', keepOriginalName);
-    await prefs.setBool('saveSettingsAsDefault', saveSettingsAsDefault);
+    await prefs.setInt('density', density.index);
+    await prefs.setInt('roundness', roundness.index);
+
+    await prefs.setString('defaultOutputFolder', defaultOutputFolder);
+    await prefs.setString('fileNameTemplate', fileNameTemplate);
+    await prefs.setInt('defaultVideoQuality', defaultVideoQuality.index);
+    await prefs.setInt('defaultAudioQuality', defaultAudioQuality.index);
+    await prefs.setInt('defaultImageQuality', defaultImageQuality.index);
+    await prefs.setBool('deleteOriginalAfterExport', deleteOriginalAfterExport);
+    await prefs.setBool('warnBeforeOverwrite', warnBeforeOverwrite);
+
+    await prefs.setBool('autoBackupProject', autoBackupProject);
+    await prefs.setBool('keepLastLoadedFile', keepLastLoadedFile);
+
+    await prefs.setBool('onboardingCompleted', onboardingCompleted);
+
+    await prefs.setBool('trashEnabled', trashEnabled);
+    await prefs.setBool('alwaysAskBeforeDelete', alwaysAskBeforeDelete);
+    await prefs.setBool('dontShowDeleteWarning', dontShowDeleteWarning);
 
     if (videoDefaults.isNotEmpty) {
       await prefs.setString('videoDefaults', jsonEncode(videoDefaults));
