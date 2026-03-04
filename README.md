@@ -350,11 +350,9 @@ Premium_Pro_v1.0/
     └── 📄 launch.json
 
 
-
 ## Licencia
 
 GPL-3.0
-
 
 
 ## 🛠️ Tecnologías
