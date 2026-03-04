@@ -114,7 +114,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           const SizedBox(height: 10),
           _buildPresetDropdown(processor),
           const SizedBox(height: 10),
-          _buildHardwareAccelerationSwitch(processor), // NUEVO SWITCH
+          _buildHardwareAccelerationSwitch(processor),
           const SizedBox(height: 16),
           _buildActionButtons(processor),
         ],
@@ -206,7 +206,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     );
   }
 
-  // NUEVO: Switch para aceleración hardware
   Widget _buildHardwareAccelerationSwitch(MediaProcessor processor) {
     return Row(
       children: [
@@ -336,8 +335,8 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     }
 
     try {
-      // Obtener duración del video usando FFprobe (si es posible)
-      final durationMicros = await processor._ffmpeg.getVideoDuration(_selectedVideoPath!);
+      // ✅ CORREGIDO: Usar el método público getVideoDuration de MediaProcessor
+      final durationMicros = await processor.getVideoDuration(_selectedVideoPath!);
 
       if (durationMicros == null || durationMicros <= 0) {
         debugPrint('⚠️ No se pudo obtener la duración del video, el progreso será aproximado');
