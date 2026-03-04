@@ -4,25 +4,26 @@ import 'services/media_processor.dart';
 import 'services/audio_processor.dart';
 import 'services/image_processor.dart';
 import 'services/ai_manager.dart';
-import 'providers/settings_provider.dart'; // NUEVO
-import 'screens/settings_screen.dart';     // NUEVO
+import 'providers/settings_provider.dart';
+import 'screens/settings_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'widgets/timeline_widget.dart';
 import 'widgets/audio_timeline_widget.dart';
 import 'widgets/image_editor_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   final videoProcessor = MediaProcessor();
   final audioProcessor = AudioProcessor();
   final imageProcessor = ImageProcessor();
-  
+
   await Future.wait([
     videoProcessor.init(),
     audioProcessor.init(),
     imageProcessor.init(),
   ]);
-  
+
   runApp(PremiumProApp(
     videoProcessor: videoProcessor,
     audioProcessor: audioProcessor,
@@ -50,7 +51,7 @@ class PremiumProApp extends StatelessWidget {
         ChangeNotifierProvider<AudioProcessor>.value(value: audioProcessor),
         ChangeNotifierProvider<ImageProcessor>.value(value: imageProcessor),
         ChangeNotifierProvider(create: (_) => AIManager()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()), // NUEVO
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settingsProvider, child) {
@@ -85,7 +86,12 @@ class PremiumProApp extends StatelessWidget {
                 labelLarge: TextStyle(color: settings.textColor, fontSize: 14 * settings.textScaleFactor),
               ),
             ),
-            home: const HomeScreen(),
+            routes: {
+              '/home': (context) => const HomeScreen(),
+            },
+            home: settings.onboardingCompleted
+                ? const HomeScreen()
+                : const OnboardingScreen(),
           );
         },
       ),
