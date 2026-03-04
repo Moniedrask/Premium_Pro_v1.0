@@ -34,15 +34,21 @@ jobs:
           rm -rf android/.gradle
           flutter pub get
 
-      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
+      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar) - VERSIÓN CORREGIDA
       - name: Download ffmpeg-kit-fix.aar from Google Drive
         run: |
           mkdir -p android/app/libs
-          # Usar gdown para descargar desde Google Drive (enlace directo)
           pip install gdown
-          gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O /tmp/ffmpeg-kit-fix.aar --folder
-          # Mover el archivo descargado a la carpeta libs (asumiendo que se descarga como ffmpeg-kit-fix.aar)
-          find /tmp -name "*.aar" -exec mv {} android/app/libs/ffmpeg-kit-fix.aar \;
+          # Crear carpeta temporal
+          TEMP_DIR=$(mktemp -d)
+          cd $TEMP_DIR
+          # Descargar todo el contenido de la carpeta de Google Drive
+          gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
+          # Buscar el archivo .aar y moverlo a la carpeta libs del proyecto
+          find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/ffmpeg-kit-fix.aar \;
+          # Limpiar
+          cd $GITHUB_WORKSPACE
+          rm -rf $TEMP_DIR
 
       # (Opcional) Parche para ffmpeg_kit_flutter (ya no es necesario con AAR local, pero se deja por si acaso)
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
