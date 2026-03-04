@@ -1,153 +1,158 @@
 # 🎬 Premium Pro v1.0 - Editor Multimedia Profesional
 
-Editor y compresor profesional de Video, Audio e Imagen.
+**Editor y compresor profesional de Video, Audio e Imagen.**  
+Optimizado para dispositivos de bajos recursos, sin publicidad, gratuito y 100% en español.
 
 [![Build Status](https://github.com/tu-usuario/Premium_Pro_v1.0/actions/workflows/build.yml/badge.svg)](https://github.com/tu-usuario/Premium_Pro_v1.0/actions)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android/Windows), optimizado para dispositivos de bajos recursos.
+---
 
 ## ✨ Características Principales
 
 | Módulo | Funciones |
 |--------|-----------|
-| 🎥 Video | Corte preciso, Speed Ramp (0.1x-16x), Color Grading, LUTs, Estabilización, Texto animado, Transiciones, Interpolación de frames (IA opcional), **Aceleración hardware activable (MediaCodec)** |
-| 🎵 Audio | Waveform OpenGL, Ecualizador 10 bandas, Compresor, Normalización (LUFS), Reducción de ruido (IA opcional), Edición multipista, Fades |
-| 🖼️ Imagen | HDR por capas, Escalado Lanczos4, Filtros profesionales, Ajustes precisos, Pincel básico, Upscaling IA (opcional) |
-| 🗜️ Compresión | H.264/H.265/VP9/AV1, Control CRF, Bitrate, Presets, **Aceleración hardware (MediaCodec) con interruptor** |
+| 🎥 **Video** | Corte preciso (ms), Speed Ramp (0.1x–16x), Color Grading (curvas, ruedas, LUTs .cube), Estabilización, Texto animado, Transiciones, Interpolación de frames (IA opcional), **Aceleración hardware activable (MediaCodec)** |
+| 🎵 **Audio** | Waveform OpenGL, Ecualizador paramétrico de 10 bandas, Compresor, Normalización (LUFS), Reducción de ruido (IA opcional), Edición multipista, Fades |
+| 🖼️ **Imagen** | HDR por capas (hasta 5 exposiciones), Escalado Lanczos4, Filtros profesionales, Ajustes precisos, Pincel básico, Upscaling IA (opcional) |
+| 🗜️ **Compresión** | H.264/H.265/VP9/AV1, Control CRF, Bitrate, Presets, **Aceleración hardware (MediaCodec) con interruptor** |
+| ⚙️ **Ajustes Globales** | Personalización de color de acento, color de texto, tamaño de interfaz, opciones de exportación predeterminadas (mantener nombre original, guardar configuraciones como permanentes) |
 
-- ✅ Modo Oscuro OLED (#000000 puro)
-- ✅ Sin Publicidad
-- ✅ Sin IA por defecto (funciona 100% offline)
-- ✅ FFmpeg integrado (vía AAR local)
-
-# 📋 REQUISITOS COMPLETOS - PREMIUM PRO v1.0
+- ✅ **Modo Oscuro OLED** (#000000 puro) inalterable (fondo negro fijo).
+- ✅ **Sin Publicidad** – Software libre y gratuito.
+- ✅ **Sin IA por defecto** (funciona 100% offline, modelos opcionales).
+- ✅ **FFmpeg integrado** vía AAR local (sin dependencia de servidores externos).
 
 ---
 
-## 🤖 ANDROID
+## 📋 Requisitos del Sistema
 
-### Requisitos Mínimos
-| Componente | Requisito |
-|------------|-----------|
-| **Sistema Operativo** | Android 8.0 (API 26) o superior |
-| **RAM** | 2 GB mínimo |
-| **Almacenamiento** | 250 MB libres (instalación) + espacio para proyectos |
-| **Procesador** | ARMv7 (armeabi-v7a) o ARM64 (arm64-v8a) |
-| **Pantalla** | Resolución mínima 720p |
+### 🤖 ANDROID
 
-### Requisitos Recomendados
-| Componente | Requisito |
-|------------|-----------|
-| **Sistema Operativo** | Android 11 (API 30) o superior |
-| **RAM** | 4 GB o superior |
-| **Almacenamiento** | 500 MB libres + espacio para proyectos |
-| **Procesador** | Octa-core 2.0 GHz o superior |
-| **Pantalla** | Resolución 1080p o superior |
+| Componente | Mínimo | Recomendado |
+|------------|--------|-------------|
+| **Sistema Operativo** | Android 8.0 (API 26) o superior | Android 11+ (API 30+) |
+| **RAM** | 2 GB mínimo | 4 GB o más |
+| **Almacenamiento** | 250 MB libres + espacio para proyectos | 500 MB libres + espacio |
+| **Procesador** | ARMv7 (armeabi-v7a) o ARM64 (arm64-v8a) | Octa-core 2.0 GHz+ |
+| **Pantalla** | Resolución mínima 720p | 1080p+ |
 
-### Permisos Requeridos
-- `READ_EXTERNAL_STORAGE` (Android 12 o inferior)
-- `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_MEDIA_IMAGES` (Android 13+)
-- `WRITE_EXTERNAL_STORAGE` (Android 12 o inferior)
+### 🖥️ WINDOWS (Cuando esté disponible)
+
+| Componente | Mínimo | Recomendado |
+|------------|--------|-------------|
+| **SO** | Windows 10 64-bit (1903+) | Windows 11 64-bit |
+| **RAM** | 4 GB mínimo | 8 GB o más |
+| **Procesador** | Intel Core i3 (4ª gen) | Intel Core i5/i7 (8ª gen+) |
+| **Gráficos** | DirectX 11 compatible | GPU dedicada con 2 GB VRAM |
+| **Pantalla** | 1280x720 | 1920x1080 |
+
+---
+
+## 🔐 Permisos Requeridos (Android)
+
+- Android 12 o inferior: `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`
+- Android 13+: `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO`, `READ_MEDIA_IMAGES`
 - `INTERNET` (solo para descarga opcional de modelos IA)
-- `ACCESS_NETWORK_STATE`
-- `WAKE_LOCK`
-- `FOREGROUND_SERVICE`
-- `FOREGROUND_SERVICE_DATA_PROCESSING`
+- `WAKE_LOCK`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_PROCESSING`
 
 ---
 
-## 🖥️ WINDOWS (Cuando esté disponible)
+## 📁 Estructura del Proyecto (Archivos Principales)
 
-### Requisitos Mínimos
-| Componente | Requisito |
-|------------|-----------|
-| **Sistema Operativo** | Windows 10 (64-bit) versión 1903 o superior |
-| **RAM** | 4 GB mínimo |
-| **Almacenamiento** | 500 MB libres (instalación) + espacio para proyectos |
-| **Procesador** | Intel Core i3 o equivalente AMD (4ª generación o superior) |
-| **Gráficos** | DirectX 11 compatible |
-| **Pantalla** | Resolución mínima 1280x720 |
+```
 
-### Requisitos Recomendados
-| Componente | Requisito |
-|------------|-----------|
-| **Sistema Operativo** | Windows 11 (64-bit) |
-| **RAM** | 8 GB o superior |
-| **Almacenamiento** | 1 GB libres + espacio para proyectos |
-| **Procesador** | Intel Core i5/i7 o equivalente AMD (8ª generación o superior) |
-| **Gráficos** | GPU dedicada con 2 GB VRAM (NVIDIA/AMD) |
-| **Pantalla** | Resolución 1920x1080 o superior |
+Premium_Pro_v1.0/
+│
+├── 📄 pubspec.yaml                                    # Dependencias (ffmpeg_kit_flutter 6.0.3, provider, etc.)
+├── 📄 README.md                                       # Este archivo
+├── 📄 .gitignore
+├── 📄 analysis_options.yaml
+│
+├── 📁 .github/
+│   └── 📁 workflows/
+│       └── 📄 build.yml                               # Workflow: descarga AAR, compila APKs separados + universal
+│
+├── 📁 android/                                        # Configuración nativa (Gradle, manifiesto, AAR local)
+│   ├── 📄 build.gradle
+│   ├── 📄 settings.gradle
+│   ├── 📄 gradle.properties
+│   ├── 📁 gradle/wrapper/
+│   └── 📁 app/
+│       ├── 📄 build.gradle                            # Dependencias locales + resolución de FFmpeg
+│       ├── 📁 libs/                                    # Contiene ffmpeg-kit-fix.aar (descargado en CI)
+│       └── 📁 src/main/
+│           ├── 📄 AndroidManifest.xml
+│           ├── 📁 kotlin/com/premiumpro/editor/MainActivity.kt
+│           └── 📁 res/                                 # Recursos (estilos, imágenes, etc.)
+│
+├── 📁 assets/                                          # Recursos estáticos (iconos, LUTs, modelos IA)
+│   ├── 📁 fonts/
+│   ├── 📁 icons/
+│   ├── 📁 luts/
+│   └── 📁 models/
+│
+├── 📁 lib/
+│   ├── 📄 main.dart                                    # Punto de entrada, tema dinámico y providers
+│   │
+│   ├── 📁 models/
+│   │   ├── 📄 app_settings.dart                        # Modelo de configuración global (color, tamaño, etc.)
+│   │   ├── 📄 video_settings.dart                       # Configuración de video (incluye saveAsDefault)
+│   │   ├── 📄 audio_settings.dart
+│   │   ├── 📄 image_settings.dart
+│   │   └── 📄 project_config.dart
+│   │
+│   ├── 📁 providers/
+│   │   └── 📄 settings_provider.dart                   # Provider para ajustes globales
+│   │
+│   ├── 📁 screens/
+│   │   └── 📄 settings_screen.dart                     # Pantalla de ajustes (color, texto, opciones de exportación)
+│   │
+│   ├── 📁 services/
+│   │   ├── 📄 ffmpeg_wrapper.dart                      # Abstracción de FFmpeg con progreso híbrido
+│   │   ├── 📄 media_processor.dart                      # Procesador de video (usa VideoSettings)
+│   │   ├── 📄 audio_processor.dart
+│   │   ├── 📄 image_processor.dart
+│   │   └── 📄 ai_manager.dart                           # Gestión de modelos IA (descarga, estado)
+│   │
+│   └── 📁 widgets/
+│       ├── 📄 timeline_widget.dart                      # Editor de video con interruptor HW, barra de progreso, checkboxes
+│       ├── 📄 audio_timeline_widget.dart                # Editor de audio con waveform y controles
+│       ├── 📄 image_editor_widget.dart                  # Editor de imagen con vista previa
+│       └── 📄 settings_panel.dart                        # Panel de configuración (obsoleto, mantenido por compatibilidad)
+│
+├── 📁 test/                                             # Pruebas (esqueleto)
+│
+├── 📁 build/                                            # Generado (no commitear)
+├── 📁 .dart_tool/                                       # Generado (no commitear)
+├── 📁 .idea/                                            # Local (no commitear)
+└── 📁 .vscode/                                          # Local (no commitear)
 
-### Permisos Requeridos
-- Acceso al sistema de archivos (lectura/escritura)
-- Acceso a Internet (solo para descarga opcional de modelos IA)
+```
 
 ---
 
-## 🎬 REQUISITOS ADICIONALES POR FUNCIÓN
+## 🛠️ Tecnologías Utilizadas
 
-### Para Procesamiento de Video
-| Función | Requisito Adicional |
-|---------|---------------------|
-| Exportación H.264 | Soporte hardware MediaCodec (Android) / DXVA2 (Windows) |
-| Exportación H.265 | Android 10+ o Windows 11 con GPU compatible |
-| Video 4K | 4 GB RAM mínimo, 6 GB recomendado |
-| Interpolación de Frames (IA) | 6 GB RAM mínimo, modelo IA descargado (2-4 GB) |
-
-### Para Procesamiento de Audio
-| Función | Requisito Adicional |
-|---------|---------------------|
-| Audio 32-bit float | 2 GB RAM mínimo |
-| Reducción de Ruido IA | 4 GB RAM mínimo, modelo IA descargado |
-
-### Para Procesamiento de Imagen
-| Función | Requisito Adicional |
-|---------|---------------------|
-| Imágenes hasta 4K | 2 GB RAM mínimo |
-| Imágenes 8K (8192x8192) | 6 GB RAM mínimo |
-| Upscaling IA (2x-16x) | 4 GB RAM mínimo, modelo IA descargado (1-8 GB) |
-| HDR por capas | 4 GB RAM mínimo |
+- **Framework:** Flutter 3.35.1 (Dart 3.5+)
+- **Motor Multimedia:** FFmpegKit 6.0.3 (integrado localmente vía AAR)
+- **Gestión de Estado:** Provider
+- **Renderizado de Audio:** OpenGL/Vulkan (vía FFmpeg)
+- **Almacenamiento de Preferencias:** SharedPreferences
+- **Selección de Archivos:** FilePicker
+- **Reproducción de Audio:** audioplayers
+- **Selector de Color:** flutter_colorpicker
+- **Descarga de Modelos IA:** http + path_provider
 
 ---
-
-## 📦 ESPACIO EN DISCO REQUERIDO
-
-| Componente | Espacio Requerido |
-|------------|-------------------|
-| **Instalación Base** | 250 MB (Android) / 500 MB (Windows) |
-| **Modelos IA (Opcional)** | 1 GB (Móvil) / 4 GB (Equilibrado) / 8 GB+ (Desktop) |
-| **Caché de Procesamiento** | 500 MB - 2 GB (dependiendo del proyecto) |
-| **Total Recomendado** | 2 GB libres (sin IA) / 10 GB libres (con IA) |
-
----
-
-## 🔋 RENDIMIENTO ESPERADO
-
-| Dispositivo | Tiempo Exportación 1080p (1 min) |
-|-------------|----------------------------------|
-| Gama Baja (2 GB RAM) | 3-5 minutos |
-| Gama Media (4 GB RAM) | 1-2 minutos |
-| Gama Alta (6+ GB RAM) | 30-60 segundos |
-
----
-
-## ⚠️ LIMITACIONES CONOCIDAS
-
-| Escenario | Limitación |
-|-----------|------------|
-| Android con <2 GB RAM | IA desactivada automáticamente |
-| Android 7.0 o inferior | No compatible |
-| Windows 7/8 | No compatible (requiere Windows 10+) |
-| Sin conexión a Internet | Funciona 100% offline (IA requiere descarga inicial) |
-| Dispositivos sin MediaCodec | Codificación por software (más lento) |
 
 ## 🚀 Instalación
 
 ### Desde GitHub Actions (Recomendado)
-1. Ve a la pestaña **Actions** en este repositorio
-2. Selecciona el último workflow exitoso
-3. Descarga el APK de **Artifacts**
+
+1. Ve a la pestaña **Actions** de este repositorio.
+2. Selecciona el último workflow exitoso (con check verde).
+3. En **Artifacts**, descarga el archivo `premium-pro-apk.zip`.
 4. Extrae y elige el APK correspondiente a tu dispositivo:
 
 | Archivo | Arquitectura | Tamaño aprox. | Uso recomendado |
@@ -157,190 +162,119 @@ Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android
 | `app-x86_64-release.apk` | x86_64 (64 bits) | ~48 MB | Emuladores o dispositivos Intel (Chromebooks) |
 | `app-release.apk` | Universal (todas) | ~90 MB | Si no estás seguro de la arquitectura |
 
-5. Instala en tu dispositivo (permitir fuentes desconocidas)
+5. Instala en tu dispositivo (permitir **fuentes desconocidas** si es necesario).
 
 ### Compilación Local
+
 ```bash
+# Clona el repositorio
+git clone https://github.com/tu-usuario/Premium_Pro_v1.0.git
+cd Premium_Pro_v1.0
+
+# Obtén dependencias
 flutter pub get
+
+# Compila APK release (dividido por ABI)
 flutter build apk --release --split-per-abi
 
-Premium_Pro_v1.0/
-│
-├── 📄 pubspec.yaml                                    ✅ MODIFICADO (ffmpeg_kit_flutter: 6.0.3, provider, etc.)
-├── 📄 README.md                                       ⚪ SIN CAMBIOS
-├── 📄 .gitignore                                      ⚪ SIN CAMBIOS
-├── 📄 analysis_options.yaml                           ⚪ SIN CAMBIOS
-├── 📄 .metadata                                       ⚪ SIN CAMBIOS
-│
-├── 📁 .github/
-│   └── 📁 workflows/
-│       └── 📄 build.yml                               ✅ MODIFICADO (descarga AAR, genera APKs separados + universal)
-│
-├── 📁 android/
-│   ├── 📄 build.gradle                                ✅ MODIFICADO (repositorios: google, mavenCentral, jitpack)
-│   ├── 📄 settings.gradle                             ✅ MODIFICADO (AGP 8.6.0, Kotlin 2.1.20)
-│   ├── 📄 gradle.properties                           ✅ MODIFICADO (memoria 4GB)
-│   ├── 📄 local.properties                            ⚠️ AUTO-GENERADO (no commitear)
-│   │
-│   ├── 📁 gradle/
-│   │   └── 📁 wrapper/
-│   │       ├── 📄 gradle-wrapper.properties           ✅ MODIFICADO (Gradle 8.11.1)
-│   │       └── 📄 gradle-wrapper.jar                  ⚪ SIN CAMBIOS
-│   │
-│   └── 📁 app/
-│       ├── 📄 build.gradle                            ✅ MODIFICADO (dependencias locales, resolución de FFmpeg)
-│       ├── 📄 proguard-rules.pro                      ⚪ SIN CAMBIOS
-│       ├── 📄 androidTest.gradle                      ⚪ SIN CAMBIOS (si existe)
-│       │
-│       ├── 📁 libs/                                    📦 NUEVO (carpeta para AAR local)
-│       │   └── 📄 ffmpeg-kit-fix.aar                  (se descarga automáticamente en CI)
-│       │
-│       └── 📁 src/
-│           └── 📁 main/
-│               ├── 📄 AndroidManifest.xml             ✅ MODIFICADO (permisos + services)
-│               ├── 📄 MainActivity.kt                 ⚪ SIN CAMBIOS
-│               │
-│               ├── 📁 kotlin/
-│               │   └── 📁 com/
-│               │       └── 📁 premiumpro/
-│               │           └── 📁 editor/
-│               │               └── 📄 MainActivity.kt ⚪ SIN CAMBIOS
-│               │
-│               ├── 📁 res/
-│               │   ├── 📁 drawable/
-│               │   │   ├── 📄 launch_background.xml   ✅ NUEVO
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   ├── 📁 mipmap-anydpi-v26/
-│               │   │   ├── 📄 ic_launcher.xml         ✅ NUEVO
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   ├── 📁 mipmap-hdpi/
-│               │   │   ├── 📄 ic_launcher.png         ⚪ OPCIONAL
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   ├── 📁 mipmap-mdpi/
-│               │   │   ├── 📄 ic_launcher.png         ⚪ OPCIONAL
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   ├── 📁 mipmap-xhdpi/
-│               │   │   ├── 📄 ic_launcher.png         ⚪ OPCIONAL
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   ├── 📁 mipmap-xxhdpi/
-│               │   │   ├── 📄 ic_launcher.png         ⚪ OPCIONAL
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   ├── 📁 mipmap-xxxhdpi/
-│               │   │   ├── 📄 ic_launcher.png         ⚪ OPCIONAL
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   ├── 📁 values/
-│               │   │   ├── 📄 styles.xml              ✅ NUEVO
-│               │   │   ├── 📄 strings.xml             ⚪ OPCIONAL
-│               │   │   ├── 📄 colors.xml              ⚪ OPCIONAL
-│               │   │   └── 📄 .gitkeep                ✅ NUEVO
-│               │   │
-│               │   └── 📁 xml/
-│               │       ├── 📄 file_paths.xml          ✅ NUEVO
-│               │       └── 📄 .gitkeep                ✅ NUEVO
-│               │
-│               └── 📁 assets/ (si existen assets nativos)
-│
-├── 📁 lib/
-│   ├── 📄 main.dart                                   ✅ MODIFICADO (PremiumProApp + providers)
-│   │
-│   ├── 📁 services/
-│   │   ├── 📄 ffmpeg_wrapper.dart                     ✅ NUEVO (capa de abstracción con progreso híbrido)
-│   │   ├── 📄 media_processor.dart                    ✅ MODIFICADO (usa VideoSettings)
-│   │   ├── 📄 audio_processor.dart                    ✅ NUEVO
-│   │   ├── 📄 image_processor.dart                    ✅ NUEVO
-│   │   ├── 📄 ai_manager.dart                         ⚪ SIN CAMBIOS
-│   │   └── 📄 .gitkeep                                ✅ NUEVO
-│   │
-│   ├── 📁 widgets/
-│   │   ├── 📄 timeline_widget.dart                    ✅ MODIFICADO (interruptor HW, barra de progreso)
-│   │   ├── 📄 audio_timeline_widget.dart              ✅ NUEVO
-│   │   ├── 📄 image_editor_widget.dart                ✅ NUEVO
-│   │   ├── 📄 settings_panel.dart                     ✅ NUEVO (tooltips, gestión IA)
-│   │   └── 📄 .gitkeep                                ✅ NUEVO
-│   │
-│   ├── 📁 models/
-│   │   ├── 📄 video_settings.dart                     ✅ NUEVO (incluye hardwareAcceleration)
-│   │   ├── 📄 audio_settings.dart                     ✅ NUEVO
-│   │   ├── 📄 image_settings.dart                     ✅ NUEVO
-│   │   ├── 📄 project_config.dart                     ⚪ OPCIONAL
-│   │   └── 📄 .gitkeep                                ✅ NUEVO
-│   │
-│   ├── 📁 screens/
-│   │   ├── 📄 home_screen.dart                        ⚪ OPCIONAL
-│   │   ├── 📄 editor_screen.dart                      ⚪ OPCIONAL
-│   │   └── 📄 .gitkeep                                ✅ NUEVO
-│   │
-│   ├── 📁 utils/
-│   │   ├── 📄 constants.dart                          ⚪ OPCIONAL
-│   │   ├── 📄 helpers.dart                            ⚪ OPCIONAL
-│   │   └── 📄 .gitkeep                                ✅ NUEVO
-│   │
-│   └── 📁 theme/
-│       ├── 📄 app_theme.dart                          ⚪ OPCIONAL
-│       └── 📄 .gitkeep                                ✅ NUEVO
-│
-├── 📁 assets/
-│   │
-│   ├── 📁 fonts/
-│   │   ├── 📄 .gitkeep                                ✅ NUEVO (requerido)
-│   │   ├── 📄 MaterialIcons-Regular.otf               ⚪ OPCIONAL (incluido en Flutter)
-│   │   ├── 📄 Roboto-Regular.ttf                      ⚪ OPCIONAL (incluido en Flutter)
-│   │   └── 📄 (fuentes personalizadas .ttf/.otf)      ⚪ OPCIONAL
-│   │
-│   ├── 📁 icons/
-│   │   ├── 📄 .gitkeep                                ✅ NUEVO (requerido)
-│   │   ├── 📄 app_icon.png                            ⚪ OPCIONAL
-│   │   ├── 📄 video_icon.png                          ⚪ OPCIONAL
-│   │   ├── 📄 audio_icon.png                          ⚪ OPCIONAL
-│   │   ├── 📄 image_icon.png                          ⚪ OPCIONAL
-│   │   ├── 📄 export_icon.png                         ⚪ OPCIONAL
-│   │   ├── 📄 settings_icon.png                       ⚪ OPCIONAL
-│   │   └── 📄 (iconos .png/.svg)                      ⚪ OPCIONAL
-│   │
-│   ├── 📁 luts/
-│   │   ├── 📄 .gitkeep                                ✅ NUEVO (requerido)
-│   │   ├── 📄 cinematic.cube                          ⚪ OPCIONAL
-│   │   ├── 📄 vintage.cube                            ⚪ OPCIONAL
-│   │   ├── 📄 bw.cube                                 ⚪ OPCIONAL
-│   │   ├── 📄 vivid.cube                              ⚪ OPCIONAL
-│   │   ├── 📄 warm.cube                               ⚪ OPCIONAL
-│   │   ├── 📄 cool.cube                               ⚪ OPCIONAL
-│   │   └── 📄 (LUTs .cube)                            ⚪ OPCIONAL
-│   │
-│   └── 📁 models/
-│       ├── 📄 .gitkeep                                ✅ NUEVO (requerido)
-│       ├── 📄 object_detection.tflite                 ⚪ OPCIONAL
-│       ├── 📄 face_detection.tflite                   ⚪ OPCIONAL
-│       ├── 📄 style_transfer.tflite                   ⚪ OPCIONAL
-│       ├── 📄 super_resolution.tflite                 ⚪ OPCIONAL
-│       └── 📄 (modelos .tflite/.onnx)                 ⚪ OPCIONAL
-│
-├── 📁 test/
-│   ├── 📄 widget_test.dart                            ⚪ SIN CAMBIOS
-│   ├── 📄 media_processor_test.dart                   ⚪ OPCIONAL
-│   ├── 📄 ffmpeg_wrapper_test.dart                    ⚪ OPCIONAL
-│   └── 📄 .gitkeep                                    ✅ NUEVO
-│
-├── 📁 build/                                          ⚠️ AUTO-GENERADO (no commitear)
-│   ├── 📁 app/
-│   ├── 📁 flutter_assets/
-│   └── 📁 ios/
-│
-├── 📁 .dart_tool/                                     ⚠️ AUTO-GENERADO (no commitear)
-│   ├── 📄 package_config.json
-│   └── 📁 flutter_build/
-│
-├── 📁 .idea/                                          ⚠️ LOCAL (no commitear)
-│   └── 📄 (configuración de Android Studio)
-│
-└── 📁 .vscode/                                        ⚠️ LOCAL (no commitear)
-    ├── 📄 settings.json
-    └── 📄 launch.json
+# (Opcional) Compila APK universal
+flutter build apk --release
+```
 
+---
+
+⚙️ Configuración
+
+Ajustes Globales (Nuevo)
+
+Desde la pantalla principal, toca el icono de ⚙️ Ajustes en la barra superior para acceder a las opciones globales:
+
+· Color de acento: Elige el color que prefieras para los elementos interactivos (botones, sliders, etc.). El fondo permanece negro OLED puro.
+· Color de texto: Personaliza el color del texto en toda la app.
+· Tamaño de texto: Ajusta la escala del texto (de 0.8x a 1.5x).
+· Mantener nombre original: Si está activado, al exportar no se añadirá un timestamp al nombre del archivo (se usará el nombre original con sufijo "_premium").
+· Guardar configuraciones como predeterminadas: Cuando marcas esta opción en cualquier editor, la configuración actual se guarda como predeterminada para futuras exportaciones.
+
+Modo Sin IA (Por Defecto)
+
+La aplicación funciona completamente sin descargar modelos de IA para garantizar:
+
+· ✅ Compatibilidad universal
+· ✅ Sin descargas adicionales
+· ✅ Máxima estabilidad
+
+Activar IA (Opcional)
+
+1. Ve a Ajustes > Inteligencia Artificial (dentro de la app).
+2. Descarga el modelo deseado (1 GB – 8 GB).
+3. Activa "Mejora IA" en exportación.
+
+Aceleración Hardware (MediaCodec)
+
+· En la pantalla de edición de video encontrarás un interruptor "Aceleración hardware".
+· Activado por defecto: usa la GPU/MediaCodec del dispositivo para codificar más rápido y con menor consumo.
+· Si encuentras problemas de compatibilidad con algún archivo, puedes desactivarlo.
+
+Opciones en Exportación (Video, Audio, Imagen)
+
+Cada editor incluye dos nuevas casillas:
+
+· Mantener nombre original (hereda el valor global, pero puedes cambiarlo localmente).
+· Guardar como permanente – Al marcarla, la configuración actual se guarda como predeterminada en los ajustes globales.
+
+---
+
+🧪 Códecs y Formatos Soportados
+
+Tipo Códecs / Formatos Notas
+Video H.264 (libx264), H.265 (libx265), VP9, AV1 Control CRF, bitrate, presets; aceleración hardware (h264_mediacodec / hevc_mediacodec) activable
+Audio AAC, MP3, Opus, FLAC, WAV (PCM) Frecuencias: 44.1, 48, 96, 192 kHz; canales mono/estéreo
+Imagen JPEG, PNG, WebP, AVIF Calidad ajustable (1-100), compresión PNG (0-9), metadatos opcionales
+
+---
+
+⚠️ Limitaciones Conocidas
+
+Escenario Limitación
+Android <2 GB RAM IA desactivada automáticamente (por estabilidad)
+Android 7.0 o inferior No compatible (requiere API 26+)
+Sin conexión a Internet IA requiere descarga previa; la app base funciona 100% offline
+Dispositivos sin MediaCodec Codificación por software (más lenta)
+Modelos IA muy pesados Requieren al menos 4 GB de RAM libre durante el procesamiento
+
+---
+
+📦 Archivos APK Generados
+
+El workflow de GitHub Actions produce los siguientes archivos en el artifact premium-pro-apk.zip:
+
+Archivo Arquitectura Tamaño aprox. Uso recomendado
+app-armeabi-v7a-release.apk ARMv7 (32 bits) ~40 MB Dispositivos muy antiguos o de gama baja
+app-arm64-v8a-release.apk ARM64 (64 bits) ~45 MB La mayoría de teléfonos modernos
+app-x86_64-release.apk x86_64 (64 bits) ~48 MB Emuladores o dispositivos Intel (Chromebooks)
+app-release.apk Universal (todas) ~90 MB Si no estás seguro de la arquitectura
+
+Recomendación: Elige siempre el APK específico para tu arquitectura (el universal solo si es necesario). Puedes verificar la arquitectura de tu dispositivo con apps como "Droid Hardware Info".
+
+---
+
+📄 Licencia
+
+GPL-3.0 - Software libre y gratuito. Sin publicidad.
+
+---
+
+🐛 Reportar Problemas
+
+Abre un Issue en GitHub con:
+
+· Dispositivo y versión de Android.
+· Pasos para reproducir el error.
+· Logs relevantes (puedes obtenerlos desde Ajustes > Ver Logs dentro de la app).
+
+---
+
+Desarrollado con ❤️ para la comunidad hispanohablante.
+¡Gracias por usar Premium Pro!
+
+```
