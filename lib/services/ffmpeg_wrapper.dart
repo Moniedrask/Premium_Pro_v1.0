@@ -88,7 +88,7 @@ class FFmpegWrapper {
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
         completeCallback: (session) {
-          // No usar async aquí; manejamos la future con .then
+          // Manejar con .then para evitar async en el callback
           session.getReturnCode().then((returnCode) {
             final success = ReturnCode.isSuccess(returnCode);
             if (success) {
