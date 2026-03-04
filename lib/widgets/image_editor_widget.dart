@@ -5,7 +5,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/image_processor.dart';
 import '../services/ai_manager.dart';
+import '../services/trash_manager.dart';
 import '../models/image_settings.dart';
+import '../providers/settings_provider.dart';
+import '../models/app_settings.dart';
 
 class ImageEditorWidget extends StatefulWidget {
   const ImageEditorWidget({super.key});
@@ -17,29 +20,189 @@ class ImageEditorWidget extends StatefulWidget {
 class _ImageEditorWidgetState extends State<ImageEditorWidget> {
   String? _selectedImagePath;
   String _selectedImageName = 'Ninguno';
-  ImageSettings _settings = ImageSettings();
+  late ImageSettings _settings;
+  bool _keepOriginalName = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final globalSettings = settingsProvider.settings;
+    _settings = ImageSettings.fromJson(globalSettings.imageDefaults);
+    _keepOriginalName = globalSettings.keepOriginalName;
+    setState(() {});
+  }
+
+  double _getPadding(InterfaceDensity density) {
+    switch (density) {
+      case InterfaceDensity.compact:
+        return 4.0;
+      case InterfaceDensity.normal:
+        return 8.0;
+      case InterfaceDensity.comfortable:
+        return 12.0;
+    }
+  }
+
+  BorderRadius _getBorderRadius(CornerRoundness roundness) {
+    switch (roundness) {
+      case CornerRoundness.square:
+        return BorderRadius.zero;
+      case CornerRoundness.light:
+        return BorderRadius.circular(8);
+      case CornerRoundness.rounded:
+        return BorderRadius.circular(16);
+    }
+  }
+
+  Future<void> _deleteFile(String filePath) async {
+    final trashManager = TrashManager();
+    final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
+
+    if (settings.trashEnabled) {
+      if (settings.alwaysAskBeforeDelete) {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirmar'),
+            content: const Text('¿Mover este archivo a la papelera?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Mover')),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          await trashManager.moveToTrash(filePath);
+          setState(() {
+            _selectedImagePath = null;
+            _selectedImageName = 'Ninguno';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Archivo movido a la papelera'), backgroundColor: Colors.orange),
+            );
+          }
+        }
+      } else {
+        await trashManager.moveToTrash(filePath);
+        setState(() {
+          _selectedImagePath = null;
+          _selectedImageName = 'Ninguno';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Archivo movido a la papelera'), backgroundColor: Colors.orange),
+          );
+        }
+      }
+    } else {
+      if (settings.dontShowDeleteWarning) {
+        File(filePath).delete();
+        setState(() {
+          _selectedImagePath = null;
+          _selectedImageName = 'Ninguno';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Archivo eliminado permanentemente'), backgroundColor: Colors.red),
+          );
+        }
+      } else {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirmar'),
+            content: const Text('¿Borrar este archivo permanentemente?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Borrar')),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          File(filePath).delete();
+          setState(() {
+            _selectedImagePath = null;
+            _selectedImageName = 'Ninguno';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Archivo eliminado permanentemente'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final processor = Provider.of<ImageProcessor>(context);
     final aiManager = Provider.of<AIManager>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final globalSettings = settingsProvider.settings;
+
+    final paddingValue = _getPadding(globalSettings.density);
+    final borderRadius = _getBorderRadius(globalSettings.roundness);
 
     return Column(
       children: [
         Expanded(
           flex: 2,
-          child: Container(
-            color: const Color(0xFF111111),
-            child: _buildImageView(processor),
+          child: Stack(
+            children: [
+              Container(
+                color: const Color(0xFF111111),
+                child: Center(
+                  child: processor.isProcessing
+                      ? _buildProcessingView(processor)
+                      : _buildImageView(processor),
+                ),
+              ),
+              if (_selectedImagePath != null && !processor.isProcessing)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.delete, color: globalSettings.accentColor),
+                    onPressed: () => _deleteFile(_selectedImagePath!),
+                    tooltip: 'Eliminar imagen',
+                  ),
+                ),
+            ],
           ),
         ),
         Expanded(
           flex: 3,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(paddingValue * 2),
             color: const Color(0xFF000000),
-            child: _buildControls(processor, aiManager),
+            child: _buildControls(processor, aiManager, globalSettings, settingsProvider),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProcessingView(ImageProcessor processor) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(color: Colors.blueAccent),
+        const SizedBox(height: 10),
+        Text(processor.statusMessage, style: const TextStyle(color: Colors.white)),
+        Text('${(processor.progress * 100).toStringAsFixed(1)}%',
+            style: const TextStyle(color: Colors.grey, fontSize: 20)),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () => processor.cancelProcessing(),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('CANCELAR'),
         ),
       ],
     );
@@ -51,20 +214,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
         child: Text('Selecciona una imagen', style: TextStyle(color: Colors.grey)),
       );
     }
-    if (processor.isProcessing) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(color: Colors.blueAccent),
-            const SizedBox(height: 10),
-            Text(processor.statusMessage, style: const TextStyle(color: Colors.white)),
-            Text('${(processor.progress * 100).toStringAsFixed(1)}%',
-                style: const TextStyle(color: Colors.grey, fontSize: 20)),
-          ],
-        ),
-      );
-    }
     return Center(
       child: Image.file(
         File(_selectedImagePath!),
@@ -74,7 +223,12 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
     );
   }
 
-  Widget _buildControls(ImageProcessor processor, AIManager aiManager) {
+  Widget _buildControls(
+    ImageProcessor processor,
+    AIManager aiManager,
+    AppSettings globalSettings,
+    SettingsProvider settingsProvider,
+  ) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +245,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
               DropdownMenuItem(value: 'webp', child: Text('WebP')),
               DropdownMenuItem(value: 'avif', child: Text('AVIF')),
             ],
-            onChanged: (val) => setState(() => _settings.format = val!),
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _settings.format = val!);
+            },
             decoration: const InputDecoration(labelText: 'Formato'),
           ),
 
@@ -105,7 +261,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                   min: 1,
                   max: 100,
                   divisions: 99,
-                  onChanged: (val) => setState(() => _settings.quality = val.round()),
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.quality = val.round());
+                  },
                 ),
               ],
             ),
@@ -119,7 +277,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                   min: 0,
                   max: 9,
                   divisions: 9,
-                  onChanged: (val) => setState(() => _settings.compressionLevel = val.round()),
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.compressionLevel = val.round());
+                  },
                 ),
               ],
             ),
@@ -131,7 +291,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                 child: TextField(
                   decoration: const InputDecoration(labelText: 'Ancho máx. (px)'),
                   keyboardType: TextInputType.number,
-                  onChanged: (val) => _settings.maxWidth = int.tryParse(val) ?? 0,
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.maxWidth = int.tryParse(val) ?? 0);
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -139,7 +301,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                 child: TextField(
                   decoration: const InputDecoration(labelText: 'Alto máx. (px)'),
                   keyboardType: TextInputType.number,
-                  onChanged: (val) => _settings.maxHeight = int.tryParse(val) ?? 0,
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.maxHeight = int.tryParse(val) ?? 0);
+                  },
                 ),
               ),
             ],
@@ -153,7 +317,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
               DropdownMenuItem(value: 'bicubic', child: Text('Bicúbico')),
               DropdownMenuItem(value: 'bilinear', child: Text('Bilineal (rápido)')),
             ],
-            onChanged: (val) => setState(() => _settings.filter = val!),
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _settings.filter = val!);
+            },
             decoration: const InputDecoration(labelText: 'Algoritmo'),
           ),
 
@@ -162,7 +328,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             children: [
               Checkbox(
                 value: _settings.preserveMetadata,
-                onChanged: (val) => setState(() => _settings.preserveMetadata = val!),
+                onChanged: processor.isProcessing ? null : (val) {
+                  setState(() => _settings.preserveMetadata = val!);
+                },
               ),
               const Text('Conservar metadatos EXIF', style: TextStyle(color: Colors.white)),
             ],
@@ -173,11 +341,41 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
               children: [
                 Checkbox(
                   value: _settings.aiUpscale,
-                  onChanged: (val) => setState(() => _settings.aiUpscale = val!),
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.aiUpscale = val!);
+                  },
                 ),
                 const Text('Upscale con IA', style: TextStyle(color: Colors.white)),
               ],
             ),
+
+          const SizedBox(height: 10),
+          CheckboxListTile(
+            title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
+            subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            value: _keepOriginalName,
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _keepOriginalName = val!);
+              if (globalSettings.keepOriginalName != val) {
+                settingsProvider.setKeepOriginalName(val!);
+              }
+            },
+            secondary: Icon(Icons.label, color: globalSettings.accentColor),
+            activeColor: globalSettings.accentColor,
+          ),
+          CheckboxListTile(
+            title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
+            subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            value: _settings.aiEnabled, // Usamos aiEnabled como placeholder; idealmente añadir un campo saveAsDefault a ImageSettings
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _settings.aiEnabled = val!);
+              if (val == true) {
+                settingsProvider.setImageDefaults(_settings.toJson());
+              }
+            },
+            secondary: Icon(Icons.save, color: globalSettings.accentColor),
+            activeColor: globalSettings.accentColor,
+          ),
 
           const SizedBox(height: 20),
           Row(
@@ -239,9 +437,17 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
       if (dir == null) throw Exception('No storage');
       final outputDir = '${dir.path}/PremiumPro/Images';
       await Directory(outputDir).create(recursive: true);
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      final int timestamp = DateTime.now().millisecondsSinceEpoch;
       final ext = _settings.format;
-      final outputPath = '$outputDir/image_$timestamp.$ext';
+
+      String outputPath;
+      if (_keepOriginalName) {
+        final originalName = _selectedImageName.split('.').first;
+        outputPath = '$outputDir/${originalName}_premium.$ext';
+      } else {
+        outputPath = '$outputDir/image_$timestamp.$ext';
+      }
 
       final success = await processor.processImage(
         inputPath: _selectedImagePath!,
@@ -252,9 +458,18 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ Imagen exportada'), backgroundColor: Colors.green),
         );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Error al exportar'), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       debugPrint('Error exportando imagen: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 }
