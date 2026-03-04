@@ -31,9 +31,13 @@ class FFmpegWrapper {
       final session = await FFprobeKit.getMediaInformation(path);
       final information = await session.getMediaInformation();
       if (information != null) {
-        final durationSec = information.getDuration(); // double?
-        if (durationSec != null && durationSec > 0) {
-          return (durationSec * 1000000).round();
+        final durationStr = information.getDuration(); // String?
+        if (durationStr != null && durationStr.isNotEmpty) {
+          // Convertir a double (la duración viene en segundos como string, ej: "10.5")
+          final durationSec = double.tryParse(durationStr);
+          if (durationSec != null && durationSec > 0) {
+            return (durationSec * 1000000).round();
+          }
         }
       }
     } catch (e) {
@@ -85,37 +89,31 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
+      // ✅ CORRECCIÓN: usar callbacks posicionales (no con nombre)
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
-        completeCallback: (session) {
-          // Manejar con .then para evitar async en el callback
-          session.getReturnCode().then((returnCode) {
-            final success = ReturnCode.isSuccess(returnCode);
-            if (success) {
-              _statusMessage = "✅ Completado";
-              _progress = 1.0;
-              onProgress?.call(1.0);
-              debugPrint('✅ Procesamiento exitoso: $outputPath');
-            } else {
-              _statusMessage = "❌ Error en procesamiento";
-              session.getOutput().then((output) {
-                debugPrint('❌ Error FFmpeg: $output');
-              });
-            }
-            _isProcessing = false;
-            _currentSession = null;
-            completer.complete(success);
-          }).catchError((error) {
-            _isProcessing = false;
-            _currentSession = null;
-            completer.complete(false);
-          });
+        (session) async {
+          final returnCode = await session.getReturnCode();
+          final success = ReturnCode.isSuccess(returnCode);
+          if (success) {
+            _statusMessage = "✅ Completado";
+            _progress = 1.0;
+            onProgress?.call(1.0);
+            debugPrint('✅ Procesamiento exitoso: $outputPath');
+          } else {
+            _statusMessage = "❌ Error en procesamiento";
+            final output = await session.getOutput();
+            debugPrint('❌ Error FFmpeg: $output');
+          }
+          _isProcessing = false;
+          _currentSession = null;
+          completer.complete(success);
         },
-        logCallback: (log) {
+        (log) {
           debugPrint('📝 FFmpeg log: ${log.getMessage()}');
           onLog?.call(log.getMessage());
         },
-        statisticsCallback: (statistics) {
+        (statistics) {
           final time = statistics.getTime(); // en microsegundos
           if (time > 0) {
             double progress = time / effectiveDuration;
