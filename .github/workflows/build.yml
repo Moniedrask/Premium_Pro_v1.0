@@ -30,6 +30,8 @@ jobs:
 
       - name: Clean and Install Dependencies
         run: |
+          - name: Clear pub cache
+  run: flutter pub cache repair
           flutter clean
           rm -rf android/.gradle
           flutter pub get
