@@ -2,7 +2,7 @@
 
 Editor y compresor profesional de Video, Audio e Imagen.
 
-[![Build Status](https://github.com/usuario/premium-pro-v1/actions/workflows/build.yml/badge.svg)](https://github.com/usuario/premium-pro-v1/actions)
+[![Build Status](https://github.com/tu-usuario/Premium_Pro_v1.0/actions/workflows/build.yml/badge.svg)](https://github.com/tu-usuario/Premium_Pro_v1.0/actions)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android/Windows), optimizado para dispositivos de bajos recursos.
@@ -11,15 +11,15 @@ Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android
 
 | Módulo | Funciones |
 |--------|-----------|
-| 🎥 Video | Corte preciso, Speed Ramp, Color Grading, LUTs, Estabilización |
-| 🎵 Audio | Waveform OpenGL, Ecualizador 10 bandas, Reducción de ruido |
-| 🖼️ Imagen | HDR por capas, Escalado Lanczos4, Filtros profesionales |
-| 🗜️ Compresión | H.264/H.265/VP9/AV1, Control CRF, Hardware Acceleration |
+| 🎥 Video | Corte preciso, Speed Ramp (0.1x-16x), Color Grading, LUTs, Estabilización, Texto animado, Transiciones, Interpolación de frames (IA opcional), **Aceleración hardware activable (MediaCodec)** |
+| 🎵 Audio | Waveform OpenGL, Ecualizador 10 bandas, Compresor, Normalización (LUFS), Reducción de ruido (IA opcional), Edición multipista, Fades |
+| 🖼️ Imagen | HDR por capas, Escalado Lanczos4, Filtros profesionales, Ajustes precisos, Pincel básico, Upscaling IA (opcional) |
+| 🗜️ Compresión | H.264/H.265/VP9/AV1, Control CRF, Bitrate, Presets, **Aceleración hardware (MediaCodec) con interruptor** |
 
-- ✅ Modo Oscuro OLED
+- ✅ Modo Oscuro OLED (#000000 puro)
 - ✅ Sin Publicidad
-- ✅ Sin IA por defecto
-- ✅ FFmpeg integrado
+- ✅ Sin IA por defecto (funciona 100% offline)
+- ✅ FFmpeg integrado (vía AAR local)
 
 # 📋 REQUISITOS COMPLETOS - PREMIUM PRO v1.0
 
@@ -148,39 +148,25 @@ Editor y compresor profesional de Imagen, Audio y Video multiplataforma (Android
 1. Ve a la pestaña **Actions** en este repositorio
 2. Selecciona el último workflow exitoso
 3. Descarga el APK de **Artifacts**
-4. Instala en tu dispositivo (permitir fuentes desconocidas)
+4. Extrae y elige el APK correspondiente a tu dispositivo:
 
-## Instalación
+| Archivo | Arquitectura | Tamaño aprox. | Uso recomendado |
+|---------|--------------|---------------|-----------------|
+| `app-armeabi-v7a-release.apk` | ARMv7 (32 bits) | ~40 MB | Dispositivos muy antiguos o de gama baja |
+| `app-arm64-v8a-release.apk` | ARM64 (64 bits) | ~45 MB | **La mayoría de teléfonos modernos** |
+| `app-x86_64-release.apk` | x86_64 (64 bits) | ~48 MB | Emuladores o dispositivos Intel (Chromebooks) |
+| `app-release.apk` | Universal (todas) | ~90 MB | Si no estás seguro de la arquitectura |
 
-1. Ve a **Actions** en GitHub
-2. Descarga el APK de **Artifacts**
-3. Instala en tu dispositivo
-
+5. Instala en tu dispositivo (permitir fuentes desconocidas)
 
 ### Compilación Local
 ```bash
 flutter pub get
 flutter build apk --release --split-per-abi
-```
-
-## ⚙️ Configuración
-
-### Modo Sin IA (Por Defecto)
-La aplicación funciona completamente sin modelos de IA para garantizar:
-- ✅ Compatibilidad universal
-- ✅ Sin descargas adicionales
-- ✅ Máxima estabilidad
-
-### Activar IA (Opcional)
-1. Ve a Ajustes > Inteligencia Artificial
-2. Descarga el modelo deseado (1GB - 8GB)
-3. Activa "Mejora IA" en exportación
-
-## 📁 Estructura del Proyecto
 
 Premium_Pro_v1.0/
 │
-├── 📄 pubspec.yaml                                    ✅ MODIFICADO (ffmpeg: 6.0.2)
+├── 📄 pubspec.yaml                                    ✅ MODIFICADO (ffmpeg_kit_flutter: 6.0.3, provider, etc.)
 ├── 📄 README.md                                       ⚪ SIN CAMBIOS
 ├── 📄 .gitignore                                      ⚪ SIN CAMBIOS
 ├── 📄 analysis_options.yaml                           ⚪ SIN CAMBIOS
@@ -188,23 +174,26 @@ Premium_Pro_v1.0/
 │
 ├── 📁 .github/
 │   └── 📁 workflows/
-│       └── 📄 build.yml                               ✅ MODIFICADO (caché + 3 reintentos)
+│       └── 📄 build.yml                               ✅ MODIFICADO (descarga AAR, genera APKs separados + universal)
 │
 ├── 📁 android/
-│   ├── 📄 build.gradle                                ✅ MODIFICADO (10 repositorios)
-│   ├── 📄 settings.gradle                             ✅ MODIFICADO (AGP 8.9.0, Kotlin 2.1.20)
-│   ├── 📄 gradle.properties                           ⚪ SIN CAMBIOS
+│   ├── 📄 build.gradle                                ✅ MODIFICADO (repositorios: google, mavenCentral, jitpack)
+│   ├── 📄 settings.gradle                             ✅ MODIFICADO (AGP 8.6.0, Kotlin 2.1.20)
+│   ├── 📄 gradle.properties                           ✅ MODIFICADO (memoria 4GB)
 │   ├── 📄 local.properties                            ⚠️ AUTO-GENERADO (no commitear)
 │   │
 │   ├── 📁 gradle/
 │   │   └── 📁 wrapper/
-│   │       ├── 📄 gradle-wrapper.properties           ✅ MODIFICADO (Gradle 8.9)
+│   │       ├── 📄 gradle-wrapper.properties           ✅ MODIFICADO (Gradle 8.11.1)
 │   │       └── 📄 gradle-wrapper.jar                  ⚪ SIN CAMBIOS
 │   │
 │   └── 📁 app/
-│       ├── 📄 build.gradle                            ✅ MODIFICADO (plugins + SDK 34)
+│       ├── 📄 build.gradle                            ✅ MODIFICADO (dependencias locales, resolución de FFmpeg)
 │       ├── 📄 proguard-rules.pro                      ⚪ SIN CAMBIOS
 │       ├── 📄 androidTest.gradle                      ⚪ SIN CAMBIOS (si existe)
+│       │
+│       ├── 📁 libs/                                    📦 NUEVO (carpeta para AAR local)
+│       │   └── 📄 ffmpeg-kit-fix.aar                  (se descarga automáticamente en CI)
 │       │
 │       └── 📁 src/
 │           └── 📁 main/
@@ -259,22 +248,28 @@ Premium_Pro_v1.0/
 │               └── 📁 assets/ (si existen assets nativos)
 │
 ├── 📁 lib/
-│   ├── 📄 main.dart                                   ✅ MODIFICADO (PremiumProApp + enableLogs)
+│   ├── 📄 main.dart                                   ✅ MODIFICADO (PremiumProApp + providers)
 │   │
 │   ├── 📁 services/
-│   │   ├── 📄 media_processor.dart                    ✅ MODIFICADO (imports ffmpeg_kit_flutter)
-│   │   ├── 📄 ffmpeg_wrapper.dart                     ✅ NUEVO (capa de abstracción)
+│   │   ├── 📄 ffmpeg_wrapper.dart                     ✅ NUEVO (capa de abstracción con progreso híbrido)
+│   │   ├── 📄 media_processor.dart                    ✅ MODIFICADO (usa VideoSettings)
+│   │   ├── 📄 audio_processor.dart                    ✅ NUEVO
+│   │   ├── 📄 image_processor.dart                    ✅ NUEVO
 │   │   ├── 📄 ai_manager.dart                         ⚪ SIN CAMBIOS
 │   │   └── 📄 .gitkeep                                ✅ NUEVO
 │   │
 │   ├── 📁 widgets/
-│   │   ├── 📄 timeline_widget.dart                    ✅ MODIFICADO (FilePicker.platform)
-│   │   ├── 📄 .gitkeep                                ✅ NUEVO
-│   │   └── 📄 (otros widgets si existen)
+│   │   ├── 📄 timeline_widget.dart                    ✅ MODIFICADO (interruptor HW, barra de progreso)
+│   │   ├── 📄 audio_timeline_widget.dart              ✅ NUEVO
+│   │   ├── 📄 image_editor_widget.dart                ✅ NUEVO
+│   │   ├── 📄 settings_panel.dart                     ✅ NUEVO (tooltips, gestión IA)
+│   │   └── 📄 .gitkeep                                ✅ NUEVO
 │   │
 │   ├── 📁 models/
-│   │   ├── 📄 video_model.dart                        ⚪ OPCIONAL
-│   │   ├── 📄 export_config.dart                      ⚪ OPCIONAL
+│   │   ├── 📄 video_settings.dart                     ✅ NUEVO (incluye hardwareAcceleration)
+│   │   ├── 📄 audio_settings.dart                     ✅ NUEVO
+│   │   ├── 📄 image_settings.dart                     ✅ NUEVO
+│   │   ├── 📄 project_config.dart                     ⚪ OPCIONAL
 │   │   └── 📄 .gitkeep                                ✅ NUEVO
 │   │
 │   ├── 📁 screens/
@@ -349,30 +344,3 @@ Premium_Pro_v1.0/
     ├── 📄 settings.json
     └── 📄 launch.json
 
-
-## Licencia
-
-GPL-3.0
-
-
-## 🛠️ Tecnologías
-
-- **Framework:** Flutter 3.16+
-- **Motor Multimedia:** FFmpeg Kit 6.0+
-- **Gestión de Estado:** Provider
-- **Renderizado:** OpenGL/Vulkan (Audio Waveform)
-
-## 📄 Licencia
-
-GPL-3.0 - Software libre y gratuito. Sin publicidad.
-
-## 🐛 Reportar Problemas
-
-Abre un **Issue** en GitHub con:
-- Dispositivo y versión de Android
-- Logs del error (Ajustes > Ver Logs)
-- Pasos para reproducir
-
----
-
-**Desarrollado con ❤️ para la comunidad**
