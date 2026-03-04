@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../services/media_processor.dart';
-import '../models/video_settings.dart'; // <-- importar el modelo
+import '../models/video_settings.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -16,8 +16,6 @@ class TimelineWidget extends StatefulWidget {
 class _TimelineWidgetState extends State<TimelineWidget> {
   String? _selectedVideoPath;
   String _selectedVideoName = 'Ninguno';
-
-  // Usar VideoSettings en lugar de variables individuales
   final VideoSettings _settings = VideoSettings();
 
   @override
@@ -132,9 +130,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         DropdownMenuItem(value: 'libvpx-vp9', child: Text('VP9 (Web)', style: TextStyle(color: Colors.white))),
       ],
       onChanged: processor.isProcessing ? null : (val) {
-        setState(() {
-          _settings.videoCodec = val!;
-        });
+        setState(() => _settings.videoCodec = val!);
       },
       decoration: const InputDecoration(
         labelText: 'Códec de Video',
@@ -157,9 +153,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           divisions: 38,
           activeColor: Colors.blueAccent,
           onChanged: processor.isProcessing ? null : (val) {
-            setState(() {
-              _settings.videoBitrate = val.round();
-            });
+            setState(() => _settings.videoBitrate = val.round());
           },
         ),
         const Text('1000= Baja | 2500= Media | 5000+= Alta', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -180,9 +174,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           divisions: 51,
           activeColor: Colors.blueAccent,
           onChanged: processor.isProcessing ? null : (val) {
-            setState(() {
-              _settings.crf = val.round();
-            });
+            setState(() => _settings.crf = val.round());
           },
         ),
         const Text('18-23= Alta | 24-28= Media | 29-51= Baja', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -202,9 +194,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         DropdownMenuItem(value: 'veryslow', child: Text('Muy Lento', style: TextStyle(color: Colors.white))),
       ],
       onChanged: processor.isProcessing ? null : (val) {
-        setState(() {
-          _settings.preset = val!;
-        });
+        setState(() => _settings.preset = val!);
       },
       decoration: const InputDecoration(
         labelText: 'Velocidad de Codificación',
@@ -249,8 +239,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     switch (codec) {
       case 'libvpx-vp9':
         return 'webm';
-      case 'libx265':
-        return 'mp4';
       default:
         return 'mp4';
     }
@@ -331,11 +319,10 @@ class _TimelineWidgetState extends State<TimelineWidget> {
       debugPrint('📁 Output: $outputPath');
       debugPrint('⚙️ Config: ${_settings.videoCodec} | ${_settings.videoBitrate} kbps | ${_settings.preset} | CRF ${_settings.crf}');
 
-      // Llamar a processVideo con el objeto settings
       final bool success = await processor.processVideo(
         inputPath: _selectedVideoPath!,
         outputPath: outputPath,
-        settings: _settings,  // pasamos el objeto completo
+        settings: _settings,
       );
 
       if (mounted) {
