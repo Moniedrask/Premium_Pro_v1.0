@@ -64,8 +64,13 @@ jobs:
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
 
-      - name: Build APK
-        run: flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
+      # 🏗️ COMPILAR APKs (separados + universal)
+      - name: Build APKs (split and universal)
+        run: |
+          # Generar APKs separados por ABI (más pequeños)
+          flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
+          # Generar APK universal (contiene todas las ABIs)
+          flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
