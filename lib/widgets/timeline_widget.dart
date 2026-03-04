@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../services/media_processor.dart';
+import '../models/video_settings.dart'; // <-- importar el modelo
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -15,10 +16,9 @@ class TimelineWidget extends StatefulWidget {
 class _TimelineWidgetState extends State<TimelineWidget> {
   String? _selectedVideoPath;
   String _selectedVideoName = 'Ninguno';
-  String _codec = 'libx264';
-  int _bitrate = 2500;
-  String _preset = 'medium';
-  int _crf = 23;
+
+  // Usar VideoSettings en lugar de variables individuales
+  final VideoSettings _settings = VideoSettings();
 
   @override
   Widget build(BuildContext context) {
@@ -124,14 +124,18 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
   Widget _buildCodecDropdown(MediaProcessor processor) {
     return DropdownButtonFormField<String>(
-      value: _codec,
+      value: _settings.videoCodec,
       dropdownColor: const Color(0xFF111111),
       items: const [
         DropdownMenuItem(value: 'libx264', child: Text('H.264 (Compatible)', style: TextStyle(color: Colors.white))),
         DropdownMenuItem(value: 'libx265', child: Text('H.265 (Eficiente)', style: TextStyle(color: Colors.white))),
         DropdownMenuItem(value: 'libvpx-vp9', child: Text('VP9 (Web)', style: TextStyle(color: Colors.white))),
       ],
-      onChanged: processor.isProcessing ? null : (val) => setState(() => _codec = val!),
+      onChanged: processor.isProcessing ? null : (val) {
+        setState(() {
+          _settings.videoCodec = val!;
+        });
+      },
       decoration: const InputDecoration(
         labelText: 'Códec de Video',
         labelStyle: TextStyle(color: Colors.grey),
@@ -144,14 +148,19 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Bitrate: $_bitrate kbps', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        Text('Bitrate: ${_settings.videoBitrate} kbps',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         Slider(
-          value: _bitrate.toDouble(),
+          value: _settings.videoBitrate.toDouble(),
           min: 500,
           max: 10000,
           divisions: 38,
           activeColor: Colors.blueAccent,
-          onChanged: processor.isProcessing ? null : (val) => setState(() => _bitrate = val.round()),
+          onChanged: processor.isProcessing ? null : (val) {
+            setState(() {
+              _settings.videoBitrate = val.round();
+            });
+          },
         ),
         const Text('1000= Baja | 2500= Media | 5000+= Alta', style: TextStyle(color: Colors.grey, fontSize: 12)),
       ],
@@ -162,14 +171,19 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('CRF (Calidad): $_crf', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        Text('CRF (Calidad): ${_settings.crf}',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         Slider(
-          value: _crf.toDouble(),
+          value: _settings.crf.toDouble(),
           min: 0,
           max: 51,
           divisions: 51,
           activeColor: Colors.blueAccent,
-          onChanged: processor.isProcessing ? null : (val) => setState(() => _crf = val.round()),
+          onChanged: processor.isProcessing ? null : (val) {
+            setState(() {
+              _settings.crf = val.round();
+            });
+          },
         ),
         const Text('18-23= Alta | 24-28= Media | 29-51= Baja', style: TextStyle(color: Colors.grey, fontSize: 12)),
       ],
@@ -178,7 +192,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
   Widget _buildPresetDropdown(MediaProcessor processor) {
     return DropdownButtonFormField<String>(
-      value: _preset,
+      value: _settings.preset,
       dropdownColor: const Color(0xFF111111),
       items: const [
         DropdownMenuItem(value: 'ultrafast', child: Text('Ultra Rápido', style: TextStyle(color: Colors.white))),
@@ -187,7 +201,11 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         DropdownMenuItem(value: 'slow', child: Text('Lento', style: TextStyle(color: Colors.white))),
         DropdownMenuItem(value: 'veryslow', child: Text('Muy Lento', style: TextStyle(color: Colors.white))),
       ],
-      onChanged: processor.isProcessing ? null : (val) => setState(() => _preset = val!),
+      onChanged: processor.isProcessing ? null : (val) {
+        setState(() {
+          _settings.preset = val!;
+        });
+      },
       decoration: const InputDecoration(
         labelText: 'Velocidad de Codificación',
         labelStyle: TextStyle(color: Colors.grey),
@@ -306,20 +324,18 @@ class _TimelineWidgetState extends State<TimelineWidget> {
       await Directory(outputFolder).create(recursive: true);
 
       final int timestamp = DateTime.now().millisecondsSinceEpoch;
-      final ext = _getExtensionForCodec(_codec);
+      final ext = _getExtensionForCodec(_settings.videoCodec);
       final String outputPath = '$outputFolder/premium_export_$timestamp.$ext';
 
       debugPrint('📁 Input: $_selectedVideoPath');
       debugPrint('📁 Output: $outputPath');
-      debugPrint('⚙️ Config: $_codec | $_bitrate kbps | $_preset | CRF $_crf');
+      debugPrint('⚙️ Config: ${_settings.videoCodec} | ${_settings.videoBitrate} kbps | ${_settings.preset} | CRF ${_settings.crf}');
 
+      // Llamar a processVideo con el objeto settings
       final bool success = await processor.processVideo(
         inputPath: _selectedVideoPath!,
         outputPath: outputPath,
-        codec: _codec,
-        bitrate: _bitrate,
-        preset: _preset,
-        crf: _crf,
+        settings: _settings,  // pasamos el objeto completo
       );
 
       if (mounted) {
@@ -347,15 +363,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
             content: Text('❌ Error crítico: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
-
-VideoSettings _settings = VideoSettings();
-
-// Luego en _exportVideo:
-final success = await processor.processVideo(
-  inputPath: _selectedVideoPath!,
-  outputPath: outputPath,
-  settings: _settings,  // pasar el objeto completo
-);
           ),
         );
       }
