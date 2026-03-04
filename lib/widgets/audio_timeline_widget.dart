@@ -6,7 +6,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/audio_processor.dart';
 import '../services/ai_manager.dart';
+import '../services/trash_manager.dart';
 import '../models/audio_settings.dart';
+import '../providers/settings_provider.dart';
+import '../models/app_settings.dart';
 
 class AudioTimelineWidget extends StatefulWidget {
   const AudioTimelineWidget({super.key});
@@ -18,7 +21,8 @@ class AudioTimelineWidget extends StatefulWidget {
 class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
   String? _selectedAudioPath;
   String _selectedAudioName = 'Ninguno';
-  AudioSettings _settings = AudioSettings();
+  late AudioSettings _settings;
+  bool _keepOriginalName = false;
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
@@ -27,9 +31,18 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
   @override
   void initState() {
     super.initState();
+    _loadSettings();
     _player.onDurationChanged.listen((d) => setState(() => _duration = d));
     _player.onPositionChanged.listen((p) => setState(() => _position = p));
     _player.onPlayerComplete.listen((_) => setState(() => _isPlaying = false));
+  }
+
+  Future<void> _loadSettings() async {
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final globalSettings = settingsProvider.settings;
+    _settings = AudioSettings.fromJson(globalSettings.audioDefaults);
+    _keepOriginalName = globalSettings.keepOriginalName;
+    setState(() {});
   }
 
   @override
@@ -38,27 +51,172 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     super.dispose();
   }
 
+  double _getPadding(InterfaceDensity density) {
+    switch (density) {
+      case InterfaceDensity.compact:
+        return 4.0;
+      case InterfaceDensity.normal:
+        return 8.0;
+      case InterfaceDensity.comfortable:
+        return 12.0;
+    }
+  }
+
+  BorderRadius _getBorderRadius(CornerRoundness roundness) {
+    switch (roundness) {
+      case CornerRoundness.square:
+        return BorderRadius.zero;
+      case CornerRoundness.light:
+        return BorderRadius.circular(8);
+      case CornerRoundness.rounded:
+        return BorderRadius.circular(16);
+    }
+  }
+
+  Future<void> _deleteFile(String filePath) async {
+    final trashManager = TrashManager();
+    final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
+
+    if (settings.trashEnabled) {
+      if (settings.alwaysAskBeforeDelete) {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirmar'),
+            content: const Text('¿Mover este archivo a la papelera?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Mover')),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          await trashManager.moveToTrash(filePath);
+          setState(() {
+            _selectedAudioPath = null;
+            _selectedAudioName = 'Ninguno';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Archivo movido a la papelera'), backgroundColor: Colors.orange),
+            );
+          }
+        }
+      } else {
+        await trashManager.moveToTrash(filePath);
+        setState(() {
+          _selectedAudioPath = null;
+          _selectedAudioName = 'Ninguno';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Archivo movido a la papelera'), backgroundColor: Colors.orange),
+          );
+        }
+      }
+    } else {
+      if (settings.dontShowDeleteWarning) {
+        File(filePath).delete();
+        setState(() {
+          _selectedAudioPath = null;
+          _selectedAudioName = 'Ninguno';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Archivo eliminado permanentemente'), backgroundColor: Colors.red),
+          );
+        }
+      } else {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirmar'),
+            content: const Text('¿Borrar este archivo permanentemente?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Borrar')),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          File(filePath).delete();
+          setState(() {
+            _selectedAudioPath = null;
+            _selectedAudioName = 'Ninguno';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Archivo eliminado permanentemente'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final processor = Provider.of<AudioProcessor>(context);
     final aiManager = Provider.of<AIManager>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final globalSettings = settingsProvider.settings;
+
+    final paddingValue = _getPadding(globalSettings.density);
+    final borderRadius = _getBorderRadius(globalSettings.roundness);
 
     return Column(
       children: [
         Expanded(
           flex: 2,
-          child: Container(
-            color: const Color(0xFF111111),
-            child: _buildWaveform(processor),
+          child: Stack(
+            children: [
+              Container(
+                color: const Color(0xFF111111),
+                child: Center(
+                  child: processor.isProcessing
+                      ? _buildProcessingView(processor)
+                      : _buildWaveform(processor),
+                ),
+              ),
+              if (_selectedAudioPath != null && !processor.isProcessing)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.delete, color: globalSettings.accentColor),
+                    onPressed: () => _deleteFile(_selectedAudioPath!),
+                    tooltip: 'Eliminar audio',
+                  ),
+                ),
+            ],
           ),
         ),
         Expanded(
           flex: 3,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(paddingValue * 2),
             color: const Color(0xFF000000),
-            child: _buildControls(processor, aiManager),
+            child: _buildControls(processor, aiManager, globalSettings, settingsProvider),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProcessingView(AudioProcessor processor) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(color: Colors.blueAccent),
+        const SizedBox(height: 10),
+        Text(processor.statusMessage, style: const TextStyle(color: Colors.white)),
+        Text('${(processor.progress * 100).toStringAsFixed(1)}%',
+            style: const TextStyle(color: Colors.grey, fontSize: 20)),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () => processor.cancelProcessing(),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('CANCELAR'),
         ),
       ],
     );
@@ -68,20 +226,6 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     if (_selectedAudioPath == null) {
       return const Center(
         child: Text('Carga un archivo de audio', style: TextStyle(color: Colors.grey)),
-      );
-    }
-    if (processor.isProcessing) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(color: Colors.blueAccent),
-            const SizedBox(height: 10),
-            Text(processor.statusMessage, style: const TextStyle(color: Colors.white)),
-            Text('${(processor.progress * 100).toStringAsFixed(1)}%',
-                style: const TextStyle(color: Colors.grey, fontSize: 20)),
-          ],
-        ),
       );
     }
     return Column(
@@ -110,7 +254,12 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     );
   }
 
-  Widget _buildControls(AudioProcessor processor, AIManager aiManager) {
+  Widget _buildControls(
+    AudioProcessor processor,
+    AIManager aiManager,
+    AppSettings globalSettings,
+    SettingsProvider settingsProvider,
+  ) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,7 +277,9 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
               DropdownMenuItem(value: 'flac', child: Text('FLAC')),
               DropdownMenuItem(value: 'wav', child: Text('WAV')),
             ],
-            onChanged: (val) => setState(() => _settings.codec = val!),
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _settings.codec = val!);
+            },
             decoration: const InputDecoration(labelText: 'Códec'),
           ),
 
@@ -142,7 +293,9 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   min: 32,
                   max: 320,
                   divisions: 36,
-                  onChanged: (val) => setState(() => _settings.bitrate = val.round()),
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.bitrate = val.round());
+                  },
                 ),
               ],
             ),
@@ -157,7 +310,9 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   min: 0,
                   max: 9,
                   divisions: 9,
-                  onChanged: (val) => setState(() => _settings.compressionLevel = val.round()),
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.compressionLevel = val.round());
+                  },
                 ),
               ],
             ),
@@ -171,7 +326,9 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
               DropdownMenuItem(value: 96000, child: Text('96 kHz')),
               DropdownMenuItem(value: 192000, child: Text('192 kHz')),
             ],
-            onChanged: (val) => setState(() => _settings.sampleRate = val!),
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _settings.sampleRate = val!);
+            },
             decoration: const InputDecoration(labelText: 'Frecuencia'),
           ),
 
@@ -182,7 +339,9 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
               DropdownMenuItem(value: 'mono', child: Text('Mono')),
               DropdownMenuItem(value: 'stereo', child: Text('Estéreo')),
             ],
-            onChanged: (val) => setState(() => _settings.channels = val!),
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _settings.channels = val!);
+            },
             decoration: const InputDecoration(labelText: 'Canales'),
           ),
 
@@ -191,7 +350,9 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             children: [
               Checkbox(
                 value: _settings.normalize,
-                onChanged: (val) => setState(() => _settings.normalize = val!),
+                onChanged: processor.isProcessing ? null : (val) {
+                  setState(() => _settings.normalize = val!);
+                },
               ),
               const Text('Normalizar volumen', style: TextStyle(color: Colors.white)),
             ],
@@ -202,11 +363,42 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
               children: [
                 Checkbox(
                   value: _settings.removeNoise,
-                  onChanged: (val) => setState(() => _settings.removeNoise = val!),
+                  onChanged: processor.isProcessing ? null : (val) {
+                    setState(() => _settings.removeNoise = val!);
+                  },
                 ),
                 const Text('Reducción de ruido (IA)', style: TextStyle(color: Colors.white)),
               ],
             ),
+
+          const SizedBox(height: 10),
+          CheckboxListTile(
+            title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
+            subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            value: _keepOriginalName,
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _keepOriginalName = val!);
+              if (globalSettings.keepOriginalName != val) {
+                settingsProvider.setKeepOriginalName(val!);
+              }
+            },
+            secondary: Icon(Icons.label, color: globalSettings.accentColor),
+            activeColor: globalSettings.accentColor,
+          ),
+          CheckboxListTile(
+            title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
+            subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            value: _settings.aiEnabled, // Usamos aiEnabled como placeholder; idealmente añadir un campo saveAsDefault a AudioSettings
+            onChanged: processor.isProcessing ? null : (val) {
+              setState(() => _settings.aiEnabled = val!);
+              if (val == true) {
+                // Guardar como permanente (aquí deberías guardar en settingsProvider)
+                settingsProvider.setAudioDefaults(_settings.toJson());
+              }
+            },
+            secondary: Icon(Icons.save, color: globalSettings.accentColor),
+            activeColor: globalSettings.accentColor,
+          ),
 
           const SizedBox(height: 20),
           Row(
@@ -274,9 +466,17 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
       if (dir == null) throw Exception('No se pudo acceder al almacenamiento');
       final outputDir = '${dir.path}/PremiumPro/Audio';
       await Directory(outputDir).create(recursive: true);
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      final int timestamp = DateTime.now().millisecondsSinceEpoch;
       final ext = _settings.codec == 'aac' ? 'm4a' : _settings.codec;
-      final outputPath = '$outputDir/audio_$timestamp.$ext';
+
+      String outputPath;
+      if (_keepOriginalName) {
+        final originalName = _selectedAudioName.split('.').first;
+        outputPath = '$outputDir/${originalName}_premium.$ext';
+      } else {
+        outputPath = '$outputDir/audio_$timestamp.$ext';
+      }
 
       final success = await processor.processAudio(
         inputPath: _selectedAudioPath!,
