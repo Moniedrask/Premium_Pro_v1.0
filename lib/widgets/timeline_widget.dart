@@ -6,6 +6,8 @@ import 'dart:io';
 import '../services/media_processor.dart';
 import '../models/video_settings.dart';
 import '../providers/settings_provider.dart';
+import '../services/trash_manager.dart';
+import '../models/app_settings.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -34,30 +36,150 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     setState(() {});
   }
 
+  double _getPadding(InterfaceDensity density) {
+    switch (density) {
+      case InterfaceDensity.compact:
+        return 4.0;
+      case InterfaceDensity.normal:
+        return 8.0;
+      case InterfaceDensity.comfortable:
+        return 12.0;
+    }
+  }
+
+  BorderRadius _getBorderRadius(CornerRoundness roundness) {
+    switch (roundness) {
+      case CornerRoundness.square:
+        return BorderRadius.zero;
+      case CornerRoundness.light:
+        return BorderRadius.circular(8);
+      case CornerRoundness.rounded:
+        return BorderRadius.circular(16);
+    }
+  }
+
+  Future<void> _deleteFile(String filePath) async {
+    final trashManager = TrashManager();
+    final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
+
+    if (settings.trashEnabled) {
+      if (settings.alwaysAskBeforeDelete) {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirmar'),
+            content: const Text('¿Mover este archivo a la papelera?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Mover')),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          await trashManager.moveToTrash(filePath);
+          setState(() {
+            _selectedVideoPath = null;
+            _selectedVideoName = 'Ninguno';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Archivo movido a la papelera'), backgroundColor: Colors.orange),
+            );
+          }
+        }
+      } else {
+        await trashManager.moveToTrash(filePath);
+        setState(() {
+          _selectedVideoPath = null;
+          _selectedVideoName = 'Ninguno';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Archivo movido a la papelera'), backgroundColor: Colors.orange),
+          );
+        }
+      }
+    } else {
+      if (settings.dontShowDeleteWarning) {
+        File(filePath).delete();
+        setState(() {
+          _selectedVideoPath = null;
+          _selectedVideoName = 'Ninguno';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Archivo eliminado permanentemente'), backgroundColor: Colors.red),
+          );
+        }
+      } else {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirmar'),
+            content: const Text('¿Borrar este archivo permanentemente?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Borrar')),
+            ],
+          ),
+        );
+        if (confirm == true) {
+          File(filePath).delete();
+          setState(() {
+            _selectedVideoPath = null;
+            _selectedVideoName = 'Ninguno';
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Archivo eliminado permanentemente'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final processor = Provider.of<MediaProcessor>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
     final globalSettings = settingsProvider.settings;
 
+    final paddingValue = _getPadding(globalSettings.density);
+    final borderRadius = _getBorderRadius(globalSettings.roundness);
+
     return Column(
       children: [
         Expanded(
           flex: 3,
-          child: Container(
-            width: double.infinity,
-            color: const Color(0xFF111111),
-            child: Center(
-              child: processor.isProcessing
-                  ? _buildProcessingView(processor)
-                  : _buildPreviewPlaceholder(),
-            ),
+          child: Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF111111),
+                child: Center(
+                  child: processor.isProcessing
+                      ? _buildProcessingView(processor)
+                      : _buildPreviewPlaceholder(),
+                ),
+              ),
+              if (_selectedVideoPath != null && !processor.isProcessing)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.delete, color: globalSettings.accentColor),
+                    onPressed: () => _deleteFile(_selectedVideoPath!),
+                    tooltip: 'Eliminar video',
+                  ),
+                ),
+            ],
           ),
         ),
         Expanded(
           flex: 2,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(paddingValue * 2),
             color: const Color(0xFF000000),
             child: SingleChildScrollView(
               child: Column(
@@ -440,94 +562,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
             duration: const Duration(seconds: 4),
           ),
         );
-      }
-    }
-  }
-}
-// Dentro de _TimelineWidgetState, en el build, obtener settings:
-final settingsProvider = Provider.of<SettingsProvider>(context);
-final settings = settingsProvider.settings;
-
-// Usar settings.density para ajustar padding
-double getPadding() {
-  switch (settings.density) {
-    case InterfaceDensity.compact:
-      return 4.0;
-    case InterfaceDensity.normal:
-      return 8.0;
-    case InterfaceDensity.comfortable:
-      return 12.0;
-  }
-}
-
-// Usar settings.roundness para bordes redondeados
-BorderRadius getBorderRadius() {
-  switch (settings.roundness) {
-    case CornerRoundness.square:
-      return BorderRadius.zero;
-    case CornerRoundness.light:
-      return BorderRadius.circular(8);
-    case CornerRoundness.rounded:
-      return BorderRadius.circular(16);
-  }
-}
-
-// Ejemplo de uso en un Container:
-Container(
-  padding: EdgeInsets.all(getPadding()),
-  decoration: BoxDecoration(
-    color: Colors.grey[900],
-    borderRadius: getBorderRadius(),
-  ),
-  child: ...
-)
-
-// Lógica de borrado (cuando el usuario quiera eliminar un archivo)
-Future<void> _deleteFile(String filePath) async {
-  final trashManager = TrashManager();
-  final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
-
-  if (settings.trashEnabled) {
-    if (settings.alwaysAskBeforeDelete) {
-      // Mostrar diálogo: "¿Mover a papelera?"
-      bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Confirmar'),
-          content: const Text('¿Mover este archivo a la papelera?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Mover')),
-          ],
-        ),
-      );
-      if (confirm == true) {
-        await trashManager.moveToTrash(filePath);
-      }
-    } else {
-      // Mover directamente
-      await trashManager.moveToTrash(filePath);
-    }
-  } else {
-    // Papelera desactivada
-    if (settings.dontShowDeleteWarning) {
-      // Borrar directamente sin preguntar
-      File(filePath).delete();
-    } else {
-      // Preguntar "¿Borrar permanentemente?"
-      bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Confirmar'),
-          content: const Text('¿Borrar este archivo permanentemente?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Borrar')),
-          ],
-        ),
-      );
-      if (confirm == true) {
-        File(filePath).delete();
       }
     }
   }
