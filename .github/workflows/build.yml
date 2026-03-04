@@ -30,10 +30,9 @@ jobs:
 
       - name: Clean and Install Dependencies
         run: |
-          - name: Clear pub cache
-  run: flutter pub cache repair
           flutter clean
           rm -rf android/.gradle
+          flutter pub cache repair   # 👈 Se añade correctamente
           flutter pub get
 
       # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
