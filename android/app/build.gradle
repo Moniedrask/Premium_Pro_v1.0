@@ -82,7 +82,7 @@ dependencies {
     }
 
     // --- DEPENDENCIAS LOCALES ---
-    // Archivo AAR descargado en el workflow (ffmpeg-kit-fix.aar)
+    // Archivo AAR descargado (ffmpeg-kit-fix.aar)
     implementation(files("libs/ffmpeg-kit-fix.aar"))
 
     // Dependencia obligatoria para FFmpegKit (stack traces)
