@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../providers/settings_provider.dart';
 import '../models/app_settings.dart';
 
@@ -22,7 +23,6 @@ class SettingsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Sección: Apariencia
             _buildSectionTitle('APARIENCIA'),
             _buildColorPickerTile(
               context,
@@ -43,33 +43,35 @@ class SettingsScreen extends StatelessWidget {
               1.5,
               (val) => settingsProvider.setTextScaleFactor(val),
             ),
+            _buildDensitySelector(settingsProvider, settings),
+            _buildRoundnessSelector(settingsProvider, settings),
             const Divider(height: 32, color: Colors.grey),
 
-            // Sección: Exportación
             _buildSectionTitle('EXPORTACIÓN'),
-            SwitchListTile(
-              title: const Text('Mantener nombre original'),
-              subtitle: const Text('Si está activado, no se añadirá timestamp'),
-              value: settings.keepOriginalName,
-              onChanged: (val) => settingsProvider.setKeepOriginalName(val),
-              activeColor: settings.accentColor,
-            ),
-            SwitchListTile(
-              title: const Text('Guardar configuraciones como predeterminadas'),
-              subtitle: const Text('Al marcar, los ajustes actuales se usarán por defecto'),
-              value: settings.saveSettingsAsDefault,
-              onChanged: (val) => settingsProvider.setSaveSettingsAsDefault(val),
-              activeColor: settings.accentColor,
-            ),
+            _buildFolderPicker(settingsProvider, settings),
+            _buildFileNameTemplate(settingsProvider, settings),
+            _buildQualityPresets(settingsProvider, settings),
+            _buildDeleteOriginalSwitch(settingsProvider, settings),
+            _buildWarnOverwriteSwitch(settingsProvider, settings),
             const Divider(height: 32, color: Colors.grey),
 
-            // Sección: Acerca de
-            _buildSectionTitle('ACERCA DE'),
-            ListTile(
-              leading: Icon(Icons.info, color: settings.accentColor),
-              title: const Text('Versión 1.0.0'),
-              subtitle: const Text('Premium Pro - Editor Multimedia'),
-            ),
+            _buildSectionTitle('PROYECTO'),
+            _buildAutoBackupSwitch(settingsProvider, settings),
+            _buildKeepLastFileSwitch(settingsProvider, settings),
+            const Divider(height: 32, color: Colors.grey),
+
+            _buildSectionTitle('PAPELERA'),
+            _buildTrashEnabledSwitch(settingsProvider, settings),
+            if (settings.trashEnabled) ...[
+              _buildAlwaysAskSwitch(settingsProvider, settings),
+            ] else ...[
+              _buildDontShowDeleteWarningSwitch(settingsProvider, settings),
+              _buildResetDeleteWarningButton(settingsProvider),
+            ],
+            const Divider(height: 32, color: Colors.grey),
+
+            _buildSectionTitle('BIENVENIDA'),
+            _buildOnboardingCompletedSwitch(settingsProvider, settings),
           ],
         ),
       ),
@@ -172,6 +174,219 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDensitySelector(SettingsProvider provider, AppSettings settings) {
+    return ListTile(
+      title: const Text('Densidad de interfaz'),
+      subtitle: Text(_densityName(settings.density)),
+      trailing: DropdownButton<InterfaceDensity>(
+        value: settings.density,
+        items: InterfaceDensity.values.map((d) {
+          return DropdownMenuItem(
+            value: d,
+            child: Text(_densityName(d)),
+          );
+        }).toList(),
+        onChanged: (val) => provider.setDensity(val!),
+      ),
+    );
+  }
+
+  String _densityName(InterfaceDensity d) {
+    switch (d) {
+      case InterfaceDensity.compact:
+        return 'Compacto';
+      case InterfaceDensity.normal:
+        return 'Normal';
+      case InterfaceDensity.comfortable:
+        return 'Cómodo';
+    }
+  }
+
+  Widget _buildRoundnessSelector(SettingsProvider provider, AppSettings settings) {
+    return ListTile(
+      title: const Text('Redondez de bordes'),
+      subtitle: Text(_roundnessName(settings.roundness)),
+      trailing: DropdownButton<CornerRoundness>(
+        value: settings.roundness,
+        items: CornerRoundness.values.map((r) {
+          return DropdownMenuItem(
+            value: r,
+            child: Text(_roundnessName(r)),
+          );
+        }).toList(),
+        onChanged: (val) => provider.setRoundness(val!),
+      ),
+    );
+  }
+
+  String _roundnessName(CornerRoundness r) {
+    switch (r) {
+      case CornerRoundness.square:
+        return 'Cuadrado';
+      case CornerRoundness.light:
+        return 'Ligero';
+      case CornerRoundness.rounded:
+        return 'Redondeado';
+    }
+  }
+
+  Widget _buildFolderPicker(SettingsProvider provider, AppSettings settings) {
+    return ListTile(
+      title: const Text('Carpeta de salida'),
+      subtitle: Text(settings.defaultOutputFolder),
+      trailing: IconButton(
+        icon: const Icon(Icons.folder_open),
+        onPressed: () async {
+          String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+          if (selectedDirectory != null) {
+            provider.setDefaultOutputFolder(selectedDirectory);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildFileNameTemplate(SettingsProvider provider, AppSettings settings) {
+    final controller = TextEditingController(text: settings.fileNameTemplate);
+    return ListTile(
+      title: const Text('Formato de nombre'),
+      subtitle: TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          hintText: '{name}_premium, {date}, etc.',
+          hintStyle: TextStyle(color: Colors.grey),
+        ),
+        onChanged: (val) => provider.setFileNameTemplate(val),
+      ),
+    );
+  }
+
+  Widget _buildQualityPresets(SettingsProvider provider, AppSettings settings) {
+    return Column(
+      children: [
+        _buildQualityDropdown(
+          'Video',
+          settings.defaultVideoQuality,
+          (val) => provider.setDefaultVideoQuality(val),
+        ),
+        _buildQualityDropdown(
+          'Audio',
+          settings.defaultAudioQuality,
+          (val) => provider.setDefaultAudioQuality(val),
+        ),
+        _buildQualityDropdown(
+          'Imagen',
+          settings.defaultImageQuality,
+          (val) => provider.setDefaultImageQuality(val),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQualityDropdown(String label, DefaultQuality current, Function(DefaultQuality) onChanged) {
+    return ListTile(
+      title: Text('Calidad $label por defecto'),
+      trailing: DropdownButton<DefaultQuality>(
+        value: current,
+        items: DefaultQuality.values.map((q) {
+          return DropdownMenuItem(
+            value: q,
+            child: Text(_qualityName(q)),
+          );
+        }).toList(),
+        onChanged: (val) => onChanged(val!),
+      ),
+    );
+  }
+
+  String _qualityName(DefaultQuality q) {
+    switch (q) {
+      case DefaultQuality.high:
+        return 'Alta';
+      case DefaultQuality.medium:
+        return 'Media';
+      case DefaultQuality.low:
+        return 'Baja';
+    }
+  }
+
+  Widget _buildDeleteOriginalSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('Eliminar original después de exportar'),
+      subtitle: const Text('El archivo fuente se moverá a la papelera si está activada'),
+      value: settings.deleteOriginalAfterExport,
+      onChanged: (val) => provider.setDeleteOriginalAfterExport(val),
+    );
+  }
+
+  Widget _buildWarnOverwriteSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('Advertir antes de sobrescribir'),
+      value: settings.warnBeforeOverwrite,
+      onChanged: (val) => provider.setWarnBeforeOverwrite(val),
+    );
+  }
+
+  Widget _buildAutoBackupSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('Auto-respaldar proyecto'),
+      subtitle: const Text('Guarda el estado automáticamente al salir'),
+      value: settings.autoBackupProject,
+      onChanged: (val) => provider.setAutoBackupProject(val),
+    );
+  }
+
+  Widget _buildKeepLastFileSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('Mantener último archivo cargado'),
+      subtitle: const Text('Al abrir la app, se cargará el último archivo usado'),
+      value: settings.keepLastLoadedFile,
+      onChanged: (val) => provider.setKeepLastLoadedFile(val),
+    );
+  }
+
+  Widget _buildTrashEnabledSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('Activar papelera'),
+      subtitle: const Text('Los archivos eliminados se moverán a la papelera'),
+      value: settings.trashEnabled,
+      onChanged: (val) => provider.setTrashEnabled(val),
+    );
+  }
+
+  Widget _buildAlwaysAskSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('Preguntar siempre antes de mover a papelera'),
+      value: settings.alwaysAskBeforeDelete,
+      onChanged: (val) => provider.setAlwaysAskBeforeDelete(val),
+    );
+  }
+
+  Widget _buildDontShowDeleteWarningSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('No volver a mostrar advertencia de borrado'),
+      subtitle: const Text('Los archivos se borrarán directamente sin preguntar'),
+      value: settings.dontShowDeleteWarning,
+      onChanged: (val) => provider.setDontShowDeleteWarning(val),
+    );
+  }
+
+  Widget _buildResetDeleteWarningButton(SettingsProvider provider) {
+    return TextButton(
+      onPressed: () => provider.resetDontShowDeleteWarning(),
+      child: const Text('Restablecer advertencias de borrado'),
+    );
+  }
+
+  Widget _buildOnboardingCompletedSwitch(SettingsProvider provider, AppSettings settings) {
+    return SwitchListTile(
+      title: const Text('Mostrar bienvenida al inicio'),
+      value: !settings.onboardingCompleted,
+      onChanged: (val) => provider.setOnboardingCompleted(!val),
     );
   }
 }
