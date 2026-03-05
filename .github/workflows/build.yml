@@ -70,9 +70,7 @@ jobs:
       # 🏗️ COMPILAR APKs (separados + universal)
       - name: Build APKs (split and universal)
         run: |
-          # Generar APKs separados por ABI (más pequeños)
           flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
-          # Generar APK universal (contiene todas las ABIs)
           flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Upload Artifact
