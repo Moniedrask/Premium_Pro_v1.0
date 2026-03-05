@@ -12,7 +12,7 @@ class FFmpegWrapper {
 
   bool _isProcessing = false;
   String _statusMessage = "Listo";
-  FFmpegSession? _currentSession;
+  dynamic _currentSession; // Usamos dynamic para evitar problemas de tipo
 
   bool get isProcessing => _isProcessing;
   String get statusMessage => _statusMessage;
@@ -51,6 +51,7 @@ class FFmpegWrapper {
     int bitrate = 2500,
     String preset = 'medium',
     int crf = 23,
+    // totalDurationMicros ya no se usa
   }) async {
     if (_isProcessing) {
       debugPrint('❌ Ya hay un procesamiento en curso');
@@ -74,7 +75,6 @@ class FFmpegWrapper {
     try {
       debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
-      // EJECUCIÓN SÍNCRONA (espera a que termine)
       final session = await FFmpegKit.executeWithArguments(arguments);
       _currentSession = session;
 
