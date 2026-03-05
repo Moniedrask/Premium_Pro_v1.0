@@ -9,20 +9,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  ffmpeg_kit_flutter: 5.1.0   # 👈 Cambio aquí
-  provider: 6.1.2
-  file_picker: 8.1.7
-  path_provider: 2.1.4
-  shared_preferences: 2.5.3
-  http: 1.4.0
-  flutter_colorpicker: 1.1.0
-  cached_network_image: 3.4.1
-  audioplayers: 6.1.0
+  ffmpeg_kit_flutter: 6.0.3   # Versión que coincide con tus AAR locales
+  provider: 6.1.2              # Puedes actualizar a 6.1.5+1 si quieres (no es crítico)
+  file_picker: 8.1.7            # Puedes actualizar a 10.3.10 pero requiere migración
+  path_provider: 2.1.4          # Puedes actualizar a 2.1.5
+  shared_preferences: 2.5.3     # Puedes actualizar a 2.5.4
+  http: 1.4.0                   # Puedes actualizar a 1.6.0 (cambios menores)
+  flutter_colorpicker: 1.1.0    # Sin cambios mayores
+  cached_network_image: 3.4.1   # Puede actualizarse, pero verifica
+  audioplayers: 6.1.0           # Puedes actualizar a 6.6.0 (hay cambios)
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: 4.0.0
+  flutter_lints: 4.0.0           # Puedes actualizar a 6.0.0
 
 flutter:
   uses-material-design: true
