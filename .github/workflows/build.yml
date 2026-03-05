@@ -36,29 +36,36 @@ jobs:
           flutter pub cache repair
           flutter pub get
 
-      # 📥 DESCARGAR AAR CORRECTO (ffmpeg-kit-audio-6.0-2.aar) y renombrar
-      - name: Download correct AAR and place in libs
+      # 📥 DESCARGAR AAR Y COLOCAR EN LA CARPETA CORRECTA
+      - name: Download AAR from Google Drive
         run: |
           mkdir -p android/app/libs
           pip install gdown
-          # ID del archivo específico (obtenido de la carpeta compartida)
-          FILE_ID="1rAnf-rq2UM333SJixSqtUomIRZKj_hWf"  # Este es el ID de ffmpeg-kit-fix.aar? 
-          # Pero según tu mensaje, tienes ffmpeg-kit-audio-6.0-2.aar. Necesitamos el ID correcto.
-          # Como no lo sé, usaremos la descarga de la carpeta y luego seleccionamos el archivo de audio.
           TEMP_DIR=$(mktemp -d)
           cd $TEMP_DIR
+          # Descargar toda la carpeta
           gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
-          # Buscar el archivo de audio
-          if find . -name "ffmpeg-kit-audio-6.0-2.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar \; then
-            echo "✅ Archivo de audio encontrado y copiado"
+          
+          # Buscar específicamente ffmpeg-kit-audio-6.0-2.aar (si existe)
+          AUDIO_AAR=$(find . -name "ffmpeg-kit-audio-6.0-2.aar" | head -1)
+          if [ -n "$AUDIO_AAR" ]; then
+            echo "✅ Encontrado ffmpeg-kit-audio-6.0-2.aar"
+            mv "$AUDIO_AAR" $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar
           else
-            # Si no, intentar con cualquier .aar
-            find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar \;
-            echo "⚠️ Usando primer .aar encontrado"
+            # Si no, tomar cualquier .aar (usar el primero)
+            ANY_AAR=$(find . -name "*.aar" | head -1)
+            if [ -n "$ANY_AAR" ]; then
+              echo "⚠️ Usando primer .aar encontrado: $(basename "$ANY_AAR")"
+              mv "$ANY_AAR" $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar
+            else
+              echo "❌ No se encontró ningún archivo .aar"
+              exit 1
+            fi
           fi
+          
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
-          # Verificar que el archivo existe
+          echo "✅ Archivo colocado en android/app/libs/full_binary-6.0-2.aar"
           ls -la android/app/libs/
 
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
