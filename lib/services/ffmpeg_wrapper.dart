@@ -71,25 +71,26 @@ class FFmpegWrapper {
       debugPrint('⚠️ No se pudo obtener la duración real del video. Se usará un progreso aproximado basado en 60 segundos.');
     }
 
-    List<String> arguments = [
-      '-i', inputPath,
-      '-c:v', codec,
-      '-preset', preset,
-      '-crf', crf.toString(),
-      '-b:v', '${bitrate}k',
-      '-c:a', 'aac',
-      '-movflags', '+faststart',
-      '-y', outputPath,
-    ];
+    // Convertir la lista de argumentos a un string de comando
+    // (executeAsync espera un string, no una lista)
+    String command = arguments.map((arg) {
+      // Escapar argumentos que contengan espacios
+      if (arg.contains(' ')) {
+        return '"$arg"';
+      }
+      return arg;
+    }).join(' ');
 
     try {
-      debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
+      debugPrint('⚙️ Comando FFmpeg: ffmpeg $command');
 
       final completer = Completer<bool>();
 
-      // ✅ VERSIÓN CON ARGUMENTOS POSICIONALES (compatible con 5.1.0)
-      _currentSession = await FFmpegKit.executeWithArguments(
-        arguments,
+      // ✅ VERSIÓN CORREGIDA: usar executeAsync con la firma correcta
+      // La firma es: executeAsync(String command, CompleteCallback callback)
+      // Los otros callbacks se pasan como parámetros adicionales
+      _currentSession = await FFmpegKit.executeAsync(
+        command,
         (session) async {
           final returnCode = await session.getReturnCode();
           final success = ReturnCode.isSuccess(returnCode);
@@ -132,6 +133,7 @@ class FFmpegWrapper {
     }
   }
 
+  // Mantener executeCommandWithArgs para otros usos (síncrono)
   Future<bool> executeCommandWithArgs(List<String> arguments) async {
     try {
       final session = await FFmpegKit.executeWithArguments(arguments);
