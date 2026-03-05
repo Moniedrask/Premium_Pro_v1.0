@@ -49,33 +49,19 @@ jobs:
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
 
-      # 🛠️ PARCHAR EL ANDROIDMANIFEST.XML DENTRO DEL AAR LOCAL (VERSIÓN CORREGIDA)
-      - name: Patch local AAR manifest
+      # 🛠️ PARCHAR EL AAR: REEMPLAZAR EL ANDROIDMANIFEST.XML POR UNO VÁLIDO
+      - name: Patch AAR with valid manifest
         run: |
           cd android/app/libs
-          # Renombrar a full_binary-6.0-2.aar (para coincidir con la dependencia)
-          mv ffmpeg-kit-fix.aar full_binary-6.0-2.aar
-          # Crear directorio temporal
-          mkdir temp_aar
-          cp full_binary-6.0-2.aar temp_aar/
-          cd temp_aar
-          unzip full_binary-6.0-2.aar -d extracted
+          # Renombrar para claridad
+          mv ffmpeg-kit-fix.aar original.aar
+          # Crear estructura temporal
+          mkdir aar_temp
+          cd aar_temp
+          unzip ../original.aar -d extracted
           
-          # CORRECCIÓN: Añadir package="com.arthenica.ffmpegkit" en lugar de eliminarlo
-          # Si el manifest existe, aseguramos que tenga el atributo package
-          if [ -f extracted/AndroidManifest.xml ]; then
-            # Verificar si ya tiene package
-            if ! grep -q 'package=' extracted/AndroidManifest.xml; then
-              # Añadir package al manifest
-              sed -i '1s/<manifest /<manifest package="com.arthenica.ffmpegkit" /' extracted/AndroidManifest.xml
-            fi
-            # Asegurar xmlns:android si no existe
-            if ! grep -q 'xmlns:android' extracted/AndroidManifest.xml; then
-              sed -i '1s/<manifest /<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android" /' extracted/AndroidManifest.xml
-            fi
-          else
-            # Si no existe, crear uno mínimo
-            cat > extracted/AndroidManifest.xml << 'EOF'
+          # Crear un manifest mínimo y correcto
+          cat > extracted/AndroidManifest.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.arthenica.ffmpegkit">
@@ -83,15 +69,14 @@ jobs:
     <application />
 </manifest>
 EOF
-          fi
           
-          # Volver a empaquetar
+          # Reempaquetar el AAR
           cd extracted
-          zip -r ../full_binary-6.0-2-patched.aar .
+          zip -r ../full_binary-6.0-2.aar .
           cd ..
-          mv full_binary-6.0-2-patched.aar ../full_binary-6.0-2.aar
+          mv full_binary-6.0-2.aar ../
           cd ..
-          rm -rf temp_aar
+          rm -rf aar_temp original.aar
           ls -la
 
       # Parche para ffmpeg_kit_flutter (versión 6.0.3)
