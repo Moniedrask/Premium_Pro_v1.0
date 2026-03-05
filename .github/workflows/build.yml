@@ -49,10 +49,10 @@ jobs:
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
 
-      # Parche para ffmpeg_kit_flutter (opcional, pero se deja por seguridad)
+      # Parche para ffmpeg_kit_flutter (versión 5.1.0)
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
         run: |
-          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
+          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-5.1.0/android"
           if [ -d "$FFMPEG_DIR" ]; then
             sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_DIR/build.gradle" || true
             sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' "$FFMPEG_DIR/src/main/AndroidManifest.xml" || true
