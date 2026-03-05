@@ -28,6 +28,7 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # 🧹 Limpieza total de caché y dependencias
       - name: Clean and Install Dependencies
         run: |
           flutter clean
@@ -36,10 +37,47 @@ jobs:
           flutter pub cache repair
           flutter pub get
 
-      # Parche para ffmpeg_kit_flutter (versión 5.1.0)
+      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
+      - name: Download ffmpeg-kit-fix.aar from Google Drive
+        run: |
+          mkdir -p android/app/libs
+          pip install gdown
+          TEMP_DIR=$(mktemp -d)
+          cd $TEMP_DIR
+          gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
+          find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/ffmpeg-kit-fix.aar \;
+          cd $GITHUB_WORKSPACE
+          rm -rf $TEMP_DIR
+
+      # 🛠️ PARCHAR EL ANDROIDMANIFEST.XML DENTRO DEL AAR LOCAL
+      - name: Patch local AAR manifest
+        run: |
+          cd android/app/libs
+          # Renombrar a full_binary-6.0-2.aar (para coincidir con la dependencia)
+          mv ffmpeg-kit-fix.aar full_binary-6.0-2.aar
+          # Crear directorio temporal
+          mkdir temp_aar
+          cp full_binary-6.0-2.aar temp_aar/
+          cd temp_aar
+          unzip full_binary-6.0-2.aar -d extracted
+          # Modificar el manifest: eliminar package si existe, añadir namespace
+          sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' extracted/AndroidManifest.xml
+          sed -i 's/package="com.arthenica.ffmpegkit"//g' extracted/AndroidManifest.xml
+          # Asegurar que tenga el namespace
+          sed -i '1s/<manifest /<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android" /' extracted/AndroidManifest.xml
+          # Volver a empaquetar
+          cd extracted
+          zip -r ../full_binary-6.0-2-patched.aar .
+          cd ..
+          mv full_binary-6.0-2-patched.aar ../full_binary-6.0-2.aar
+          cd ..
+          rm -rf temp_aar
+          ls -la
+
+      # Parche para ffmpeg_kit_flutter (versión 6.0.3)
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
         run: |
-          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-5.1.0/android"
+          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
           if [ -d "$FFMPEG_DIR" ]; then
             sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_DIR/build.gradle" || true
             sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' "$FFMPEG_DIR/src/main/AndroidManifest.xml" || true
@@ -54,6 +92,7 @@ jobs:
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
 
+      # 🏗️ COMPILAR APKs (separados + universal)
       - name: Build APKs (split and universal)
         run: |
           flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
