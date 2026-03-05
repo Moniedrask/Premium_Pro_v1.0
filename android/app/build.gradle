@@ -75,14 +75,9 @@ flutter {
     source = "../.."
 }
 
-// Repositorio local (ya definido en el build.gradle raíz, no es necesario repetirlo)
-// repositories { ... }  // ← ELIMINADO
-
-// Estrategia de resolución (ya definida en el raíz) → ELIMINADA
-
 dependencies {
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-    implementation 'com.local.ffmpeg-kit:full_binary:6.0-2'
+    implementation 'com.arthenica:ffmpeg-kit-https:6.0-2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
