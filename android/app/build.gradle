@@ -84,7 +84,7 @@ dependencies {
     // Dependencia obligatoria para FFmpegKit (stack traces)
     implementation 'com.arthenica:smart-exception-java:0.2.1'
 
-    // Nuestro AAR local (parcheado correctamente)
+    // ✅ Nuestro AAR local (parcheado) como archivo físico
     implementation files('libs/full_binary-6.0-2.aar')
 
     // --- OTRAS DEPENDENCIAS ---
