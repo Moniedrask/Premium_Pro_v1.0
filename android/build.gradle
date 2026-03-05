@@ -6,20 +6,6 @@ allprojects {
     }
 }
 
-// Forzar la resolución local para cualquier intento de dependencia remota
-subprojects {
-    configurations.all {
-        resolutionStrategy {
-            eachDependency { DependencyResolveDetails details ->
-                if (details.requested.group == 'com.arthenica' && details.requested.name == 'ffmpeg-kit-https') {
-                    // Redirigir al archivo local (esto puede no ser necesario, pero se deja por seguridad)
-                    details.useTarget files("${project(':app').projectDir}/libs/full_binary-6.0-2.aar")
-                }
-            }
-        }
-    }
-}
-
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
