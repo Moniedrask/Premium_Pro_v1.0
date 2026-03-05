@@ -1,8 +1,12 @@
 allprojects {
     repositories {
+        // Repositorio local (DEBE IR PRIMERO)
+        maven {
+            url = project(':app').file('repo').toURI().toString()
+        }
+
         google()
         mavenCentral()
-        // Opcional: JitPack si alguna otra dependencia lo requiere
         maven { url 'https://jitpack.io' }
     }
 }
