@@ -85,9 +85,8 @@ repositories {
 // Estrategia de resolución: sustituir la dependencia remota por la local
 configurations.all {
     resolutionStrategy.dependencySubstitution {
-        // SIN PUNTO: substitute module(...) using module(...)
-        substitute module('com.arthenica:ffmpeg-kit-https')
-            using module('com.local.ffmpeg-kit:full_binary:6.0-2')
+        // ✅ Sintaxis correcta: substitute module(...) using module(...) (sin punto ni paréntesis)
+        substitute module('com.arthenica:ffmpeg-kit-https') using module('com.local.ffmpeg-kit:full_binary:6.0-2')
     }
 }
 
