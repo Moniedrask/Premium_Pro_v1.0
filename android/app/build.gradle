@@ -75,10 +75,17 @@ flutter {
     source = "../.."
 }
 
-// --- NUEVA ESTRATEGIA DE RESOLUCIÓN (sin bucle) ---
+// Repositorio local (debe estar definido antes de las dependencias)
+repositories {
+    maven {
+        url = file('repo').toURI().toString()
+    }
+}
+
+// Estrategia de resolución para sustituir la dependencia remota por la local
 configurations.all {
     resolutionStrategy.dependencySubstitution {
-        // Sustituye la dependencia remota problemática por nuestro módulo local
+        // Sustituye cualquier dependencia de com.arthenica:ffmpeg-kit-https por nuestro módulo local
         substitute module('com.arthenica:ffmpeg-kit-https')
             .using module('com.local.ffmpeg-kit:full_binary:6.0-2')
     }
@@ -91,7 +98,7 @@ dependencies {
     // Nuestro módulo local (que contiene el AAR)
     implementation 'com.local.ffmpeg-kit:full_binary:6.0-2'
 
-    // --- TUS OTRAS DEPENDENCIAS ---
+    // --- OTRAS DEPENDENCIAS ---
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
