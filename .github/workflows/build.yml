@@ -28,11 +28,13 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # 🧹 Limpieza total de caché y dependencias
       - name: Clean and Install Dependencies
         run: |
           flutter clean
           rm -rf android/.gradle
-          flutter pub cache repair   # 👈 Se añade correctamente
+          rm -rf $HOME/.pub-cache
+          flutter pub cache repair
           flutter pub get
 
       # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
