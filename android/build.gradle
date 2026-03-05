@@ -14,7 +14,7 @@ allprojects {
 subprojects {
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            // ✅ Sintaxis correcta: substitute module(...) using module(...)
+            // Sustituye la dependencia remota por la local en todos los módulos
             substitute module('com.arthenica:ffmpeg-kit-https')
                 using module('com.local.ffmpeg-kit:full_binary:6.0-2')
         }
