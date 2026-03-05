@@ -70,7 +70,6 @@ android {
         }
     }
 
-    // 👇 Solución sugerida para evitar errores de validación
     lintOptions {
         checkReleaseBuilds false
     }
@@ -86,7 +85,6 @@ configurations.implementation {
 
 dependencies {
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-    // ✅ Dependencia directa al archivo físico
     implementation files('libs/full_binary-6.0-2.aar')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
