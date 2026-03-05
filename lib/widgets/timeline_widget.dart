@@ -36,6 +36,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     setState(() {});
   }
 
+  // Métodos para densidad y redondez
   double _getPadding(InterfaceDensity density) {
     switch (density) {
       case InterfaceDensity.compact:
@@ -58,6 +59,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     }
   }
 
+  // Lógica de borrado (papelera)
   Future<void> _deleteFile(String filePath) async {
     final trashManager = TrashManager();
     final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
@@ -499,11 +501,8 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     }
 
     try {
-      final durationMicros = await processor.getVideoDuration(_selectedVideoPath!);
-
-      if (durationMicros == null || durationMicros <= 0) {
-        debugPrint('⚠️ No se pudo obtener la duración del video, el progreso será aproximado');
-      }
+      // Obtenemos la duración (opcional, no se usa para progreso por ahora)
+      // final durationMicros = await processor.getVideoDuration(_selectedVideoPath!);
 
       final Directory? directory = await getExternalStorageDirectory();
       if (directory == null) {
@@ -532,7 +531,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         inputPath: _selectedVideoPath!,
         outputPath: outputPath,
         settings: _settings,
-        totalDurationMicros: durationMicros,
+        // totalDurationMicros ya no se pasa
       );
 
       if (mounted) {
