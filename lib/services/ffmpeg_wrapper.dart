@@ -87,7 +87,7 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
-      // ✅ VERSIÓN CON PARÁMETROS CON NOMBRE (requerida por ffmpeg_kit_flutter 6.0.3)
+      // ✅ Versión con parámetros con nombre (correcta para ffmpeg_kit_flutter 6.0.3)
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
         completeCallback: (session) {
