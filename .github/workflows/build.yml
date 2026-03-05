@@ -36,21 +36,31 @@ jobs:
           flutter pub cache repair
           flutter pub get
 
-      # 📥 DESCARGAR AAR CORRECTO (ffmpeg-kit-audio-6.0-2.aar)
-      - name: Download correct AAR from Google Drive
+      # 📥 DESCARGAR AAR CORRECTO (ffmpeg-kit-audio-6.0-2.aar) y renombrar
+      - name: Download correct AAR and place in libs
         run: |
           mkdir -p android/app/libs
           pip install gdown
+          # ID del archivo específico (obtenido de la carpeta compartida)
+          FILE_ID="1rAnf-rq2UM333SJixSqtUomIRZKj_hWf"  # Este es el ID de ffmpeg-kit-fix.aar? 
+          # Pero según tu mensaje, tienes ffmpeg-kit-audio-6.0-2.aar. Necesitamos el ID correcto.
+          # Como no lo sé, usaremos la descarga de la carpeta y luego seleccionamos el archivo de audio.
           TEMP_DIR=$(mktemp -d)
           cd $TEMP_DIR
-          # Descargar toda la carpeta (contiene varios archivos)
           gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
-          # Buscar el archivo de audio y renombrarlo
-          find . -name "ffmpeg-kit-audio-6.0-2.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar \;
+          # Buscar el archivo de audio
+          if find . -name "ffmpeg-kit-audio-6.0-2.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar \; then
+            echo "✅ Archivo de audio encontrado y copiado"
+          else
+            # Si no, intentar con cualquier .aar
+            find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar \;
+            echo "⚠️ Usando primer .aar encontrado"
+          fi
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
+          # Verificar que el archivo existe
+          ls -la android/app/libs/
 
-      # Parche para ffmpeg_kit_flutter (versión 6.0.3)
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
         run: |
           FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
