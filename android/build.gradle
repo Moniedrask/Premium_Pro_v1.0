@@ -3,20 +3,20 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
-        // Repositorio local (debe existir en app/repo)
-        maven {
-            url = project(':app').file('repo').toURI().toString()
-        }
+        // No es necesario el repositorio local Maven si usamos files()
     }
 }
 
-// Aplicar la estrategia de resolución a todos los subproyectos para forzar el uso del módulo local
+// Aplicar la estrategia de resolución a todos los subproyectos
 subprojects {
     configurations.all {
         resolutionStrategy {
             eachDependency { DependencyResolveDetails details ->
                 if (details.requested.group == 'com.arthenica' && details.requested.name == 'ffmpeg-kit-https') {
-                    details.useTarget group: 'com.local.ffmpeg-kit', name: 'full_binary', version: '6.0-2'
+                    // Como ahora usamos files(), esta sustitución puede no ser necesaria,
+                    // pero la dejamos por si acaso algún otro submódulo (como :ffmpeg_kit_flutter)
+                    // intenta resolver la dependencia remota.
+                    details.useTarget files("${project(':app').projectDir}/libs/full_binary-6.0-2.aar")
                 }
             }
         }
