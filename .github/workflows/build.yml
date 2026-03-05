@@ -36,7 +36,6 @@ jobs:
           flutter pub cache repair
           flutter pub get
 
-      # 📥 DESCARGAR AAR Y COLOCAR EN LA CARPETA CORRECTA
       - name: Download AAR from Google Drive
         run: |
           mkdir -p android/app/libs
@@ -46,13 +45,13 @@ jobs:
           # Descargar toda la carpeta
           gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
           
-          # Buscar específicamente ffmpeg-kit-audio-6.0-2.aar (si existe)
+          # Buscar específicamente ffmpeg-kit-audio-6.0-2.aar
           AUDIO_AAR=$(find . -name "ffmpeg-kit-audio-6.0-2.aar" | head -1)
           if [ -n "$AUDIO_AAR" ]; then
             echo "✅ Encontrado ffmpeg-kit-audio-6.0-2.aar"
             mv "$AUDIO_AAR" $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar
           else
-            # Si no, tomar cualquier .aar (usar el primero)
+            # Si no, tomar cualquier .aar (el primero que encuentre)
             ANY_AAR=$(find . -name "*.aar" | head -1)
             if [ -n "$ANY_AAR" ]; then
               echo "⚠️ Usando primer .aar encontrado: $(basename "$ANY_AAR")"
