@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
-import 'package:ffmpeg_kit_flutter/statistics.dart';
 import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,12 +11,10 @@ class FFmpegWrapper {
   FFmpegWrapper._internal();
 
   bool _isProcessing = false;
-  double _progress = 0.0;
   String _statusMessage = "Listo";
-  dynamic _currentSession;
+  FFmpegSession? _currentSession;
 
   bool get isProcessing => _isProcessing;
-  double get progress => _progress;
   String get statusMessage => _statusMessage;
 
   Future<void> init() async {
@@ -25,6 +22,7 @@ class FFmpegWrapper {
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
+  /// Obtiene la duración de un video en microsegundos usando FFprobe
   Future<int?> getVideoDuration(String path) async {
     try {
       final session = await FFprobeKit.getMediaInformation(path);
@@ -44,6 +42,8 @@ class FFmpegWrapper {
     return null;
   }
 
+  /// Versión SIMPLIFICADA y ESTABLE: usa executeWithArguments síncrono.
+  /// No tiene progreso en tiempo real, pero es 100% compatible con la API.
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
@@ -51,9 +51,6 @@ class FFmpegWrapper {
     int bitrate = 2500,
     String preset = 'medium',
     int crf = 23,
-    int? totalDurationMicros,
-    Function(double progress)? onProgress,
-    Function(String log)? onLog,
   }) async {
     if (_isProcessing) {
       debugPrint('❌ Ya hay un procesamiento en curso');
@@ -61,69 +58,41 @@ class FFmpegWrapper {
     }
 
     _isProcessing = true;
-    _progress = 0.0;
     _statusMessage = "Iniciando...";
 
-    const int defaultDurationMicros = 60 * 1000000;
-    final effectiveDuration = totalDurationMicros ?? defaultDurationMicros;
-
-    if (totalDurationMicros == null) {
-      debugPrint('⚠️ No se pudo obtener la duración real del video. Se usará un progreso aproximado basado en 60 segundos.');
-    }
-
-    // Convertir la lista de argumentos a un string de comando
-    // (executeAsync espera un string, no una lista)
-    String command = arguments.map((arg) {
-      // Escapar argumentos que contengan espacios
-      if (arg.contains(' ')) {
-        return '"$arg"';
-      }
-      return arg;
-    }).join(' ');
+    List<String> arguments = [
+      '-i', inputPath,
+      '-c:v', codec,
+      '-preset', preset,
+      '-crf', crf.toString(),
+      '-b:v', '${bitrate}k',
+      '-c:a', 'aac',
+      '-movflags', '+faststart',
+      '-y', outputPath,
+    ];
 
     try {
-      debugPrint('⚙️ Comando FFmpeg: ffmpeg $command');
+      debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
-      final completer = Completer<bool>();
+      // EJECUCIÓN SÍNCRONA (espera a que termine)
+      final session = await FFmpegKit.executeWithArguments(arguments);
+      _currentSession = session;
 
-      // ✅ VERSIÓN CORREGIDA: usar executeAsync con la firma correcta
-      // La firma es: executeAsync(String command, CompleteCallback callback)
-      // Los otros callbacks se pasan como parámetros adicionales
-      _currentSession = await FFmpegKit.executeAsync(
-        command,
-        (session) async {
-          final returnCode = await session.getReturnCode();
-          final success = ReturnCode.isSuccess(returnCode);
-          if (success) {
-            _statusMessage = "✅ Completado";
-            _progress = 1.0;
-            onProgress?.call(1.0);
-            debugPrint('✅ Procesamiento exitoso: $outputPath');
-          } else {
-            _statusMessage = "❌ Error en procesamiento";
-            final output = await session.getOutput();
-            debugPrint('❌ Error FFmpeg: $output');
-          }
-          _isProcessing = false;
-          _currentSession = null;
-          completer.complete(success);
-        },
-        (log) {
-          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
-          onLog?.call(log.getMessage());
-        },
-        (statistics) {
-          final time = statistics.getTime();
-          if (time > 0) {
-            double progress = time / effectiveDuration;
-            if (progress > 1.0) progress = 1.0;
-            _progress = progress;
-            onProgress?.call(_progress);
-          }
-        },
-      );
+      final returnCode = await session.getReturnCode();
+      final success = ReturnCode.isSuccess(returnCode);
 
-      return await completer.future;
+      if (success) {
+        _statusMessage = "✅ Completado";
+        debugPrint('✅ Procesamiento exitoso: $outputPath');
+      } else {
+        _statusMessage = "❌ Error en procesamiento";
+        final output = await session.getOutput();
+        debugPrint('❌ Error FFmpeg: $output');
+      }
+
+      _isProcessing = false;
+      _currentSession = null;
+      return success;
     } catch (e) {
       _isProcessing = false;
       _currentSession = null;
@@ -133,7 +102,6 @@ class FFmpegWrapper {
     }
   }
 
-  // Mantener executeCommandWithArgs para otros usos (síncrono)
   Future<bool> executeCommandWithArgs(List<String> arguments) async {
     try {
       final session = await FFmpegKit.executeWithArguments(arguments);
