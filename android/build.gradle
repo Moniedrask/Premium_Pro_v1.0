@@ -14,7 +14,6 @@ allprojects {
 subprojects {
     configurations.all {
         resolutionStrategy {
-            // Forzar el uso de nuestra dependencia local cuando se solicite la remota
             eachDependency { DependencyResolveDetails details ->
                 if (details.requested.group == 'com.arthenica' && details.requested.name == 'ffmpeg-kit-https') {
                     details.useTarget group: 'com.local.ffmpeg-kit', name: 'full_binary', version: '6.0-2'
