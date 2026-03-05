@@ -75,19 +75,13 @@ flutter {
     source = "../.."
 }
 
-// Excluir explícitamente la dependencia remota problemática
 configurations.implementation {
     exclude group: "com.arthenica", module: "ffmpeg-kit-https"
 }
 
 dependencies {
-    // Dependencia obligatoria para FFmpegKit (stack traces)
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-
-    // ✅ Nuestro AAR local (parcheado) como archivo físico
     implementation files('libs/full_binary-6.0-2.aar')
-
-    // --- OTRAS DEPENDENCIAS ---
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
