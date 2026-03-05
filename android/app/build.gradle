@@ -75,7 +75,7 @@ flutter {
     source = "../.."
 }
 
-// Repositorio local (debe estar definido antes de las dependencias)
+// Repositorio local (debe estar definido)
 repositories {
     maven {
         url = file('repo').toURI().toString()
@@ -85,9 +85,9 @@ repositories {
 // Estrategia de resolución para sustituir la dependencia remota por la local
 configurations.all {
     resolutionStrategy.dependencySubstitution {
-        // Sustituye cualquier dependencia de com.arthenica:ffmpeg-kit-https por nuestro módulo local
+        // SIN PUNTO: substitute module(...) using module(...)
         substitute module('com.arthenica:ffmpeg-kit-https')
-            .using module('com.local.ffmpeg-kit:full_binary:6.0-2')
+            using module('com.local.ffmpeg-kit:full_binary:6.0-2')
     }
 }
 
