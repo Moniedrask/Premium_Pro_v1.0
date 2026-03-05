@@ -28,7 +28,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 🧹 Limpieza total de caché y dependencias
       - name: Clean and Install Dependencies
         run: |
           flutter clean
@@ -37,7 +36,6 @@ jobs:
           flutter pub cache repair
           flutter pub get
 
-      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
       - name: Download ffmpeg-kit-fix.aar from Google Drive
         run: |
           mkdir -p android/app/libs
@@ -49,18 +47,13 @@ jobs:
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
 
-      # 🛠️ PARCHAR EL AAR: REEMPLAZAR EL ANDROIDMANIFEST.XML POR UNO VÁLIDO
       - name: Patch AAR with valid manifest
         run: |
           cd android/app/libs
-          # Renombrar para claridad
           mv ffmpeg-kit-fix.aar original.aar
-          # Crear estructura temporal
           mkdir aar_temp
           cd aar_temp
           unzip ../original.aar -d extracted
-          
-          # Crear un manifest mínimo y correcto
           cat > extracted/AndroidManifest.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -69,8 +62,6 @@ jobs:
     <application />
 </manifest>
 EOF
-          
-          # Reempaquetar el AAR
           cd extracted
           zip -r ../full_binary-6.0-2.aar .
           cd ..
@@ -79,7 +70,6 @@ EOF
           rm -rf aar_temp original.aar
           ls -la
 
-      # Parche para ffmpeg_kit_flutter (versión 6.0.3)
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
         run: |
           FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
@@ -97,7 +87,6 @@ EOF
           echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
 
-      # 🏗️ COMPILAR APKs (separados + universal)
       - name: Build APKs (split and universal)
         run: |
           flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
