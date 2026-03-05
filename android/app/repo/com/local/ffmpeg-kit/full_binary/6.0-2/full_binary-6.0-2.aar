@@ -1,3 +1,0 @@
-git add android/app/repo/
-git commit -m "Add local Maven repository with FFmpeg AAR"
-git push
