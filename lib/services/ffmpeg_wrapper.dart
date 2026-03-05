@@ -87,37 +87,31 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
-      // ✅ Versión con parámetros con nombre (correcta para ffmpeg_kit_flutter 6.0.3)
+      // ✅ VERSIÓN CON ARGUMENTOS POSICIONALES (compatible con 5.1.0)
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
-        completeCallback: (session) {
-          session.getReturnCode().then((returnCode) {
-            final success = ReturnCode.isSuccess(returnCode);
-            if (success) {
-              _statusMessage = "✅ Completado";
-              _progress = 1.0;
-              onProgress?.call(1.0);
-              debugPrint('✅ Procesamiento exitoso: $outputPath');
-            } else {
-              _statusMessage = "❌ Error en procesamiento";
-              session.getOutput().then((output) {
-                debugPrint('❌ Error FFmpeg: $output');
-              });
-            }
-            _isProcessing = false;
-            _currentSession = null;
-            completer.complete(success);
-          }).catchError((error) {
-            _isProcessing = false;
-            _currentSession = null;
-            completer.complete(false);
-          });
+        (session) async {
+          final returnCode = await session.getReturnCode();
+          final success = ReturnCode.isSuccess(returnCode);
+          if (success) {
+            _statusMessage = "✅ Completado";
+            _progress = 1.0;
+            onProgress?.call(1.0);
+            debugPrint('✅ Procesamiento exitoso: $outputPath');
+          } else {
+            _statusMessage = "❌ Error en procesamiento";
+            final output = await session.getOutput();
+            debugPrint('❌ Error FFmpeg: $output');
+          }
+          _isProcessing = false;
+          _currentSession = null;
+          completer.complete(success);
         },
-        logCallback: (log) {
+        (log) {
           debugPrint('📝 FFmpeg log: ${log.getMessage()}');
           onLog?.call(log.getMessage());
         },
-        statisticsCallback: (statistics) {
+        (statistics) {
           final time = statistics.getTime();
           if (time > 0) {
             double progress = time / effectiveDuration;
