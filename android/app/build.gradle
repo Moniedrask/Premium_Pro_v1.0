@@ -75,14 +75,14 @@ flutter {
     source = "../.."
 }
 
-// Repositorio local (debe estar definido)
+// Repositorio local (debe existir la estructura)
 repositories {
     maven {
         url = file('repo').toURI().toString()
     }
 }
 
-// Estrategia de resolución para sustituir la dependencia remota por la local
+// Estrategia de resolución: sustituir la dependencia remota por la local
 configurations.all {
     resolutionStrategy.dependencySubstitution {
         // SIN PUNTO: substitute module(...) using module(...)
@@ -92,13 +92,8 @@ configurations.all {
 }
 
 dependencies {
-    // Dependencia obligatoria para FFmpegKit (stack traces)
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-
-    // Nuestro módulo local (que contiene el AAR)
     implementation 'com.local.ffmpeg-kit:full_binary:6.0-2'
-
-    // --- OTRAS DEPENDENCIAS ---
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
