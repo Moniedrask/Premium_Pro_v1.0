@@ -36,28 +36,16 @@ jobs:
           flutter pub cache repair
           flutter pub get
 
+      # 📥 DESCARGAR Y COLOCAR EL AAR (versión simple y robusta)
       - name: Download AAR from Google Drive
         run: |
           mkdir -p android/app/libs
           pip install gdown
-          TEMP_DIR=$(mktemp -d)
-          cd $TEMP_DIR
-          # Descargar toda la carpeta
-          gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
-          
-          # Buscar cualquier .aar y renombrarlo
-          AAR_FILE=$(find . -name "*.aar" | head -1)
-          if [ -n "$AAR_FILE" ]; then
-            echo "✅ Usando: $(basename "$AAR_FILE")"
-            mv "$AAR_FILE" $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar
-          else
-            echo "❌ No se encontró ningún archivo .aar"
-            exit 1
-          fi
-          
-          cd $GITHUB_WORKSPACE
-          rm -rf $TEMP_DIR
-          echo "✅ Archivo colocado en android/app/libs/full_binary-6.0-2.aar"
+          # Descargar directamente el archivo ffmpeg-kit-fix.aar (ID conocido)
+          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O /tmp/ffmpeg-kit-fix.aar
+          # Mover y renombrar
+          mv /tmp/ffmpeg-kit-fix.aar android/app/libs/full_binary-6.0-2.aar
+          echo "✅ Archivo descargado y renombrado"
           ls -la android/app/libs/
 
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
