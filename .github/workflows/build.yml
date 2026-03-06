@@ -45,21 +45,14 @@ jobs:
           # Descargar toda la carpeta
           gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
           
-          # Buscar específicamente ffmpeg-kit-audio-6.0-2.aar
-          AUDIO_AAR=$(find . -name "ffmpeg-kit-audio-6.0-2.aar" | head -1)
-          if [ -n "$AUDIO_AAR" ]; then
-            echo "✅ Encontrado ffmpeg-kit-audio-6.0-2.aar"
-            mv "$AUDIO_AAR" $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar
+          # Buscar cualquier .aar y renombrarlo
+          AAR_FILE=$(find . -name "*.aar" | head -1)
+          if [ -n "$AAR_FILE" ]; then
+            echo "✅ Usando: $(basename "$AAR_FILE")"
+            mv "$AAR_FILE" $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar
           else
-            # Si no, tomar cualquier .aar (el primero que encuentre)
-            ANY_AAR=$(find . -name "*.aar" | head -1)
-            if [ -n "$ANY_AAR" ]; then
-              echo "⚠️ Usando primer .aar encontrado: $(basename "$ANY_AAR")"
-              mv "$ANY_AAR" $GITHUB_WORKSPACE/android/app/libs/full_binary-6.0-2.aar
-            else
-              echo "❌ No se encontró ningún archivo .aar"
-              exit 1
-            fi
+            echo "❌ No se encontró ningún archivo .aar"
+            exit 1
           fi
           
           cd $GITHUB_WORKSPACE
