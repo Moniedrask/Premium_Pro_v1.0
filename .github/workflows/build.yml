@@ -32,47 +32,7 @@ jobs:
         run: |
           flutter clean
           rm -rf android/.gradle
-          rm -rf $HOME/.pub-cache
-          flutter pub cache repair
           flutter pub get
-
-      - name: Download AAR from Google Drive
-        run: |
-          mkdir -p android/app/libs
-          pip install gdown
-          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O android/app/libs/full_binary-6.0-2.aar
-          echo "✅ Archivo descargado:"
-          ls -la android/app/libs/
-
-      # 🛠️ PARCHAR SUBMÓDULO: eliminar TODAS las líneas con 'com.arthenica'
-      - name: Patch ffmpeg_kit_flutter module - remove arthenica dependencies
-        run: |
-          SUBMODULE_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
-          if [ -d "$SUBMODULE_DIR" ]; then
-            echo "✅ Submódulo encontrado en: $SUBMODULE_DIR"
-            # Mostrar las líneas con 'com.arthenica' antes de eliminar (debug)
-            echo "🔍 Líneas encontradas antes del parche:"
-            grep -n "com\.arthenica" "$SUBMODULE_DIR/build.gradle" || echo "   (ninguna)"
-            # Eliminar todas las líneas que contengan 'com.arthenica'
-            sed -i '/com\.arthenica/d' "$SUBMODULE_DIR/build.gradle"
-            echo "✅ Líneas con 'com.arthenica' eliminadas."
-            # Verificar después
-            echo "🔍 Líneas después del parche:"
-            grep -n "com\.arthenica" "$SUBMODULE_DIR/build.gradle" || echo "   ✅ No quedan líneas."
-          else
-            echo "⚠️ No se encontró el submódulo. Verifica la versión en pubspec.yaml (6.0.3)."
-            exit 1
-          fi
-
-      # Parche adicional para namespace (AGP 8.x)
-      - name: Patch ffmpeg_kit_flutter for AGP 8.x
-        run: |
-          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
-          if [ -d "$FFMPEG_DIR" ]; then
-            sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_DIR/build.gradle" || true
-            sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' "$FFMPEG_DIR/src/main/AndroidManifest.xml" || true
-            echo "✅ Parche de AGP aplicado"
-          fi
 
       - name: Accept Android Licenses
         run: |
@@ -84,8 +44,8 @@ jobs:
 
       - name: Build APKs (split and universal)
         run: |
-          flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
-          flutter build apk --release --android-skip-build-dependency-validation
+          flutter build apk --release --split-per-abi
+          flutter build apk --release
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
