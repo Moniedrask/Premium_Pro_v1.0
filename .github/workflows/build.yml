@@ -34,22 +34,26 @@ jobs:
           rm -rf android/.gradle
           flutter pub get
 
-      # 🛠️ PARCHAR EL PLUGIN FLUTTER_FFMPEG PARA AÑADIR NAMESPACE
+      # 🛠️ PARCHAR DINÁMICO PARA FLUTTER_FFMPEG (cualquier versión)
       - name: Patch flutter_ffmpeg for AGP 8.x
         run: |
-          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/flutter_ffmpeg-0.4.2/android"
-          if [ -d "$FFMPEG_DIR" ]; then
-            echo "✅ Plugin encontrado en: $FFMPEG_DIR"
-            # Añadir namespace al build.gradle si no existe
-            if ! grep -q 'namespace' "$FFMPEG_DIR/build.gradle"; then
-              sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_DIR/build.gradle"
-              echo "✅ Namespace añadido."
+          # Buscar el directorio del plugin en la caché (independientemente de la versión)
+          FLUTTER_FFMPEG_DIR=$(find $HOME/.pub-cache/hosted/pub.dev -maxdepth 1 -type d -name "flutter_ffmpeg-*" | head -n 1)
+          if [ -n "$FLUTTER_FFMPEG_DIR" ]; then
+            echo "✅ Plugin encontrado en: $FLUTTER_FFMPEG_DIR"
+            cd "$FLUTTER_FFMPEG_DIR/android"
+            if [ -f build.gradle ]; then
+              if ! grep -q 'namespace' build.gradle; then
+                sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' build.gradle
+                echo "✅ Namespace añadido."
+              else
+                echo "ℹ️ Namespace ya existe."
+              fi
             else
-              echo "ℹ️ Namespace ya existe."
+              echo "⚠️ No se encontró build.gradle en la carpeta android."
             fi
           else
-            echo "⚠️ No se encontró el plugin. Verifica la versión (0.4.2)."
-            exit 1
+            echo "⚠️ No se encontró el plugin flutter_ffmpeg en la caché. Se continuará sin parche."
           fi
 
       - name: Accept Android Licenses
