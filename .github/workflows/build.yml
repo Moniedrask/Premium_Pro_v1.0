@@ -34,6 +34,24 @@ jobs:
           rm -rf android/.gradle
           flutter pub get
 
+      # 🛠️ PARCHAR EL PLUGIN FLUTTER_FFMPEG PARA AÑADIR NAMESPACE
+      - name: Patch flutter_ffmpeg for AGP 8.x
+        run: |
+          FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/flutter_ffmpeg-0.4.2/android"
+          if [ -d "$FFMPEG_DIR" ]; then
+            echo "✅ Plugin encontrado en: $FFMPEG_DIR"
+            # Añadir namespace al build.gradle si no existe
+            if ! grep -q 'namespace' "$FFMPEG_DIR/build.gradle"; then
+              sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_DIR/build.gradle"
+              echo "✅ Namespace añadido."
+            else
+              echo "ℹ️ Namespace ya existe."
+            fi
+          else
+            echo "⚠️ No se encontró el plugin. Verifica la versión (0.4.2)."
+            exit 1
+          fi
+
       - name: Accept Android Licenses
         run: |
           mkdir -p $HOME/.android
