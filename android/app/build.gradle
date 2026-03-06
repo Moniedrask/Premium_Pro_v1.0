@@ -79,15 +79,7 @@ flutter {
     source = "../.."
 }
 
-// Excluir el grupo problemático en todas las configuraciones de ESTE módulo
-configurations.all {
-    exclude group: "com.arthenica", module: "ffmpeg-kit-https"
-}
-
 dependencies {
-    implementation 'com.arthenica:smart-exception-java:0.2.1'
-    // ⭐ Dependencia directa al archivo físico (sin coordenadas Maven)
-    implementation files('libs/full_binary-6.0-2.aar')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
