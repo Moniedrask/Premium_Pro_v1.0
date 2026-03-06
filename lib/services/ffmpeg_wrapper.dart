@@ -22,24 +22,48 @@ class FFmpegWrapper {
 
   Future<void> init() async {
     debugPrint('✅ FlutterFFmpeg inicializado');
-    // No se requiere configuración adicional
   }
 
   /// Obtiene la duración de un video en microsegundos usando FFprobe
+  /// La duración viene en formato String: "HH:MM:SS.microseconds" [citation:2]
   Future<int?> getVideoDuration(String path) async {
     try {
       final info = await _flutterFFprobe.getMediaInformation(path);
       if (info != null) {
-        // La duración viene en segundos (double)
-        final durationSec = info.getDuration();
-        if (durationSec != null && durationSec > 0) {
-          return (durationSec * 1000000).round();
+        // Obtener el mapa de propiedades [citation:3]
+        final properties = info.getMediaProperties();
+        final durationStr = properties?['duration'] as String?;
+        
+        if (durationStr != null && durationStr.isNotEmpty) {
+          // Parsear duración desde formato "HH:MM:SS.micros" a microsegundos
+          return _parseDurationToMicros(durationStr);
         }
       }
     } catch (e) {
       debugPrint('❌ Error obteniendo duración del video: $e');
     }
     return null;
+  }
+
+  /// Parsea duración en formato "HH:MM:SS.micros" a microsegundos [citation:3]
+  int _parseDurationToMicros(String durationStr) {
+    int hours = 0;
+    int minutes = 0;
+    double seconds = 0.0;
+    
+    List<String> parts = durationStr.split(':');
+    if (parts.length == 3) {
+      hours = int.parse(parts[0]);
+      minutes = int.parse(parts[1]);
+      seconds = double.parse(parts[2]);
+    } else if (parts.length == 2) {
+      minutes = int.parse(parts[0]);
+      seconds = double.parse(parts[1]);
+    } else {
+      seconds = double.parse(durationStr);
+    }
+    
+    return ((hours * 3600 + minutes * 60 + seconds) * 1000000).round();
   }
 
   Future<bool> processVideo({
@@ -70,42 +94,31 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
-      // Ejecutar comando con callbacks
+      // ✅ API CORRECTA: executeWithArguments acepta 1 argumento (List<String>) y devuelve Future<int>
       _currentExecutionId = await _flutterFFmpeg.executeWithArguments(
         command.split(' '),
-        (executionId, returnCode) {
-          final success = returnCode == 0;
-          if (success) {
-            _statusMessage = "✅ Completado";
-            _progress = 1.0;
-            onProgress?.call(1.0);
-            debugPrint('✅ Procesamiento exitoso: $outputPath');
-          } else {
-            _statusMessage = "❌ Error en procesamiento";
-            debugPrint('❌ Error FFmpeg, código: $returnCode');
-          }
-          _isProcessing = false;
-          _currentExecutionId = null;
-          completer.complete(success);
-        },
-        (executionId, log) {
-          debugPrint('📝 FFmpeg log: $log');
-          onLog?.call(log);
-        },
-        (executionId, statistics) {
-          // Extraer tiempo procesado (puede variar según la compilación)
-          final timeMatch = RegExp(r'time=(\d+\.?\d*)').firstMatch(statistics);
-          if (timeMatch != null) {
-            final timeSec = double.tryParse(timeMatch.group(1) ?? '0');
-            if (timeSec != null && timeSec > 0 && totalDurationMicros != null) {
-              double progress = (timeSec * 1000000) / totalDurationMicros;
-              if (progress > 1.0) progress = 1.0;
-              _progress = progress;
-              onProgress?.call(_progress);
-            }
-          }
-        },
-      );
+      ).then((returnCode) {
+        final success = returnCode == 0;
+        if (success) {
+          _statusMessage = "✅ Completado";
+          _progress = 1.0;
+          onProgress?.call(1.0);
+          debugPrint('✅ Procesamiento exitoso: $outputPath');
+        } else {
+          _statusMessage = "❌ Error en procesamiento";
+          debugPrint('❌ Error FFmpeg, código: $returnCode');
+        }
+        _isProcessing = false;
+        _currentExecutionId = null;
+        completer.complete(success);
+        return null; // Para evitar warning
+      }).catchError((error) {
+        _isProcessing = false;
+        _currentExecutionId = null;
+        _statusMessage = "❌ Error: $error";
+        debugPrint('❌ Excepción: $error');
+        completer.complete(false);
+      });
 
       return await completer.future;
     } catch (e) {
@@ -148,8 +161,6 @@ class FFmpegWrapper {
   }
 
   Future<List<String>> getAvailableCodecs() async {
-    // flutter_ffmpeg no tiene un método directo para listar códecs,
-    // devolvemos una lista predefinida de códecs comunes
     return [
       'libx264',
       'libx265',
