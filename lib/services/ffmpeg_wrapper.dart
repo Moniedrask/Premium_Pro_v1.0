@@ -96,6 +96,47 @@ class FFmpegWrapper {
     }
   }
 
+  /// Método genérico para ejecutar cualquier comando FFmpeg con argumentos.
+  /// Utilizado por [AudioProcessor] y [ImageProcessor].
+  Future<bool> executeCommandWithArgs(List<String> args) async {
+    if (_isProcessing) {
+      debugPrint('❌ Ya hay un procesamiento en curso');
+      return false;
+    }
+
+    _isProcessing = true;
+    _statusMessage = "Procesando...";
+
+    try {
+      debugPrint('⚙️ Comando: ffmpeg ${args.join(' ')}');
+
+      final session = await FFmpegKit.executeWithArguments(args);
+      _currentSession = session;
+
+      final returnCode = await session.getReturnCode();
+      final success = ReturnCode.isSuccess(returnCode);
+
+      if (success) {
+        _statusMessage = "✅ Completado";
+        debugPrint('✅ Procesamiento exitoso');
+      } else {
+        _statusMessage = "❌ Error";
+        final output = await session.getOutput();
+        debugPrint('❌ Error FFmpeg: $output');
+      }
+
+      _isProcessing = false;
+      _currentSession = null;
+      return success;
+    } catch (e) {
+      _isProcessing = false;
+      _currentSession = null;
+      _statusMessage = "❌ Error: $e";
+      debugPrint('❌ Excepción: $e');
+      return false;
+    }
+  }
+
   void cancel() {
     _currentSession?.cancel();
     _isProcessing = false;
