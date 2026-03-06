@@ -34,27 +34,14 @@ jobs:
           rm -rf android/.gradle
           flutter pub get
 
-      # 🛠️ PARCHAR DINÁMICO PARA FLUTTER_FFMPEG (cualquier versión)
-      - name: Patch flutter_ffmpeg for AGP 8.x
+      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
+      - name: Download ffmpeg-kit-fix.aar from Google Drive
         run: |
-          # Buscar el directorio del plugin en la caché (independientemente de la versión)
-          FLUTTER_FFMPEG_DIR=$(find $HOME/.pub-cache/hosted/pub.dev -maxdepth 1 -type d -name "flutter_ffmpeg-*" | head -n 1)
-          if [ -n "$FLUTTER_FFMPEG_DIR" ]; then
-            echo "✅ Plugin encontrado en: $FLUTTER_FFMPEG_DIR"
-            cd "$FLUTTER_FFMPEG_DIR/android"
-            if [ -f build.gradle ]; then
-              if ! grep -q 'namespace' build.gradle; then
-                sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' build.gradle
-                echo "✅ Namespace añadido."
-              else
-                echo "ℹ️ Namespace ya existe."
-              fi
-            else
-              echo "⚠️ No se encontró build.gradle en la carpeta android."
-            fi
-          else
-            echo "⚠️ No se encontró el plugin flutter_ffmpeg en la caché. Se continuará sin parche."
-          fi
+          mkdir -p android/app/libs
+          pip install gdown
+          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O android/app/libs/ffmpeg-kit-fix.aar
+          echo "✅ Archivo descargado:"
+          ls -la android/app/libs/
 
       - name: Accept Android Licenses
         run: |
