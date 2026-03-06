@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
-import 'package:flutter_ffmpeg/flutter_ffprobe.dart';
 import 'package:flutter/foundation.dart';
 
 class FFmpegWrapper {
