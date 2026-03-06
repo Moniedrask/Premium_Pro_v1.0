@@ -36,25 +36,40 @@ jobs:
           flutter pub cache repair
           flutter pub get
 
-      # 📥 DESCARGAR Y COLOCAR EL AAR (versión simple y robusta)
+      # 📥 DESCARGAR AAR (simplificado, ID directo)
       - name: Download AAR from Google Drive
         run: |
           mkdir -p android/app/libs
           pip install gdown
-          # Descargar directamente el archivo ffmpeg-kit-fix.aar (ID conocido)
-          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O /tmp/ffmpeg-kit-fix.aar
-          # Mover y renombrar
-          mv /tmp/ffmpeg-kit-fix.aar android/app/libs/full_binary-6.0-2.aar
-          echo "✅ Archivo descargado y renombrado"
+          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O android/app/libs/full_binary-6.0-2.aar
+          echo "✅ Archivo descargado:"
           ls -la android/app/libs/
 
+      # 🛠️ PARCHAR EL SUBMÓDULO ffmpeg_kit_flutter
+      - name: Patch ffmpeg_kit_flutter module dependency
+        run: |
+          # Buscar el directorio del submódulo en el caché
+          SUBMODULE_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
+          if [ -d "$SUBMODULE_DIR" ]; then
+            echo "✅ Submódulo encontrado en: $SUBMODULE_DIR"
+            # Hacer copia de seguridad por si acaso
+            cp "$SUBMODULE_DIR/build.gradle" "$SUBMODULE_DIR/build.gradle.bak"
+            # Eliminar la dependencia problemática (comentarla o borrarla)
+            sed -i '/implementation "com.arthenica:ffmpeg-kit-https:6.0-2"/d' "$SUBMODULE_DIR/build.gradle"
+            # Opcional: añadir la dependencia local si el submódulo la necesitara (no suele ser el caso)
+            echo "✅ Dependencia remota eliminada del submódulo"
+          else
+            echo "⚠️ No se encontró el submódulo. Puede que la versión sea diferente."
+          fi
+
+      # Parche adicional para ffmpeg_kit_flutter (namespace, etc.)
       - name: Patch ffmpeg_kit_flutter for AGP 8.x
         run: |
           FFMPEG_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
           if [ -d "$FFMPEG_DIR" ]; then
             sed -i '/android {/a\    namespace "com.arthenica.ffmpegkit"' "$FFMPEG_DIR/build.gradle" || true
             sed -i 's/package="com.arthenica.ffmpegkit.flutter"//g' "$FFMPEG_DIR/src/main/AndroidManifest.xml" || true
-            echo "✅ Parche aplicado"
+            echo "✅ Parche de AGP aplicado"
           fi
 
       - name: Accept Android Licenses
