@@ -3,6 +3,26 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
+        // No incluyas repositorios locales aquí
+    }
+}
+
+// Aplicar a todos los subproyectos, incluido :ffmpeg_kit_flutter
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            // Forzar la sustitución de la dependencia remota por nuestro archivo local
+            dependencySubstitution {
+                substitute module('com.arthenica:ffmpeg-kit-https')
+                    .using module('com.arthenica:ffmpeg-kit-https-local:6.0-2')
+            }
+            // También podemos usar eachDependency como respaldo
+            eachDependency { DependencyResolveDetails details ->
+                if (details.requested.group == 'com.arthenica' && details.requested.name == 'ffmpeg-kit-https') {
+                    details.useTarget files("${rootProject.projectDir}/app/libs/full_binary-6.0-2.aar")
+                }
+            }
+        }
     }
 }
 
