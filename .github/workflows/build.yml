@@ -28,20 +28,34 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
       - name: Clean and Install Dependencies
         run: |
           flutter clean
           rm -rf android/.gradle
           flutter pub get
 
-      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE (ffmpeg-kit-fix.aar)
+      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE
       - name: Download ffmpeg-kit-fix.aar from Google Drive
         run: |
           mkdir -p android/app/libs
           pip install gdown
-          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O android/app/libs/ffmpeg-kit-fix.aar
+          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O android/app/libs/ffmpeg-kit-https-6.0-2.LTS.aar
           echo "✅ Archivo descargado:"
           ls -la android/app/libs/
+
+      # 📦 INSTALAR AAR EN REPOSITORIO MAVEN LOCAL
+      - name: Install AAR to local Maven repository
+        run: |
+          mvn install:install-file \
+            -Dfile=android/app/libs/ffmpeg-kit-https-6.0-2.LTS.aar \
+            -DgroupId=com.arthenica \
+            -DartifactId=ffmpeg-kit-https \
+            -Dversion=6.0-2.LTS \
+            -Dpackaging=aar
+          echo "✅ AAR instalado en repositorio Maven local"
 
       - name: Accept Android Licenses
         run: |
