@@ -16,7 +16,6 @@ class ImageProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
-  /// Procesa una imagen según configuración
   Future<bool> processImage({
     required String inputPath,
     required String outputPath,
@@ -41,7 +40,6 @@ class ImageProcessor extends ChangeNotifier {
       } else {
         scale = 'scale=-1:$settings.maxHeight';
       }
-      // Algoritmo de escalado
       String swsFlags;
       switch (settings.filter) {
         case 'lanczos':
@@ -78,10 +76,8 @@ class ImageProcessor extends ChangeNotifier {
       args.add('-1');
     }
 
-    // Upscale IA (placeholder - requeriría modelo externo)
+    // Upscale IA (placeholder)
     if (settings.aiUpscale && settings.aiEnabled) {
-      // Aquí iría la lógica para usar un modelo de superresolución
-      // Por ahora, se ignora y se usa escalado normal
       debugPrint('⚠️ IA upscale no implementado, usando escalado estándar');
     }
 
