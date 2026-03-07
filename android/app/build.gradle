@@ -79,15 +79,15 @@ flutter {
     source = "../.."
 }
 
-// Excluir la dependencia remota problemática (por si acaso)
+// Excluir cualquier intento de resolución remota (por si acaso)
 configurations.all {
     exclude group: "com.arthenica", module: "ffmpeg-kit-https"
 }
 
 dependencies {
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-    // Dependencia directa al AAR local (se descargará en el workflow)
-    implementation files('libs/ffmpeg-kit-fix.aar')
+    // 👇 DEPENDENCIA NORMAL (se resolverá desde el repositorio local)
+    implementation 'com.arthenica:ffmpeg-kit-https:6.0-2.LTS'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
