@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 import 'package:flutter/foundation.dart';
 
@@ -11,15 +12,17 @@ class FFmpegWrapper {
 
   bool _isProcessing = false;
   String _statusMessage = "Listo";
-  dynamic _currentSession; // Cambiado de FFmpegSession? a dynamic
+  dynamic _currentSession; // Usamos dynamic para evitar problemas de tipo
 
   bool get isProcessing => _isProcessing;
   String get statusMessage => _statusMessage;
 
   Future<void> init() async {
+    await FFmpegKitConfig.enableLogs();
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
+  /// Obtiene la duración de un video en microsegundos usando FFprobe
   Future<int?> getVideoDuration(String path) async {
     try {
       final session = await FFprobeKit.getMediaInformation(path);
@@ -34,11 +37,12 @@ class FFmpegWrapper {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error obteniendo duración: $e');
+      debugPrint('❌ Error obteniendo duración del video: $e');
     }
     return null;
   }
 
+  /// Procesa un video de forma síncrona (sin progreso)
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
@@ -67,7 +71,7 @@ class FFmpegWrapper {
     ];
 
     try {
-      debugPrint('⚙️ Comando: ffmpeg ${arguments.join(' ')}');
+      debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
       final session = await FFmpegKit.executeWithArguments(arguments);
       _currentSession = session;
@@ -79,7 +83,7 @@ class FFmpegWrapper {
         _statusMessage = "✅ Completado";
         debugPrint('✅ Procesamiento exitoso: $outputPath');
       } else {
-        _statusMessage = "❌ Error";
+        _statusMessage = "❌ Error en procesamiento";
         final output = await session.getOutput();
         debugPrint('❌ Error FFmpeg: $output');
       }
@@ -96,43 +100,14 @@ class FFmpegWrapper {
     }
   }
 
-  /// Método genérico para ejecutar cualquier comando FFmpeg con argumentos.
-  /// Utilizado por [AudioProcessor] y [ImageProcessor].
-  Future<bool> executeCommandWithArgs(List<String> args) async {
-    if (_isProcessing) {
-      debugPrint('❌ Ya hay un procesamiento en curso');
-      return false;
-    }
-
-    _isProcessing = true;
-    _statusMessage = "Procesando...";
-
+  /// Ejecuta un comando con lista de argumentos (útil para audio e imagen)
+  Future<bool> executeCommandWithArgs(List<String> arguments) async {
     try {
-      debugPrint('⚙️ Comando: ffmpeg ${args.join(' ')}');
-
-      final session = await FFmpegKit.executeWithArguments(args);
-      _currentSession = session;
-
+      final session = await FFmpegKit.executeWithArguments(arguments);
       final returnCode = await session.getReturnCode();
-      final success = ReturnCode.isSuccess(returnCode);
-
-      if (success) {
-        _statusMessage = "✅ Completado";
-        debugPrint('✅ Procesamiento exitoso');
-      } else {
-        _statusMessage = "❌ Error";
-        final output = await session.getOutput();
-        debugPrint('❌ Error FFmpeg: $output');
-      }
-
-      _isProcessing = false;
-      _currentSession = null;
-      return success;
+      return ReturnCode.isSuccess(returnCode);
     } catch (e) {
-      _isProcessing = false;
-      _currentSession = null;
-      _statusMessage = "❌ Error: $e";
-      debugPrint('❌ Excepción: $e');
+      debugPrint('❌ Error en comando con args: $e');
       return false;
     }
   }
@@ -142,6 +117,31 @@ class FFmpegWrapper {
     _isProcessing = false;
     _currentSession = null;
     _statusMessage = "Cancelado";
-    debugPrint('⛔ Procesamiento cancelado');
+    debugPrint('⛔ Procesamiento cancelado por el usuario');
+  }
+
+  Future<bool> executeCommand(String command) async {
+    try {
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+      return ReturnCode.isSuccess(returnCode);
+    } catch (e) {
+      debugPrint('❌ Error en comando personalizado: $e');
+      return false;
+    }
+  }
+
+  Future<List<String>> getAvailableCodecs() async {
+    try {
+      final session = await FFmpegKit.execute('-codecs');
+      final output = await session.getOutput() ?? '';
+      return output.split('\n')
+          .where((line) => line.contains('V') && line.contains('DEV'))
+          .map((line) => line.split(' ').last.trim())
+          .toList();
+    } catch (e) {
+      debugPrint('❌ Error al obtener códecs: $e');
+      return [];
+    }
   }
 }
