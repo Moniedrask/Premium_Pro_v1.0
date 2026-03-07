@@ -2,6 +2,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        mavenLocal() // 👈 Repositorio Maven local (donde instalamos el AAR)
         maven { url 'https://jitpack.io' }
     }
 }
