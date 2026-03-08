@@ -4,9 +4,9 @@ enum BitrateMode { crf, cbr }
 
 class VideoSettings {
   String videoCodec;
-  BitrateMode bitrateMode;   // 'crf' o 'cbr'
-  int videoBitrate;          // usado en CBR y como fallback
-  int crf;                   // usado solo en CRF
+  BitrateMode bitrateMode;
+  int videoBitrate;
+  int crf;
   String preset;
   int keyframeInterval;
   String profile;
@@ -19,15 +19,15 @@ class VideoSettings {
   
   // Interpolación de frames (sin IA)
   bool frameInterpolation;
-  int targetFps;           // FPS objetivo (máximo 4x el original)
+  int targetFps;
   
   // Escalado de resolución (sin IA)
   bool resolutionUpscale;
-  int targetWidth;          // Ancho objetivo (0 = mantener proporción)
-  int targetHeight;         // Alto objetivo (0 = mantener proporción)
-  int maxScaleFactor;       // Factor máximo de escala (4x)
+  int targetWidth;
+  int targetHeight;
+  int maxScaleFactor;
   
-  // IA (opcional, para futuras versiones)
+  // IA (opcional)
   bool aiInterpolation;
   int aiTargetFps;
   bool aiStabilization;
@@ -38,7 +38,7 @@ class VideoSettings {
 
   VideoSettings({
     this.videoCodec = 'libx264',
-    this.bitrateMode = BitrateMode.crf, // Por defecto CRF
+    this.bitrateMode = BitrateMode.crf,
     this.videoBitrate = 2500,
     this.crf = 23,
     this.preset = 'medium',
@@ -50,22 +50,15 @@ class VideoSettings {
     this.audioBitrate = 128,
     this.audioSampleRate = 48000,
     this.audioChannels = 'stereo',
-    
-    // Interpolación
     this.frameInterpolation = false,
     this.targetFps = 60,
-    
-    // Escalado
     this.resolutionUpscale = false,
     this.targetWidth = 1920,
     this.targetHeight = 1080,
     this.maxScaleFactor = 4,
-    
-    // IA
     this.aiInterpolation = false,
     this.aiTargetFps = 60,
     this.aiStabilization = false,
-    
     this.preserveMetadata = false,
     this.aiEnabled = false,
     this.saveAsDefault = false,
