@@ -140,18 +140,41 @@ class FFmpegWrapper {
       arguments.addAll(['-vf', filters.join(',')]);
     }
 
-    arguments.addAll([
-      '-c:v', settings.videoCodec,
-      '-preset', settings.preset,
-      '-crf', settings.crf.toString(),
-      '-b:v', '${settings.videoBitrate}k',
-    ]);
+    // Configuración de video según modo seleccionado
+    if (settings.bitrateMode == BitrateMode.cbr) {
+      // CBR: bitrate fijo con maxrate y bufsize iguales
+      arguments.addAll([
+        '-b:v', '${settings.videoBitrate}k',
+        '-maxrate', '${settings.videoBitrate}k',
+        '-bufsize', '${settings.videoBitrate}k',
+      ]);
 
-    if (settings.hardwareAcceleration) {
-      if (settings.videoCodec == 'libx264') {
-        arguments.addAll(['-c:v', 'h264_mediacodec']);
-      } else if (settings.videoCodec == 'libx265') {
-        arguments.addAll(['-c:v', 'hevc_mediacodec']);
+      if (settings.hardwareAcceleration) {
+        if (settings.videoCodec == 'libx264') {
+          arguments.addAll(['-c:v', 'h264_mediacodec', '-bitrate_mode', '0']); // 0 = CBR en mediacodec
+        } else if (settings.videoCodec == 'libx265') {
+          arguments.addAll(['-c:v', 'hevc_mediacodec', '-bitrate_mode', '0']);
+        } else {
+          arguments.addAll(['-c:v', settings.videoCodec]);
+        }
+      } else {
+        arguments.addAll(['-c:v', settings.videoCodec]);
+      }
+    } else {
+      // CRF: modo original
+      arguments.addAll([
+        '-c:v', settings.videoCodec,
+        '-preset', settings.preset,
+        '-crf', settings.crf.toString(),
+        '-b:v', '${settings.videoBitrate}k',
+      ]);
+
+      if (settings.hardwareAcceleration) {
+        if (settings.videoCodec == 'libx264') {
+          arguments.addAll(['-c:v', 'h264_mediacodec']);
+        } else if (settings.videoCodec == 'libx265') {
+          arguments.addAll(['-c:v', 'hevc_mediacodec']);
+        }
       }
     }
 
@@ -173,7 +196,6 @@ class FFmpegWrapper {
 
     arguments.addAll(['-movflags', '+faststart', '-y', outputPath]);
 
-    // Convertir lista de argumentos a string para executeAsync
     String command = arguments.join(' ');
 
     try {
@@ -181,7 +203,6 @@ class FFmpegWrapper {
 
       final completer = Completer<bool>();
 
-      // ✅ Usar executeAsync (asíncrono) con callbacks posicionales
       _currentSession = await FFmpegKit.executeAsync(
         command,
         (session) {
