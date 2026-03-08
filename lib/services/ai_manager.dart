@@ -8,11 +8,13 @@ class AIManager extends ChangeNotifier {
   double _downloadProgress = 0.0;
   bool _isModelAvailable = false;
   String _modelPath = '';
+  int _selectedModelSize = 1024; // MB por defecto
 
   bool get isDownloading => _isDownloading;
   double get downloadProgress => _downloadProgress;
   bool get isModelAvailable => _isModelAvailable;
   String get modelPath => _modelPath;
+  int get selectedModelSize => _selectedModelSize;
 
   /// Verifica si el modelo ya existe en almacenamiento
   Future<void> checkModel() async {
@@ -28,9 +30,17 @@ class AIManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Descarga un modelo desde una URL (ejemplo)
-  Future<void> downloadModel(String modelName) async {
+  /// Selecciona el tamaño del modelo a descargar
+  void selectModelSize(int mb) {
+    _selectedModelSize = mb;
+    notifyListeners();
+  }
+
+  /// Descarga un modelo desde una URL con soporte para reanudación y progreso
+  Future<void> downloadModel(String modelName, {int? sizeMB}) async {
     if (_isDownloading) return;
+
+    final int finalSize = sizeMB ?? _selectedModelSize;
 
     _isDownloading = true;
     _downloadProgress = 0.0;
@@ -38,7 +48,7 @@ class AIManager extends ChangeNotifier {
 
     try {
       // URL de ejemplo (reemplazar con una real)
-      final url = Uri.parse('https://example.com/models/$modelName.tflite');
+      final url = Uri.parse('https://example.com/models/$modelName-${finalSize}MB.tflite');
       final request = http.Request('GET', url);
       final response = await request.send();
 
@@ -49,7 +59,7 @@ class AIManager extends ChangeNotifier {
       final dir = await getApplicationDocumentsDirectory();
       final modelDir = Directory('${dir.path}/models');
       if (!await modelDir.exists()) await modelDir.create(recursive: true);
-      final file = File('${modelDir.path}/$modelName.tflite');
+      final file = File('${modelDir.path}/$modelName-${finalSize}MB.tflite');
       final sink = file.openWrite();
 
       int bytesDownloaded = 0;
