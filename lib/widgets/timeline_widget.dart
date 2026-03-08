@@ -1,83 +1,73 @@
-// ... después de _buildHardwareAccelerationSwitch(processor)
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import '../services/media_processor.dart';
+import '../models/video_settings.dart';
+import '../providers/settings_provider.dart';
+import '../services/trash_manager.dart';
+import '../models/app_settings.dart';
 
-const SizedBox(height: 10),
-const Text('MEJORAS DE CALIDAD', 
-    style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+class TimelineWidget extends StatefulWidget {
+  const TimelineWidget({super.key});
 
-// Escalado de resolución
-CheckboxListTile(
-  title: const Text('Escalar resolución', style: TextStyle(color: Colors.white)),
-  subtitle: const Text('Aumenta resolución hasta 4x (1080p → 4320p, 2K → 8K)', 
-      style: TextStyle(color: Colors.grey, fontSize: 12)),
-  value: _settings.resolutionUpscale,
-  onChanged: processor.isProcessing ? null : (val) {
-    setState(() => _settings.resolutionUpscale = val!);
-  },
-  secondary: Icon(Icons.zoom_out_map, color: globalSettings.accentColor),
-  activeColor: globalSettings.accentColor,
-),
+  @override
+  State<TimelineWidget> createState() => _TimelineWidgetState();
+}
 
-if (_settings.resolutionUpscale)
-  Padding(
-    padding: const EdgeInsets.only(left: 16, right: 16),
-    child: Row(
-      children: [
-        Expanded(
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'Ancho objetivo (px)'),
-            keyboardType: TextInputType.number,
-            controller: TextEditingController(text: _settings.targetWidth.toString()),
-            onChanged: (val) => setState(() => _settings.targetWidth = int.tryParse(val) ?? 1920),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: TextField(
-            decoration: const InputDecoration(labelText: 'Alto objetivo (px)'),
-            keyboardType: TextInputType.number,
-            controller: TextEditingController(text: _settings.targetHeight.toString()),
-            onChanged: (val) => setState(() => _settings.targetHeight = int.tryParse(val) ?? 1080),
-          ),
-        ),
-      ],
-    ),
-  ),
+class _TimelineWidgetState extends State<TimelineWidget> {
+  String? _selectedVideoPath;
+  String _selectedVideoName = 'Ninguno';
+  late VideoSettings _settings;
+  bool _keepOriginalName = false;
 
-const SizedBox(height: 10),
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
 
-// Interpolación de frames
-CheckboxListTile(
-  title: const Text('Interpolar frames', style: TextStyle(color: Colors.white)),
-  subtitle: const Text('Aumenta FPS hasta 4x (ej: 120fps → 480fps)', 
-      style: TextStyle(color: Colors.grey, fontSize: 12)),
-  value: _settings.frameInterpolation,
-  onChanged: processor.isProcessing ? null : (val) {
-    setState(() => _settings.frameInterpolation = val!);
-  },
-  secondary: Icon(Icons.speed, color: globalSettings.accentColor),
-  activeColor: globalSettings.accentColor,
-),
+  Future<void> _loadSettings() async {
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final globalSettings = settingsProvider.settings;
+    _settings = VideoSettings.fromJson(globalSettings.videoDefaults);
+    _keepOriginalName = globalSettings.keepOriginalName;
+    setState(() {});
+  }
 
-if (_settings.frameInterpolation)
-  Padding(
-    padding: const EdgeInsets.only(left: 16, right: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('FPS objetivo: ${_settings.targetFps}', 
-            style: const TextStyle(color: Colors.white)),
-        Slider(
-          value: _settings.targetFps.toDouble(),
-          min: 24,
-          max: 480,
-          divisions: 19,
-          activeColor: globalSettings.accentColor,
-          onChanged: processor.isProcessing ? null : (val) {
-            setState(() => _settings.targetFps = val.round());
-          },
-        ),
-        const Text('Valores comunes: 60, 120, 240, 480', 
-            style: TextStyle(color: Colors.grey, fontSize: 12)),
-      ],
-    ),
-  ),
+  double _getPadding(InterfaceDensity density) {
+    switch (density) {
+      case InterfaceDensity.compact:
+        return 4.0;
+      case InterfaceDensity.normal:
+        return 8.0;
+      case InterfaceDensity.comfortable:
+        return 12.0;
+    }
+  }
+
+  BorderRadius _getBorderRadius(CornerRoundness roundness) {
+    switch (roundness) {
+      case CornerRoundness.square:
+        return BorderRadius.zero;
+      case CornerRoundness.light:
+        return BorderRadius.circular(8);
+      case CornerRoundness.rounded:
+        return BorderRadius.circular(16);
+    }
+  }
+
+  Future<void> _deleteFile(String filePath) async {
+    final trashManager = TrashManager();
+    final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
+
+    if (settings.trashEnabled) {
+      if (settings.alwaysAskBeforeDelete) {
+        bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Confirmar'),
+            content: const Text('¿Mover este archivo a la papelera?'),
+            actions: [
+              TextButton
