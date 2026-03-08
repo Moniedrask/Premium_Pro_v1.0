@@ -8,8 +8,11 @@ import '../services/audio_processor.dart';
 import '../services/ai_manager.dart';
 import '../services/trash_manager.dart';
 import '../models/audio_settings.dart';
+import '../models/compression_preset.dart';
 import '../providers/settings_provider.dart';
 import '../models/app_settings.dart';
+import 'equalizer_widget.dart';
+import 'preset_manager_dialog.dart';
 
 class AudioTimelineWidget extends StatefulWidget {
   const AudioTimelineWidget({super.key});
@@ -23,6 +26,19 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
   String _selectedAudioName = 'Ninguno';
   late AudioSettings _settings;
   bool _keepOriginalName = false;
+
+  // Ecualizador
+  List<double> _equalizerGains = List.filled(10, 0.0);
+
+  // Compresor
+  Map<String, double> _compressorParams = {
+    'threshold': -20,
+    'ratio': 4,
+    'attack': 5,
+    'release': 50,
+    'knee': 0,
+  };
+
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
@@ -43,6 +59,25 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     _settings = AudioSettings.fromJson(globalSettings.audioDefaults);
     _keepOriginalName = globalSettings.keepOriginalName;
     setState(() {});
+  }
+
+  // Método público para aplicar un preset (desde el botón de compresión)
+  void applyPreset(AudioSettings preset) {
+    setState(() {
+      _settings = AudioSettings(
+        codec: preset.codec,
+        bitrate: preset.bitrate,
+        sampleRate: preset.sampleRate,
+        channels: preset.channels,
+        normalize: preset.normalize,
+        removeNoise: preset.removeNoise,
+        compressionLevel: preset.compressionLevel,
+        aiEnabled: preset.aiEnabled,
+      );
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preset aplicado a audio'), backgroundColor: Colors.green),
+    );
   }
 
   @override
@@ -175,7 +210,7 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                 child: Center(
                   child: processor.isProcessing
                       ? _buildProcessingView(processor)
-                      : _buildWaveform(processor),
+                      : _buildWaveform(),
                 ),
               ),
               if (_selectedAudioPath != null && !processor.isProcessing)
@@ -196,7 +231,230 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
           child: Container(
             padding: EdgeInsets.all(paddingValue * 2),
             color: const Color(0xFF000000),
-            child: _buildControls(processor, aiManager, globalSettings, settingsProvider),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'CONFIGURACIÓN DE AUDIO',
+                    style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Selector de códec
+                  DropdownButtonFormField<String>(
+                    value: _settings.codec,
+                    items: const [
+                      DropdownMenuItem(value: 'aac', child: Text('AAC')),
+                      DropdownMenuItem(value: 'mp3', child: Text('MP3')),
+                      DropdownMenuItem(value: 'opus', child: Text('Opus')),
+                      DropdownMenuItem(value: 'flac', child: Text('FLAC')),
+                      DropdownMenuItem(value: 'wav', child: Text('WAV')),
+                    ],
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.codec = val!);
+                    },
+                    decoration: const InputDecoration(labelText: 'Códec'),
+                  ),
+
+                  // Bitrate (solo para códecs con pérdida)
+                  if (_settings.codec != 'flac' && _settings.codec != 'wav')
+                    Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        Text('Bitrate: ${_settings.bitrate} kbps'),
+                        Slider(
+                          value: _settings.bitrate.toDouble(),
+                          min: 32,
+                          max: 320,
+                          divisions: 36,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.bitrate = val.round());
+                          },
+                        ),
+                      ],
+                    ),
+
+                  // Compresión FLAC
+                  if (_settings.codec == 'flac')
+                    Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        Text('Nivel de compresión: ${_settings.compressionLevel}'),
+                        Slider(
+                          value: _settings.compressionLevel.toDouble(),
+                          min: 0,
+                          max: 9,
+                          divisions: 9,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.compressionLevel = val.round());
+                          },
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 10),
+                  // Frecuencia de muestreo
+                  DropdownButtonFormField<int>(
+                    value: _settings.sampleRate,
+                    items: const [
+                      DropdownMenuItem(value: 44100, child: Text('44.1 kHz')),
+                      DropdownMenuItem(value: 48000, child: Text('48 kHz')),
+                      DropdownMenuItem(value: 96000, child: Text('96 kHz')),
+                      DropdownMenuItem(value: 192000, child: Text('192 kHz')),
+                    ],
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.sampleRate = val!);
+                    },
+                    decoration: const InputDecoration(labelText: 'Frecuencia'),
+                  ),
+
+                  const SizedBox(height: 10),
+                  // Canales
+                  DropdownButtonFormField<String>(
+                    value: _settings.channels,
+                    items: const [
+                      DropdownMenuItem(value: 'mono', child: Text('Mono')),
+                      DropdownMenuItem(value: 'stereo', child: Text('Estéreo')),
+                    ],
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.channels = val!);
+                    },
+                    decoration: const InputDecoration(labelText: 'Canales'),
+                  ),
+
+                  const SizedBox(height: 10),
+                  // Normalización
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _settings.normalize,
+                        onChanged: processor.isProcessing ? null : (val) {
+                          setState(() => _settings.normalize = val!);
+                        },
+                      ),
+                      const Text('Normalizar volumen', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+
+                  // Reducción de ruido IA
+                  if (aiManager.isModelAvailable)
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _settings.removeNoise,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.removeNoise = val!);
+                          },
+                        ),
+                        const Text('Reducción de ruido (IA)', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+
+                  const SizedBox(height: 10),
+                  // Botón para ecualizador
+                  ElevatedButton.icon(
+                    onPressed: processor.isProcessing ? null : () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          backgroundColor: const Color(0xFF111111),
+                          title: const Text('Ecualizador de 10 bandas', style: TextStyle(color: Colors.white)),
+                          content: EqualizerWidget(
+                            gains: _equalizerGains,
+                            onChanged: (gains) => setState(() => _equalizerGains = gains),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cerrar', style: TextStyle(color: Colors.blueAccent)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.equalizer),
+                    label: const Text('Abrir ecualizador'),
+                  ),
+
+                  const SizedBox(height: 10),
+                  // Botón para compresor
+                  ExpansionTile(
+                    title: const Text('Compresor dinámico', style: TextStyle(color: Colors.white)),
+                    children: [
+                      _buildCompressorSlider('Umbral (dB)', 'threshold', -60, 0),
+                      _buildCompressorSlider('Ratio', 'ratio', 1, 20, isInt: false),
+                      _buildCompressorSlider('Attack (ms)', 'attack', 0, 100, isInt: false),
+                      _buildCompressorSlider('Release (ms)', 'release', 0, 500, isInt: false),
+                      _buildCompressorSlider('Knee (dB)', 'knee', 0, 12, isInt: false),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+                  // Checkbox "Mantener nombre original"
+                  CheckboxListTile(
+                    title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    value: _keepOriginalName,
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _keepOriginalName = val!);
+                      if (globalSettings.keepOriginalName != val) {
+                        settingsProvider.setKeepOriginalName(val!);
+                      }
+                    },
+                    secondary: Icon(Icons.label, color: globalSettings.accentColor),
+                    activeColor: globalSettings.accentColor,
+                  ),
+
+                  // Checkbox "Guardar como permanente"
+                  CheckboxListTile(
+                    title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    value: _settings.aiEnabled, // Usamos aiEnabled como placeholder
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.aiEnabled = val!);
+                      if (val == true) {
+                        settingsProvider.setAudioDefaults(_settings.toJson());
+                      }
+                    },
+                    secondary: Icon(Icons.save, color: globalSettings.accentColor),
+                    activeColor: globalSettings.accentColor,
+                  ),
+
+                  const SizedBox(height: 20),
+                  // Botones de acción
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: processor.isProcessing ? null : _selectAudio,
+                          icon: const Icon(Icons.folder_open),
+                          label: const Text('CARGAR'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: processor.isProcessing || _selectedAudioPath == null
+                              ? null
+                              : () => _exportAudio(processor),
+                          child: const Text('EXPORTAR'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (processor.isProcessing)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: ElevatedButton(
+                        onPressed: processor.cancelProcessing,
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        child: const Text('CANCELAR'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -214,7 +472,7 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             style: const TextStyle(color: Colors.grey, fontSize: 20)),
         const SizedBox(height: 16),
         ElevatedButton(
-          onPressed: () => processor.cancelProcessing(),
+          onPressed: processor.cancelProcessing,
           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
           child: const Text('CANCELAR'),
         ),
@@ -222,7 +480,7 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     );
   }
 
-  Widget _buildWaveform(AudioProcessor processor) {
+  Widget _buildWaveform() {
     if (_selectedAudioPath == null) {
       return const Center(
         child: Text('Carga un archivo de audio', style: TextStyle(color: Colors.grey)),
@@ -254,182 +512,32 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     );
   }
 
-  Widget _buildControls(
-    AudioProcessor processor,
-    AIManager aiManager,
-    AppSettings globalSettings,
-    SettingsProvider settingsProvider,
-  ) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCompressorSlider(String label, String key, double min, double max, {bool isInt = true}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Row(
         children: [
-          const Text('CONFIGURACIÓN DE AUDIO',
-              style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-
-          DropdownButtonFormField<String>(
-            value: _settings.codec,
-            items: const [
-              DropdownMenuItem(value: 'aac', child: Text('AAC')),
-              DropdownMenuItem(value: 'mp3', child: Text('MP3')),
-              DropdownMenuItem(value: 'opus', child: Text('Opus')),
-              DropdownMenuItem(value: 'flac', child: Text('FLAC')),
-              DropdownMenuItem(value: 'wav', child: Text('WAV')),
-            ],
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _settings.codec = val!);
-            },
-            decoration: const InputDecoration(labelText: 'Códec'),
-          ),
-
-          if (_settings.codec != 'flac' && _settings.codec != 'wav')
-            Column(
-              children: [
-                const SizedBox(height: 10),
-                Text('Bitrate: ${_settings.bitrate} kbps'),
-                Slider(
-                  value: _settings.bitrate.toDouble(),
-                  min: 32,
-                  max: 320,
-                  divisions: 36,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.bitrate = val.round());
-                  },
-                ),
-              ],
+          SizedBox(width: 100, child: Text(label, style: const TextStyle(color: Colors.white70))),
+          Expanded(
+            child: Slider(
+              value: _compressorParams[key]!.clamp(min, max),
+              min: min,
+              max: max,
+              divisions: isInt ? (max - min).round() : 100,
+              onChanged: (val) {
+                setState(() {
+                  _compressorParams[key] = val;
+                });
+              },
             ),
-
-          if (_settings.codec == 'flac')
-            Column(
-              children: [
-                const SizedBox(height: 10),
-                Text('Nivel de compresión: ${_settings.compressionLevel}'),
-                Slider(
-                  value: _settings.compressionLevel.toDouble(),
-                  min: 0,
-                  max: 9,
-                  divisions: 9,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.compressionLevel = val.round());
-                  },
-                ),
-              ],
+          ),
+          SizedBox(
+            width: 50,
+            child: Text(
+              _compressorParams[key]!.toStringAsFixed(isInt ? 0 : 1),
+              style: const TextStyle(color: Colors.white),
             ),
-
-          const SizedBox(height: 10),
-          DropdownButtonFormField<int>(
-            value: _settings.sampleRate,
-            items: const [
-              DropdownMenuItem(value: 44100, child: Text('44.1 kHz')),
-              DropdownMenuItem(value: 48000, child: Text('48 kHz')),
-              DropdownMenuItem(value: 96000, child: Text('96 kHz')),
-              DropdownMenuItem(value: 192000, child: Text('192 kHz')),
-            ],
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _settings.sampleRate = val!);
-            },
-            decoration: const InputDecoration(labelText: 'Frecuencia'),
           ),
-
-          const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            value: _settings.channels,
-            items: const [
-              DropdownMenuItem(value: 'mono', child: Text('Mono')),
-              DropdownMenuItem(value: 'stereo', child: Text('Estéreo')),
-            ],
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _settings.channels = val!);
-            },
-            decoration: const InputDecoration(labelText: 'Canales'),
-          ),
-
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Checkbox(
-                value: _settings.normalize,
-                onChanged: processor.isProcessing ? null : (val) {
-                  setState(() => _settings.normalize = val!);
-                },
-              ),
-              const Text('Normalizar volumen', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-
-          if (aiManager.isModelAvailable)
-            Row(
-              children: [
-                Checkbox(
-                  value: _settings.removeNoise,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.removeNoise = val!);
-                  },
-                ),
-                const Text('Reducción de ruido (IA)', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-
-          const SizedBox(height: 10),
-          CheckboxListTile(
-            title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
-            subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            value: _keepOriginalName,
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _keepOriginalName = val!);
-              if (globalSettings.keepOriginalName != val) {
-                settingsProvider.setKeepOriginalName(val!);
-              }
-            },
-            secondary: Icon(Icons.label, color: globalSettings.accentColor),
-            activeColor: globalSettings.accentColor,
-          ),
-          CheckboxListTile(
-            title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
-            subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            value: _settings.aiEnabled, // Usamos aiEnabled como placeholder; idealmente añadir un campo saveAsDefault a AudioSettings
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _settings.aiEnabled = val!);
-              if (val == true) {
-                // Guardar como permanente (aquí deberías guardar en settingsProvider)
-                settingsProvider.setAudioDefaults(_settings.toJson());
-              }
-            },
-            secondary: Icon(Icons.save, color: globalSettings.accentColor),
-            activeColor: globalSettings.accentColor,
-          ),
-
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: processor.isProcessing ? null : _selectAudio,
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('CARGAR'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: processor.isProcessing || _selectedAudioPath == null
-                      ? null
-                      : () => _exportAudio(processor),
-                  child: const Text('EXPORTAR'),
-                ),
-              ),
-            ],
-          ),
-          if (processor.isProcessing)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: ElevatedButton(
-                onPressed: processor.cancelProcessing,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('CANCELAR'),
-              ),
-            ),
         ],
       ),
     );
@@ -482,7 +590,10 @@ class _AudioTimelineWidgetState extends State<AudioTimelineWidget> {
         inputPath: _selectedAudioPath!,
         outputPath: outputPath,
         settings: _settings,
+        equalizerGains: _equalizerGains,
+        compressorParams: _compressorParams,
       );
+
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ Audio exportado'), backgroundColor: Colors.green),
