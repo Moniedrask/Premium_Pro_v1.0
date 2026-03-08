@@ -50,14 +50,16 @@ class FFmpegWrapper {
       final session = await FFprobeKit.getMediaInformation(path);
       final information = await session.getMediaInformation();
       if (information != null) {
-        // Intentar obtener FPS de varias formas
-        final fpsStr = information.getStreams()?.first?.getStringProperty('r_frame_rate');
-        if (fpsStr != null && fpsStr.contains('/')) {
-          final parts = fpsStr.split('/');
-          final num = int.tryParse(parts[0]);
-          final den = int.tryParse(parts[1]);
-          if (num != null && den != null && den > 0) {
-            return (num / den).round();
+        final streams = information.getStreams();
+        if (streams != null && streams.isNotEmpty) {
+          final fpsStr = streams.first.getStringProperty('r_frame_rate');
+          if (fpsStr != null && fpsStr.contains('/')) {
+            final parts = fpsStr.split('/');
+            final num = int.tryParse(parts[0]);
+            final den = int.tryParse(parts[1]);
+            if (num != null && den != null && den > 0) {
+              return (num / den).round();
+            }
           }
         }
       }
@@ -107,19 +109,16 @@ class FFmpegWrapper {
       int targetW = settings.targetWidth;
       int targetH = settings.targetHeight;
       
-      // Si solo se especificó una dimensión, calcular la otra manteniendo proporción
       if (targetW == 0 && targetH > 0) {
         targetW = (originalWidth * targetH / originalHeight).round();
       } else if (targetH == 0 && targetW > 0) {
         targetH = (originalHeight * targetW / originalWidth).round();
       }
       
-      // Calcular factor de escala real
       double scaleW = targetW / originalWidth;
       double scaleH = targetH / originalHeight;
       double scaleFactor = scaleW > scaleH ? scaleW : scaleH;
       
-      // Limitar a x4 máximo
       if (scaleFactor > settings.maxScaleFactor) {
         scaleFactor = settings.maxScaleFactor.toDouble();
         targetW = (originalWidth * scaleFactor).round();
@@ -136,18 +135,15 @@ class FFmpegWrapper {
       int finalTargetFps = settings.targetFps > maxTargetFps ? maxTargetFps : settings.targetFps;
       
       if (finalTargetFps > originalFps) {
-        // Usar minterpolate para generar frames intermedios [citation:2][citation:3]
         filters.add('minterpolate=fps=$finalTargetFps:mi_mode=mci:me_mode=bidir:mc_mode=obmc:me=ds');
         debugPrint('📊 Interpolando de ${originalFps}fps a ${finalTargetFps}fps (x${finalTargetFps/originalFps})');
       }
     }
 
-    // Aplicar filtros si existen
     if (filters.isNotEmpty) {
       arguments.addAll(['-vf', filters.join(',')]);
     }
 
-    // Configuración de video
     arguments.addAll([
       '-c:v', settings.videoCodec,
       '-preset', settings.preset,
@@ -155,7 +151,6 @@ class FFmpegWrapper {
       '-b:v', '${settings.videoBitrate}k',
     ]);
 
-    // Aceleración hardware
     if (settings.hardwareAcceleration) {
       if (settings.videoCodec == 'libx264') {
         arguments.addAll(['-c:v', 'h264_mediacodec']);
@@ -164,7 +159,6 @@ class FFmpegWrapper {
       }
     }
 
-    // Configuración de audio
     arguments.addAll([
       '-c:a', settings.audioCodec,
       '-b:a', '${settings.audioBitrate}k',
@@ -177,27 +171,21 @@ class FFmpegWrapper {
       arguments.addAll(['-ac', '2']);
     }
 
-    // Metadatos
     if (!settings.preserveMetadata) {
-      arguments.add('-map_metadata');
-      arguments.add('-1');
+      arguments.addAll(['-map_metadata', '-1']);
     }
 
-    // Optimizaciones para streaming
-    arguments.addAll(['-movflags', '+faststart']);
-
-    // Sobrescribir sin preguntar
-    arguments.add('-y');
-    arguments.add(outputPath);
+    arguments.addAll(['-movflags', '+faststart', '-y', outputPath]);
 
     try {
       debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
 
       final completer = Completer<bool>();
 
+      // ✅ Callbacks posicionales (correctos para ffmpeg_kit_flutter_minimal)
       _currentSession = await FFmpegKit.executeWithArguments(
         arguments,
-        completeCallback: (session) {
+        (session) {
           session.getReturnCode().then((returnCode) {
             final success = ReturnCode.isSuccess(returnCode);
             if (success) {
@@ -220,11 +208,11 @@ class FFmpegWrapper {
             completer.complete(false);
           });
         },
-        logCallback: (log) {
+        (log) {
           debugPrint('📝 FFmpeg log: ${log.getMessage()}');
           onLog?.call(log.getMessage());
         },
-        statisticsCallback: (statistics) {
+        (statistics) {
           final time = statistics.getTime();
           if (time > 0) {
             double progress = time / effectiveDuration;
