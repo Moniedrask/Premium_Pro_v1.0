@@ -20,6 +20,8 @@ class AudioProcessor extends ChangeNotifier {
     required String inputPath,
     required String outputPath,
     required AudioSettings settings,
+    List<double>? equalizerGains, // 10 valores en dB
+    Map<String, double>? compressorParams, // threshold, ratio, attack, release, knee
   }) async {
     _isProcessing = true;
     _progress = 0.0;
@@ -30,6 +32,51 @@ class AudioProcessor extends ChangeNotifier {
       '-i', inputPath,
     ];
 
+    // Construir lista de filtros de audio
+    List<String> audioFilters = [];
+
+    // 1. Ecualizador paramétrico de 10 bandas
+    if (equalizerGains != null && equalizerGains.length == 10) {
+      // Frecuencias centrales típicas (en Hz)
+      const freqs = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+      const q = 1.0; // ancho de banda constante
+      String eqCommand = '';
+      for (int i = 0; i < 10; i++) {
+        if (equalizerGains[i] != 0) {
+          eqCommand += 'equalizer=f=${freqs[i]}:width_type=q:width=$q:g=${equalizerGains[i]},';
+        }
+      }
+      if (eqCommand.isNotEmpty) {
+        audioFilters.add(eqCommand.substring(0, eqCommand.length - 1));
+      }
+    }
+
+    // 2. Compresor dinámico
+    if (compressorParams != null) {
+      final threshold = compressorParams['threshold'] ?? -20;
+      final ratio = compressorParams['ratio'] ?? 4;
+      final attack = compressorParams['attack'] ?? 5;
+      final release = compressorParams['release'] ?? 50;
+      final knee = compressorParams['knee'] ?? 0;
+      audioFilters.add('acompressor=threshold=${threshold}dB:ratio=$ratio:attack=${attack}ms:release=${release}ms:knee=$knee');
+    }
+
+    // 3. Normalización (si está activada)
+    if (settings.normalize) {
+      audioFilters.add('volume=${settings.normalizeTarget}dB');
+    }
+
+    // 4. Reducción de ruido con IA (si está activada)
+    if (settings.removeNoise && settings.aiEnabled) {
+      audioFilters.add('afftdn');
+    }
+
+    // Aplicar todos los filtros de una vez
+    if (audioFilters.isNotEmpty) {
+      args.addAll(['-af', audioFilters.join(',')]);
+    }
+
+    // Configuración del códec de audio
     switch (settings.codec) {
       case 'aac':
         args.addAll(['-c:a', 'aac', '-b:a', '${settings.bitrate}k']);
@@ -44,26 +91,25 @@ class AudioProcessor extends ChangeNotifier {
         args.addAll(['-c:a', 'flac', '-compression_level', settings.compressionLevel.toString()]);
         break;
       case 'wav':
-        args.addAll(['-c:a', 'pcm_s16le']);
+        args.addAll(['-c:a', 'pcm_s16le']); // 16 bits por defecto, se puede extender a 32 bits
         break;
     }
 
+    // Frecuencia de muestreo
     args.addAll(['-ar', settings.sampleRate.toString()]);
 
+    // Configuración de canales
     if (settings.channels == 'mono') {
       args.addAll(['-ac', '1']);
     } else if (settings.channels == 'stereo') {
       args.addAll(['-ac', '2']);
+    } else if (settings.channels == '5.1') {
+      args.addAll(['-ac', '6']);
+    } else if (settings.channels == '7.1') {
+      args.addAll(['-ac', '8']);
     }
 
-    if (settings.normalize) {
-      args.addAll(['-af', 'volume=${settings.normalizeTarget}dB']);
-    }
-
-    if (settings.removeNoise && settings.aiEnabled) {
-      args.addAll(['-af', 'afftdn']);
-    }
-
+    // Sobrescribir sin preguntar
     args.add('-y');
     args.add(outputPath);
 
