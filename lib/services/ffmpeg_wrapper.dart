@@ -96,15 +96,12 @@ class FFmpegWrapper {
       debugPrint('⚠️ No se pudo obtener la duración real del video. Se usará un progreso aproximado basado en 60 segundos.');
     }
 
-    // Construir lista de argumentos FFmpeg
     List<String> arguments = [
       '-i', inputPath,
     ];
 
-    // Aplicar filtros (escalado e interpolación)
     List<String> filters = [];
 
-    // 1. Escalado de resolución (limitado a x4)
     if (settings.resolutionUpscale && originalWidth != null && originalHeight != null) {
       int targetW = settings.targetWidth;
       int targetH = settings.targetHeight;
@@ -129,7 +126,6 @@ class FFmpegWrapper {
       filters.add('scale=$targetW:$targetH:flags=lanczos');
     }
 
-    // 2. Interpolación de frames (limitada a 4x FPS original)
     if (settings.frameInterpolation && originalFps != null && originalFps > 0) {
       int maxTargetFps = originalFps * settings.maxScaleFactor;
       int finalTargetFps = settings.targetFps > maxTargetFps ? maxTargetFps : settings.targetFps;
@@ -177,14 +173,17 @@ class FFmpegWrapper {
 
     arguments.addAll(['-movflags', '+faststart', '-y', outputPath]);
 
+    // Convertir lista de argumentos a string para executeAsync
+    String command = arguments.join(' ');
+
     try {
-      debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
+      debugPrint('⚙️ Comando FFmpeg: $command');
 
       final completer = Completer<bool>();
 
-      // ✅ Callbacks posicionales (correctos para ffmpeg_kit_flutter_minimal)
-      _currentSession = await FFmpegKit.executeWithArguments(
-        arguments,
+      // ✅ Usar executeAsync (asíncrono) con callbacks posicionales
+      _currentSession = await FFmpegKit.executeAsync(
+        command,
         (session) {
           session.getReturnCode().then((returnCode) {
             final success = ReturnCode.isSuccess(returnCode);
