@@ -10,7 +10,7 @@
 -keep class com.arthenica.ffmpegkit.** { *; }
 -dontwarn com.arthenica.ffmpegkit.**
 
-# Smart exception (obligatorio para FFmpegKit) [citation:7]
+# Smart exception (obligatorio para FFmpegKit)
 -keep class com.arthenica.smartexception.java.Exceptions { *; }
 
 # Keep native methods
