@@ -1,0 +1,1 @@
+enum BitrateMode { crf, cbr }
