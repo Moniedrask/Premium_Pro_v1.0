@@ -11,18 +11,18 @@ dependencies:
     sdk: flutter
   ffmpeg_kit_flutter_minimal: 6.0.8
   provider: ^6.1.5+1
-  file_picker: 8.1.7  # ⚠️ No actualizar, requiere verificar cambios en la API
+  file_picker: 10.3.3
   path_provider: ^2.1.5
   shared_preferences: ^2.5.4
   http: ^1.6.0
   flutter_colorpicker: 1.1.0
   cached_network_image: 3.4.1
-  audioplayers: ^6.6.0  # ✅ Actualización segura (versión parche)
+  audioplayers: ^6.6.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0  # ✅ Actualización segura
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
