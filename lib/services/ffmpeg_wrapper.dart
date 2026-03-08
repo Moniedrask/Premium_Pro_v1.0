@@ -228,4 +228,147 @@ class FFmpegWrapper {
         },
         (log) {
           debugPrint('📝 FFmpeg log: ${log.getMessage()}');
-          onLog
+          onLog?.call(log.getMessage());
+        },
+        (statistics) {
+          final time = statistics.getTime();
+          if (time > 0) {
+            double progress = time / effectiveDuration;
+            if (progress > 1.0) progress = 1.0;
+            _progress = progress;
+            onProgress?.call(_progress);
+          }
+        },
+      );
+
+      return await completer.future;
+    } catch (e) {
+      _isProcessing = false;
+      _currentSession = null;
+      _statusMessage = "❌ Error: $e";
+      debugPrint('❌ Excepción: $e');
+      return false;
+    }
+  }
+
+  Future<bool> processAudioWithSpeedRamp({
+    required String inputPath,
+    required String outputPath,
+    required List<SpeedSegment> segments,
+    int? totalDurationMicros,
+    Function(double progress)? onProgress,
+    Function(String log)? onLog,
+  }) async {
+    if (_isProcessing) {
+      debugPrint('❌ Ya hay un procesamiento en curso');
+      return false;
+    }
+
+    _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Aplicando speed ramp...";
+
+    String setptsExpr = 'setpts=\'';
+    for (int i = 0; i < segments.length; i++) {
+      final seg = segments[i];
+      final startSec = seg.start.inMilliseconds / 1000.0;
+      final endSec = seg.end.inMilliseconds / 1000.0;
+      final speedFactor = 1.0 / seg.speed;
+      if (i > 0) setptsExpr += ':';
+      setptsExpr += 'if(between(T,$startSec,$endSec),PTS*$speedFactor';
+    }
+    setptsExpr += ',PTS' + ')' * segments.length + '\'';
+
+    final command = '-i "$inputPath" -af "$setptsExpr" -c:a copy -y "$outputPath"';
+
+    try {
+      debugPrint('⚙️ Speed ramp command: $command');
+
+      final completer = Completer<bool>();
+
+      _currentSession = await FFmpegKit.executeAsync(
+        command,
+        (session) {
+          session.getReturnCode().then((returnCode) {
+            final success = ReturnCode.isSuccess(returnCode);
+            if (success) {
+              _statusMessage = "✅ Completado";
+              _progress = 1.0;
+              onProgress?.call(1.0);
+              debugPrint('✅ Speed ramp exitoso: $outputPath');
+            } else {
+              _statusMessage = "❌ Error en speed ramp";
+              session.getOutput().then((output) {
+                debugPrint('❌ Error FFmpeg: $output');
+              });
+            }
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(success);
+          }).catchError((error) {
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(false);
+          });
+        },
+        (log) {
+          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
+          onLog?.call(log.getMessage());
+        },
+        (statistics) {},
+      );
+
+      return await completer.future;
+    } catch (e) {
+      _isProcessing = false;
+      _currentSession = null;
+      _statusMessage = "❌ Error: $e";
+      debugPrint('❌ Excepción: $e');
+      return false;
+    }
+  }
+
+  Future<bool> executeCommandWithArgs(List<String> arguments) async {
+    try {
+      final session = await FFmpegKit.executeWithArguments(arguments);
+      final returnCode = await session.getReturnCode();
+      return ReturnCode.isSuccess(returnCode);
+    } catch (e) {
+      debugPrint('❌ Error en comando con args: $e');
+      return false;
+    }
+  }
+
+  void cancel() {
+    _currentSession?.cancel();
+    _isProcessing = false;
+    _currentSession = null;
+    _statusMessage = "Cancelado";
+    debugPrint('⛔ Procesamiento cancelado por el usuario');
+  }
+
+  Future<bool> executeCommand(String command) async {
+    try {
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+      return ReturnCode.isSuccess(returnCode);
+    } catch (e) {
+      debugPrint('❌ Error en comando personalizado: $e');
+      return false;
+    }
+  }
+
+  Future<List<String>> getAvailableCodecs() async {
+    try {
+      final session = await FFmpegKit.execute('-codecs');
+      final output = await session.getOutput() ?? '';
+      return output.split('\n')
+          .where((line) => line.contains('V') && line.contains('DEV'))
+          .map((line) => line.split(' ').last.trim())
+          .toList();
+    } catch (e) {
+      debugPrint('❌ Error al obtener códecs: $e');
+      return [];
+    }
+  }
+}
