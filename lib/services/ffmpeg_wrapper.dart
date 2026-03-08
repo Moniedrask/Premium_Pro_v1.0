@@ -5,6 +5,7 @@ import 'package:ffmpeg_kit_flutter_minimal/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_minimal/statistics.dart';
 import 'package:ffmpeg_kit_flutter_minimal/ffprobe_kit.dart';
 import 'package:flutter/foundation.dart';
+import '../models/video_settings.dart';
 
 class FFmpegWrapper {
   static final FFmpegWrapper _instance = FFmpegWrapper._internal();
@@ -44,14 +45,36 @@ class FFmpegWrapper {
     return null;
   }
 
+  Future<int?> getVideoFps(String path) async {
+    try {
+      final session = await FFprobeKit.getMediaInformation(path);
+      final information = await session.getMediaInformation();
+      if (information != null) {
+        // Intentar obtener FPS de varias formas
+        final fpsStr = information.getStreams()?.first?.getStringProperty('r_frame_rate');
+        if (fpsStr != null && fpsStr.contains('/')) {
+          final parts = fpsStr.split('/');
+          final num = int.tryParse(parts[0]);
+          final den = int.tryParse(parts[1]);
+          if (num != null && den != null && den > 0) {
+            return (num / den).round();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error obteniendo FPS del video: $e');
+    }
+    return null;
+  }
+
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
-    String codec = 'libx264',
-    int bitrate = 2500,
-    String preset = 'medium',
-    int crf = 23,
+    required VideoSettings settings,
     int? totalDurationMicros,
+    int? originalFps,
+    int? originalWidth,
+    int? originalHeight,
     Function(double progress)? onProgress,
     Function(String log)? onLog,
   }) async {
@@ -71,16 +94,101 @@ class FFmpegWrapper {
       debugPrint('⚠️ No se pudo obtener la duración real del video. Se usará un progreso aproximado basado en 60 segundos.');
     }
 
+    // Construir lista de argumentos FFmpeg
     List<String> arguments = [
       '-i', inputPath,
-      '-c:v', codec,
-      '-preset', preset,
-      '-crf', crf.toString(),
-      '-b:v', '${bitrate}k',
-      '-c:a', 'aac',
-      '-movflags', '+faststart',
-      '-y', outputPath,
     ];
+
+    // Aplicar filtros (escalado e interpolación)
+    List<String> filters = [];
+
+    // 1. Escalado de resolución (limitado a x4)
+    if (settings.resolutionUpscale && originalWidth != null && originalHeight != null) {
+      int targetW = settings.targetWidth;
+      int targetH = settings.targetHeight;
+      
+      // Si solo se especificó una dimensión, calcular la otra manteniendo proporción
+      if (targetW == 0 && targetH > 0) {
+        targetW = (originalWidth * targetH / originalHeight).round();
+      } else if (targetH == 0 && targetW > 0) {
+        targetH = (originalHeight * targetW / originalWidth).round();
+      }
+      
+      // Calcular factor de escala real
+      double scaleW = targetW / originalWidth;
+      double scaleH = targetH / originalHeight;
+      double scaleFactor = scaleW > scaleH ? scaleW : scaleH;
+      
+      // Limitar a x4 máximo
+      if (scaleFactor > settings.maxScaleFactor) {
+        scaleFactor = settings.maxScaleFactor.toDouble();
+        targetW = (originalWidth * scaleFactor).round();
+        targetH = (originalHeight * scaleFactor).round();
+        debugPrint('⚠️ Factor de escala limitado a x${settings.maxScaleFactor}');
+      }
+      
+      filters.add('scale=$targetW:$targetH:flags=lanczos');
+    }
+
+    // 2. Interpolación de frames (limitada a 4x FPS original)
+    if (settings.frameInterpolation && originalFps != null && originalFps > 0) {
+      int maxTargetFps = originalFps * settings.maxScaleFactor;
+      int finalTargetFps = settings.targetFps > maxTargetFps ? maxTargetFps : settings.targetFps;
+      
+      if (finalTargetFps > originalFps) {
+        // Usar minterpolate para generar frames intermedios [citation:2][citation:3]
+        filters.add('minterpolate=fps=$finalTargetFps:mi_mode=mci:me_mode=bidir:mc_mode=obmc:me=ds');
+        debugPrint('📊 Interpolando de ${originalFps}fps a ${finalTargetFps}fps (x${finalTargetFps/originalFps})');
+      }
+    }
+
+    // Aplicar filtros si existen
+    if (filters.isNotEmpty) {
+      arguments.addAll(['-vf', filters.join(',')]);
+    }
+
+    // Configuración de video
+    arguments.addAll([
+      '-c:v', settings.videoCodec,
+      '-preset', settings.preset,
+      '-crf', settings.crf.toString(),
+      '-b:v', '${settings.videoBitrate}k',
+    ]);
+
+    // Aceleración hardware
+    if (settings.hardwareAcceleration) {
+      if (settings.videoCodec == 'libx264') {
+        arguments.addAll(['-c:v', 'h264_mediacodec']);
+      } else if (settings.videoCodec == 'libx265') {
+        arguments.addAll(['-c:v', 'hevc_mediacodec']);
+      }
+    }
+
+    // Configuración de audio
+    arguments.addAll([
+      '-c:a', settings.audioCodec,
+      '-b:a', '${settings.audioBitrate}k',
+      '-ar', settings.audioSampleRate.toString(),
+    ]);
+
+    if (settings.audioChannels == 'mono') {
+      arguments.addAll(['-ac', '1']);
+    } else if (settings.audioChannels == 'stereo') {
+      arguments.addAll(['-ac', '2']);
+    }
+
+    // Metadatos
+    if (!settings.preserveMetadata) {
+      arguments.add('-map_metadata');
+      arguments.add('-1');
+    }
+
+    // Optimizaciones para streaming
+    arguments.addAll(['-movflags', '+faststart']);
+
+    // Sobrescribir sin preguntar
+    arguments.add('-y');
+    arguments.add(outputPath);
 
     try {
       debugPrint('⚙️ Comando FFmpeg: ffmpeg ${arguments.join(' ')}');
