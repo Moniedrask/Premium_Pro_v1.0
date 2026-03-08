@@ -21,11 +21,26 @@ class MediaProcessor extends ChangeNotifier {
     return await _ffmpeg.getVideoDuration(path);
   }
 
+  /// Obtiene los FPS del video a través del wrapper
+  Future<int?> getVideoFps(String path) async {
+    return await _ffmpeg.getVideoFps(path);
+  }
+
+  /// Obtiene las dimensiones del video (ancho y alto)
+  /// Por ahora retorna valores predeterminados, pero se puede implementar con FFprobe
+  Future<Map<String, int>> getVideoDimensions(String path) async {
+    // TODO: Implementar obtención real de dimensiones usando FFprobe
+    return {'width': 1920, 'height': 1080};
+  }
+
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
     required VideoSettings settings,
-    // totalDurationMicros ELIMINADO porque ya no se usa en el wrapper
+    int? totalDurationMicros,
+    int? originalFps,
+    int? originalWidth,
+    int? originalHeight,
   }) async {
     _isProcessing = true;
     _progress = 0.0;
@@ -35,11 +50,16 @@ class MediaProcessor extends ChangeNotifier {
     final success = await _ffmpeg.processVideo(
       inputPath: inputPath,
       outputPath: outputPath,
-      codec: settings.videoCodec,
-      bitrate: settings.videoBitrate,
-      preset: settings.preset,
-      crf: settings.crf,
-      // totalDurationMicros ya no se pasa
+      settings: settings,
+      totalDurationMicros: totalDurationMicros,
+      originalFps: originalFps,
+      originalWidth: originalWidth,
+      originalHeight: originalHeight,
+      onProgress: (progress) {
+        _progress = progress;
+        _statusMessage = "Procesando ${(progress * 100).toStringAsFixed(0)}%";
+        notifyListeners();
+      },
     );
 
     _isProcessing = false;
