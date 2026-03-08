@@ -1,13 +1,103 @@
-- name: Patch ffmpeg_kit_flutter for V2 embedding
-  run: |
-    PLUGIN_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
-    if [ -d "$PLUGIN_DIR" ]; then
-      echo "✅ Plugin encontrado, parcheando..."
-      # Eliminar el método registerWith (API V1 obsoleta)
-      sed -i '/public static void registerWith/,/^    }/d' "$PLUGIN_DIR/src/main/java/com/arthenica/ffmpegkit/flutter/FFmpegKitFlutterPlugin.java"
-      # Eliminar el parámetro registrar del método init
-      sed -i 's/, final io.flutter.plugin.common.PluginRegistry.Registrar registrar//' "$PLUGIN_DIR/src/main/java/com/arthenica/ffmpegkit/flutter/FFmpegKitFlutterPlugin.java"
-      echo "✅ Plugin parcheado correctamente"
-    else
-      echo "⚠️ Plugin no encontrado, continuando..."
-    fi
+name: Build Premium Pro APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
+      - name: Clean and Install Dependencies
+        run: |
+          flutter clean
+          rm -rf android/.gradle
+          flutter pub get
+
+      # 📥 DESCARGAR AAR DESDE GOOGLE DRIVE
+      - name: Download ffmpeg-kit-fix.aar from Google Drive
+        run: |
+          mkdir -p android/app/libs
+          pip install gdown
+          gdown https://drive.google.com/uc?id=1rAnf-rq2UM333SJixSqtUomIRZKj_hWf -O android/app/libs/ffmpeg-kit-https-6.0-2.aar
+          echo "✅ Archivo descargado:"
+          ls -la android/app/libs/
+
+      # 📦 INSTALAR AAR EN REPOSITORIO MAVEN LOCAL DEL PROYECTO (VERSIÓN CORRECTA: 6.0-2)
+      - name: Install AAR to local Maven repository
+        run: |
+          mvn install:install-file \
+            -Dfile=android/app/libs/ffmpeg-kit-https-6.0-2.aar \
+            -DgroupId=com.arthenica \
+            -DartifactId=ffmpeg-kit-https \
+            -Dversion=6.0-2 \
+            -Dpackaging=aar \
+            -DlocalRepositoryPath=android/app/repo
+          echo "✅ AAR instalado en android/app/repo con versión 6.0-2"
+
+      # 📥 DESCARGAR SMART-EXCEPTION JARS (OPCIONAL PERO RECOMENDADO)
+      - name: Download smart-exception JARs
+        run: |
+          mkdir -p android/app/repo/com/arthenica/smart-exception-java/0.2.1
+          mkdir -p android/app/repo/com/arthenica/smart-exception-common/0.2.1
+          wget -O android/app/repo/com/arthenica/smart-exception-java/0.2.1/smart-exception-java-0.2.1.jar https://repo1.maven.org/maven2/com/arthenica/smart-exception-java/0.2.1/smart-exception-java-0.2.1.jar
+          wget -O android/app/repo/com/arthenica/smart-exception-common/0.2.1/smart-exception-common-0.2.1.jar https://repo1.maven.org/maven2/com/arthenica/smart-exception-common/0.2.1/smart-exception-common-0.2.1.jar
+          echo "✅ Smart-exception JARs descargados"
+
+      # 🛠️ PARCHAR PLUGIN ffmpeg_kit_flutter PARA ELIMINAR API OBSOLETA
+      - name: Patch ffmpeg_kit_flutter for V2 embedding
+        run: |
+          PLUGIN_DIR="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android"
+          if [ -d "$PLUGIN_DIR" ]; then
+            echo "✅ Plugin encontrado, parcheando..."
+            # Eliminar el método registerWith (API V1 obsoleta)
+            sed -i '/public static void registerWith/,/^    }/d' "$PLUGIN_DIR/src/main/java/com/arthenica/ffmpegkit/flutter/FFmpegKitFlutterPlugin.java"
+            # Eliminar el parámetro registrar del método init
+            sed -i 's/, final io.flutter.plugin.common.PluginRegistry.Registrar registrar//' "$PLUGIN_DIR/src/main/java/com/arthenica/ffmpegkit/flutter/FFmpegKitFlutterPlugin.java"
+            echo "✅ Plugin parcheado correctamente"
+          else
+            echo "⚠️ Plugin no encontrado, continuando..."
+          fi
+
+      - name: Accept Android Licenses
+        run: |
+          mkdir -p $HOME/.android
+          echo "count=0" > $HOME/.android/android-sdk-licenses
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.android/android-sdk-licenses
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
+
+      - name: Build APKs (split and universal)
+        run: |
+          flutter build apk --release --split-per-abi
+          flutter build apk --release
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-pro-apk
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 30
