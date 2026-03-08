@@ -14,10 +14,10 @@ class ImageEditorWidget extends StatefulWidget {
   const ImageEditorWidget({super.key});
 
   @override
-  State<ImageEditorWidget> createState() => _ImageEditorWidgetState();
+  State<ImageEditorWidget> createState() => ImageEditorWidgetState();
 }
 
-class _ImageEditorWidgetState extends State<ImageEditorWidget> {
+class ImageEditorWidgetState extends State<ImageEditorWidget> {
   String? _selectedImagePath;
   String _selectedImageName = 'Ninguno';
   late ImageSettings _settings;
@@ -35,6 +35,26 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
     _settings = ImageSettings.fromJson(globalSettings.imageDefaults);
     _keepOriginalName = globalSettings.keepOriginalName;
     setState(() {});
+  }
+
+  void applyPreset(ImageSettings preset) {
+    setState(() {
+      _settings = ImageSettings(
+        format: preset.format,
+        quality: preset.quality,
+        compressionLevel: preset.compressionLevel,
+        preserveMetadata: preset.preserveMetadata,
+        maxWidth: preset.maxWidth,
+        maxHeight: preset.maxHeight,
+        aiUpscale: preset.aiUpscale,
+        aiScale: preset.aiScale,
+        filter: preset.filter,
+        aiEnabled: preset.aiEnabled,
+      );
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preset aplicado a imagen'), backgroundColor: Colors.green),
+    );
   }
 
   double _getPadding(InterfaceDensity density) {
@@ -161,7 +181,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                 child: Center(
                   child: processor.isProcessing
                       ? _buildProcessingView(processor)
-                      : _buildImageView(processor),
+                      : _buildImageView(),
                 ),
               ),
               if (_selectedImagePath != null && !processor.isProcessing)
@@ -182,7 +202,190 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           child: Container(
             padding: EdgeInsets.all(paddingValue * 2),
             color: const Color(0xFF000000),
-            child: _buildControls(processor, aiManager, globalSettings, settingsProvider),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'CONFIGURACIÓN DE IMAGEN',
+                    style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 10),
+
+                  DropdownButtonFormField<String>(
+                    value: _settings.format,
+                    items: const [
+                      DropdownMenuItem(value: 'jpeg', child: Text('JPEG')),
+                      DropdownMenuItem(value: 'png', child: Text('PNG')),
+                      DropdownMenuItem(value: 'webp', child: Text('WebP')),
+                      DropdownMenuItem(value: 'avif', child: Text('AVIF')),
+                    ],
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.format = val!);
+                    },
+                    decoration: const InputDecoration(labelText: 'Formato'),
+                  ),
+
+                  const SizedBox(height: 10),
+                  if (_settings.format == 'jpeg' || _settings.format == 'webp')
+                    Column(
+                      children: [
+                        Text('Calidad: ${_settings.quality}'),
+                        Slider(
+                          value: _settings.quality.toDouble(),
+                          min: 1,
+                          max: 100,
+                          divisions: 99,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.quality = val.round());
+                          },
+                        ),
+                      ],
+                    ),
+
+                  if (_settings.format == 'png')
+                    Column(
+                      children: [
+                        Text('Nivel de compresión: ${_settings.compressionLevel}'),
+                        Slider(
+                          value: _settings.compressionLevel.toDouble(),
+                          min: 0,
+                          max: 9,
+                          divisions: 9,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.compressionLevel = val.round());
+                          },
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(labelText: 'Ancho máx. (px)'),
+                          keyboardType: TextInputType.number,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.maxWidth = int.tryParse(val) ?? 0);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(labelText: 'Alto máx. (px)'),
+                          keyboardType: TextInputType.number,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.maxHeight = int.tryParse(val) ?? 0);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _settings.filter,
+                    items: const [
+                      DropdownMenuItem(value: 'lanczos', child: Text('Lanczos (alta calidad)')),
+                      DropdownMenuItem(value: 'bicubic', child: Text('Bicúbico')),
+                      DropdownMenuItem(value: 'bilinear', child: Text('Bilineal (rápido)')),
+                    ],
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.filter = val!);
+                    },
+                    decoration: const InputDecoration(labelText: 'Algoritmo'),
+                  ),
+
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _settings.preserveMetadata,
+                        onChanged: processor.isProcessing ? null : (val) {
+                          setState(() => _settings.preserveMetadata = val!);
+                        },
+                      ),
+                      const Text('Conservar metadatos EXIF', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+
+                  if (aiManager.isModelAvailable)
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _settings.aiUpscale,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.aiUpscale = val!);
+                          },
+                        ),
+                        const Text('Upscale con IA', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+
+                  const SizedBox(height: 10),
+                  CheckboxListTile(
+                    title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    value: _keepOriginalName,
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _keepOriginalName = val!);
+                      if (globalSettings.keepOriginalName != val) {
+                        settingsProvider.setKeepOriginalName(val!);
+                      }
+                    },
+                    secondary: Icon(Icons.label, color: globalSettings.accentColor),
+                    activeColor: globalSettings.accentColor,
+                  ),
+
+                  CheckboxListTile(
+                    title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    value: _settings.aiEnabled,
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.aiEnabled = val!);
+                      if (val == true) {
+                        settingsProvider.setImageDefaults(_settings.toJson());
+                      }
+                    },
+                    secondary: Icon(Icons.save, color: globalSettings.accentColor),
+                    activeColor: globalSettings.accentColor,
+                  ),
+
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: processor.isProcessing ? null : _selectImage,
+                          icon: const Icon(Icons.folder_open),
+                          label: const Text('CARGAR'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: processor.isProcessing || _selectedImagePath == null
+                              ? null
+                              : () => _exportImage(processor),
+                          child: const Text('EXPORTAR'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (processor.isProcessing)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: ElevatedButton(
+                        onPressed: processor.cancelProcessing,
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        child: const Text('CANCELAR'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -200,7 +403,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
             style: const TextStyle(color: Colors.grey, fontSize: 20)),
         const SizedBox(height: 16),
         ElevatedButton(
-          onPressed: () => processor.cancelProcessing(),
+          onPressed: processor.cancelProcessing,
           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
           child: const Text('CANCELAR'),
         ),
@@ -208,7 +411,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
     );
   }
 
-  Widget _buildImageView(ImageProcessor processor) {
+  Widget _buildImageView() {
     if (_selectedImagePath == null) {
       return const Center(
         child: Text('Selecciona una imagen', style: TextStyle(color: Colors.grey)),
@@ -219,195 +422,6 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
         File(_selectedImagePath!),
         fit: BoxFit.contain,
         errorBuilder: (ctx, error, stack) => const Text('Error al cargar imagen'),
-      ),
-    );
-  }
-
-  Widget _buildControls(
-    ImageProcessor processor,
-    AIManager aiManager,
-    AppSettings globalSettings,
-    SettingsProvider settingsProvider,
-  ) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('CONFIGURACIÓN DE IMAGEN',
-              style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-
-          DropdownButtonFormField<String>(
-            value: _settings.format,
-            items: const [
-              DropdownMenuItem(value: 'jpeg', child: Text('JPEG')),
-              DropdownMenuItem(value: 'png', child: Text('PNG')),
-              DropdownMenuItem(value: 'webp', child: Text('WebP')),
-              DropdownMenuItem(value: 'avif', child: Text('AVIF')),
-            ],
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _settings.format = val!);
-            },
-            decoration: const InputDecoration(labelText: 'Formato'),
-          ),
-
-          const SizedBox(height: 10),
-          if (_settings.format == 'jpeg' || _settings.format == 'webp')
-            Column(
-              children: [
-                Text('Calidad: ${_settings.quality}'),
-                Slider(
-                  value: _settings.quality.toDouble(),
-                  min: 1,
-                  max: 100,
-                  divisions: 99,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.quality = val.round());
-                  },
-                ),
-              ],
-            ),
-
-          if (_settings.format == 'png')
-            Column(
-              children: [
-                Text('Nivel de compresión: ${_settings.compressionLevel}'),
-                Slider(
-                  value: _settings.compressionLevel.toDouble(),
-                  min: 0,
-                  max: 9,
-                  divisions: 9,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.compressionLevel = val.round());
-                  },
-                ),
-              ],
-            ),
-
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(labelText: 'Ancho máx. (px)'),
-                  keyboardType: TextInputType.number,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.maxWidth = int.tryParse(val) ?? 0);
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(labelText: 'Alto máx. (px)'),
-                  keyboardType: TextInputType.number,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.maxHeight = int.tryParse(val) ?? 0);
-                  },
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            value: _settings.filter,
-            items: const [
-              DropdownMenuItem(value: 'lanczos', child: Text('Lanczos (alta calidad)')),
-              DropdownMenuItem(value: 'bicubic', child: Text('Bicúbico')),
-              DropdownMenuItem(value: 'bilinear', child: Text('Bilineal (rápido)')),
-            ],
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _settings.filter = val!);
-            },
-            decoration: const InputDecoration(labelText: 'Algoritmo'),
-          ),
-
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Checkbox(
-                value: _settings.preserveMetadata,
-                onChanged: processor.isProcessing ? null : (val) {
-                  setState(() => _settings.preserveMetadata = val!);
-                },
-              ),
-              const Text('Conservar metadatos EXIF', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-
-          if (aiManager.isModelAvailable)
-            Row(
-              children: [
-                Checkbox(
-                  value: _settings.aiUpscale,
-                  onChanged: processor.isProcessing ? null : (val) {
-                    setState(() => _settings.aiUpscale = val!);
-                  },
-                ),
-                const Text('Upscale con IA', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-
-          const SizedBox(height: 10),
-          CheckboxListTile(
-            title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
-            subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            value: _keepOriginalName,
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _keepOriginalName = val!);
-              if (globalSettings.keepOriginalName != val) {
-                settingsProvider.setKeepOriginalName(val!);
-              }
-            },
-            secondary: Icon(Icons.label, color: globalSettings.accentColor),
-            activeColor: globalSettings.accentColor,
-          ),
-          CheckboxListTile(
-            title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
-            subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            value: _settings.aiEnabled, // Usamos aiEnabled como placeholder; en realidad debería ser un campo saveAsDefault
-            onChanged: processor.isProcessing ? null : (val) {
-              setState(() => _settings.aiEnabled = val!);
-              if (val == true) {
-                settingsProvider.setImageDefaults(_settings.toJson());
-              }
-            },
-            secondary: Icon(Icons.save, color: globalSettings.accentColor),
-            activeColor: globalSettings.accentColor,
-          ),
-
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: processor.isProcessing ? null : _selectImage,
-                  icon: const Icon(Icons.folder_open),
-                  label: const Text('CARGAR'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: processor.isProcessing || _selectedImagePath == null
-                      ? null
-                      : () => _exportImage(processor),
-                  child: const Text('EXPORTAR'),
-                ),
-              ),
-            ],
-          ),
-          if (processor.isProcessing)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: ElevatedButton(
-                onPressed: processor.cancelProcessing,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('CANCELAR'),
-              ),
-            ),
-        ],
       ),
     );
   }
