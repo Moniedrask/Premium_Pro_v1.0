@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  ffmpeg_kit_flutter: 6.0.3
+  ffmpeg_kit_flutter_minimal: 6.0.8
   provider: ^6.1.5+1
   file_picker: 8.1.7
   path_provider: ^2.1.5
