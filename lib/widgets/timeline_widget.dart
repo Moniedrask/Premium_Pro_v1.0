@@ -8,15 +8,16 @@ import '../models/video_settings.dart';
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
+import '../models/bitrate_mode.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
 
   @override
-  State<TimelineWidget> createState() => _TimelineWidgetState();
+  State<TimelineWidget> createState() => TimelineWidgetState();
 }
 
-class _TimelineWidgetState extends State<TimelineWidget> {
+class TimelineWidgetState extends State<TimelineWidget> {
   String? _selectedVideoPath;
   String _selectedVideoName = 'Ninguno';
   late VideoSettings _settings;
@@ -139,6 +140,37 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     }
   }
 
+  void applyPreset(VideoSettings preset) {
+    setState(() {
+      _settings = VideoSettings(
+        videoCodec: preset.videoCodec,
+        videoBitrate: preset.videoBitrate,
+        crf: preset.crf,
+        preset: preset.preset,
+        hardwareAcceleration: preset.hardwareAcceleration,
+        audioCodec: preset.audioCodec,
+        audioBitrate: preset.audioBitrate,
+        audioSampleRate: preset.audioSampleRate,
+        audioChannels: preset.audioChannels,
+        frameInterpolation: preset.frameInterpolation,
+        targetFps: preset.targetFps,
+        resolutionUpscale: preset.resolutionUpscale,
+        targetWidth: preset.targetWidth,
+        targetHeight: preset.targetHeight,
+        maxScaleFactor: preset.maxScaleFactor,
+        aiInterpolation: preset.aiInterpolation,
+        aiTargetFps: preset.aiTargetFps,
+        aiStabilization: preset.aiStabilization,
+        preserveMetadata: preset.preserveMetadata,
+        aiEnabled: preset.aiEnabled,
+        saveAsDefault: preset.saveAsDefault,
+      );
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preset aplicado a video'), backgroundColor: Colors.green),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final processor = Provider.of<MediaProcessor>(context);
@@ -192,34 +224,8 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                   const SizedBox(height: 10),
                   _buildCodecDropdown(processor),
                   const SizedBox(height: 10),
-
-                  // Selector de modo de bitrate (CRF vs CBR)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ListTile(
-                          title: const Text('Modo de bitrate', style: TextStyle(color: Colors.white)),
-                          subtitle: Text(
-                            _settings.bitrateMode == BitrateMode.crf ? 'CRF (calidad constante)' : 'CBR (bitrate constante)',
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                          trailing: DropdownButton<BitrateMode>(
-                            value: _settings.bitrateMode,
-                            items: const [
-                              DropdownMenuItem(value: BitrateMode.crf, child: Text('CRF')),
-                              DropdownMenuItem(value: BitrateMode.cbr, child: Text('CBR')),
-                            ],
-                            onChanged: processor.isProcessing ? null : (val) {
-                              setState(() => _settings.bitrateMode = val!);
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildBitrateModeSelector(processor),
                   const SizedBox(height: 5),
-
-                  // Sliders según modo
                   if (_settings.bitrateMode == BitrateMode.cbr) ...[
                     _buildBitrateSlider(processor),
                     const Padding(
@@ -233,7 +239,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                     _buildBitrateSlider(processor),
                     _buildCRFSlider(processor),
                   ],
-
                   const SizedBox(height: 10),
                   _buildPresetDropdown(processor),
                   const SizedBox(height: 10),
@@ -422,6 +427,32 @@ class _TimelineWidgetState extends State<TimelineWidget> {
         labelStyle: TextStyle(color: Colors.grey),
         border: OutlineInputBorder(),
       ),
+    );
+  }
+
+  Widget _buildBitrateModeSelector(MediaProcessor processor) {
+    return Row(
+      children: [
+        Expanded(
+          child: ListTile(
+            title: const Text('Modo de bitrate', style: TextStyle(color: Colors.white)),
+            subtitle: Text(
+              _settings.bitrateMode == BitrateMode.crf ? 'CRF (calidad constante)' : 'CBR (bitrate constante)',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            trailing: DropdownButton<BitrateMode>(
+              value: _settings.bitrateMode,
+              items: const [
+                DropdownMenuItem(value: BitrateMode.crf, child: Text('CRF')),
+                DropdownMenuItem(value: BitrateMode.cbr, child: Text('CBR')),
+              ],
+              onChanged: processor.isProcessing ? null : (val) {
+                setState(() => _settings.bitrateMode = val!);
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -621,7 +652,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     try {
       final durationMicros = await processor.getVideoDuration(_selectedVideoPath!);
       final originalFps = await processor.getVideoFps(_selectedVideoPath!);
-      
+
       int originalWidth = 1920;
       int originalHeight = 1080;
 
@@ -655,8 +686,6 @@ class _TimelineWidgetState extends State<TimelineWidget> {
       debugPrint('📁 Input: $_selectedVideoPath');
       debugPrint('📁 Output: $outputPath');
       debugPrint('⚙️ Config: ${_settings.videoCodec} | ${_settings.videoBitrate} kbps | ${_settings.preset} | CRF ${_settings.crf} | HW Accel: ${_settings.hardwareAcceleration}');
-      debugPrint('📊 Escalado: ${_settings.resolutionUpscale ? "${_settings.targetWidth}x${_settings.targetHeight}" : "No"}');
-      debugPrint('📊 Interpolación: ${_settings.frameInterpolation ? "${_settings.targetFps}fps" : "No"} (original: ${originalFps ?? "?"}fps)');
 
       final bool success = await processor.processVideo(
         inputPath: _selectedVideoPath!,
