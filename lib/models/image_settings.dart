@@ -6,7 +6,7 @@ class ImageSettings {
   int maxWidth;           // 0 = original
   int maxHeight;          // 0 = original
   bool aiUpscale;         // usar IA para escalado
-  int aiScale;            // 2, 4, 8, 16
+  int aiScale;            // 2, 4, 8, 16 (pero limitado a 4 en v1.0)
   String filter;          // 'lanczos', 'bicubic', 'nearest'
   bool aiEnabled;
 
@@ -21,7 +21,10 @@ class ImageSettings {
     this.aiScale = 2,
     this.filter = 'lanczos',
     this.aiEnabled = false,
-  });
+  }) {
+    // Limitar aiScale a un máximo de 4 (según requerimiento)
+    if (aiScale > 4) aiScale = 4;
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -39,6 +42,8 @@ class ImageSettings {
   }
 
   factory ImageSettings.fromJson(Map<String, dynamic> json) {
+    int aiScale = json['aiScale'] ?? 2;
+    if (aiScale > 4) aiScale = 4; // Limitar a x4
     return ImageSettings(
       format: json['format'] ?? 'jpeg',
       quality: json['quality'] ?? 85,
@@ -47,7 +52,7 @@ class ImageSettings {
       maxWidth: json['maxWidth'] ?? 0,
       maxHeight: json['maxHeight'] ?? 0,
       aiUpscale: json['aiUpscale'] ?? false,
-      aiScale: json['aiScale'] ?? 2,
+      aiScale: aiScale,
       filter: json['filter'] ?? 'lanczos',
       aiEnabled: json['aiEnabled'] ?? false,
     );
