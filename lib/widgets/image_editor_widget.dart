@@ -366,7 +366,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
           CheckboxListTile(
             title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
             subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            value: _settings.aiEnabled, // Usamos aiEnabled como placeholder; idealmente añadir un campo saveAsDefault a ImageSettings
+            value: _settings.aiEnabled, // Usamos aiEnabled como placeholder; en realidad debería ser un campo saveAsDefault
             onChanged: processor.isProcessing ? null : (val) {
               setState(() => _settings.aiEnabled = val!);
               if (val == true) {
