@@ -22,7 +22,6 @@ class _CompressionDialogState extends State<CompressionDialog> {
   @override
   void initState() {
     super.initState();
-    // Preset por defecto: el primero de los predefinidos
     _selectedPreset = CompressionPreset.defaults.first;
   }
 
@@ -46,7 +45,6 @@ class _CompressionDialogState extends State<CompressionDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Selector de categoría
             Row(
               children: [
                 const Text('Categoría:', style: TextStyle(color: Colors.white70)),
@@ -72,7 +70,6 @@ class _CompressionDialogState extends State<CompressionDialog> {
               ],
             ),
             const SizedBox(height: 16),
-            // Lista de presets
             Expanded(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -106,7 +103,6 @@ class _CompressionDialogState extends State<CompressionDialog> {
                   children: [
                     TextButton.icon(
                       onPressed: () {
-                        // Abrir diálogo para crear nuevo preset
                         _showCreatePresetDialog(context);
                       },
                       icon: const Icon(Icons.add, color: Colors.green),
@@ -137,8 +133,6 @@ class _CompressionDialogState extends State<CompressionDialog> {
 
   void _showCreatePresetDialog(BuildContext context) {
     final nameController = TextEditingController();
-    // Usamos los valores actuales de los editores como base
-    // En una implementación real, deberías obtenerlos de los widgets
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -161,8 +155,6 @@ class _CompressionDialogState extends State<CompressionDialog> {
             onPressed: () async {
               final name = nameController.text.trim();
               if (name.isNotEmpty) {
-                // Aquí deberías obtener las configuraciones actuales
-                // Por simplicidad, usamos valores por defecto
                 final newPreset = CompressionPreset(
                   name: name,
                   videoSettings: VideoSettings(),
