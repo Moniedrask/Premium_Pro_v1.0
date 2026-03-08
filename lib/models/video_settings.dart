@@ -1,7 +1,12 @@
+import 'package:flutter/material.dart';
+
+enum BitrateMode { crf, cbr }
+
 class VideoSettings {
   String videoCodec;
-  int videoBitrate;
-  int crf;
+  BitrateMode bitrateMode;   // 'crf' o 'cbr'
+  int videoBitrate;          // usado en CBR y como fallback
+  int crf;                   // usado solo en CRF
   String preset;
   int keyframeInterval;
   String profile;
@@ -33,6 +38,7 @@ class VideoSettings {
 
   VideoSettings({
     this.videoCodec = 'libx264',
+    this.bitrateMode = BitrateMode.crf, // Por defecto CRF
     this.videoBitrate = 2500,
     this.crf = 23,
     this.preset = 'medium',
@@ -53,7 +59,7 @@ class VideoSettings {
     this.resolutionUpscale = false,
     this.targetWidth = 1920,
     this.targetHeight = 1080,
-    this.maxScaleFactor = 4,  // Límite x4
+    this.maxScaleFactor = 4,
     
     // IA
     this.aiInterpolation = false,
@@ -68,6 +74,7 @@ class VideoSettings {
   Map<String, dynamic> toJson() {
     return {
       'videoCodec': videoCodec,
+      'bitrateMode': bitrateMode.index,
       'videoBitrate': videoBitrate,
       'crf': crf,
       'preset': preset,
@@ -96,6 +103,7 @@ class VideoSettings {
   factory VideoSettings.fromJson(Map<String, dynamic> json) {
     return VideoSettings(
       videoCodec: json['videoCodec'] ?? 'libx264',
+      bitrateMode: BitrateMode.values[json['bitrateMode'] ?? 0],
       videoBitrate: json['videoBitrate'] ?? 2500,
       crf: json['crf'] ?? 23,
       preset: json['preset'] ?? 'medium',
