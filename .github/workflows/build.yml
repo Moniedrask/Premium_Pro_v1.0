@@ -46,7 +46,7 @@ jobs:
           echo "✅ Archivo descargado:"
           ls -la android/app/libs/
 
-      # 📦 INSTALAR AAR EN REPOSITORIO MAVEN LOCAL DEL PROYECTO (VERSIÓN CORRECTA: 6.0-2)
+      # 📦 INSTALAR AAR EN REPOSITORIO MAVEN LOCAL DEL PROYECTO
       - name: Install AAR to local Maven repository
         run: |
           mvn install:install-file \
@@ -58,7 +58,7 @@ jobs:
             -DlocalRepositoryPath=android/app/repo
           echo "✅ AAR instalado en android/app/repo con versión 6.0-2"
 
-      # 📥 DESCARGAR SMART-EXCEPTION JARS (OPCIONAL PERO RECOMENDADO)
+      # 📥 DESCARGAR SMART-EXCEPTION JARS
       - name: Download smart-exception JARs
         run: |
           mkdir -p android/app/repo/com/arthenica/smart-exception-java/0.2.1
@@ -66,6 +66,19 @@ jobs:
           wget -O android/app/repo/com/arthenica/smart-exception-java/0.2.1/smart-exception-java-0.2.1.jar https://repo1.maven.org/maven2/com/arthenica/smart-exception-java/0.2.1/smart-exception-java-0.2.1.jar
           wget -O android/app/repo/com/arthenica/smart-exception-common/0.2.1/smart-exception-common-0.2.1.jar https://repo1.maven.org/maven2/com/arthenica/smart-exception-common/0.2.1/smart-exception-common-0.2.1.jar
           echo "✅ Smart-exception JARs descargados"
+
+      # 🛠️ PARCHAR EL PLUGIN FFMPEG_KIT_FLUTTER (eliminar método registerWith)
+      - name: Patch ffmpeg_kit_flutter plugin
+        run: |
+          PLUGIN_FILE="$HOME/.pub-cache/hosted/pub.dev/ffmpeg_kit_flutter-6.0.3/android/src/main/java/com/arthenica/ffmpegkit/flutter/FFmpegKitFlutterPlugin.java"
+          if [ -f "$PLUGIN_FILE" ]; then
+            echo "✅ Plugin encontrado, aplicando parche..."
+            # Eliminar el método registerWith (v1 embedding obsoleto)
+            sed -i '/public static void registerWith/,/^    }/d' "$PLUGIN_FILE"
+            echo "✅ Método registerWith eliminado."
+          else
+            echo "⚠️ Archivo del plugin no encontrado. Continuando sin parche."
+          fi
 
       - name: Accept Android Licenses
         run: |
