@@ -26,6 +26,8 @@ class FFmpegWrapper {
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
 
+  // ========== MÉTODOS PARA OBTENER INFORMACIÓN DEL VIDEO ==========
+
   Future<int?> getVideoDuration(String path) async {
     try {
       final session = await FFprobeKit.getMediaInformation(path);
@@ -35,7 +37,7 @@ class FFmpegWrapper {
         if (durationStr != null && durationStr.isNotEmpty) {
           final durationSec = double.tryParse(durationStr);
           if (durationSec != null && durationSec > 0) {
-            return (durationSec * 1000000).round();
+            return (durationSec * 1000000).round(); // microsegundos
           }
         }
       }
@@ -69,6 +71,8 @@ class FFmpegWrapper {
     return null;
   }
 
+  // ========== PROCESAMIENTO DE VIDEO (con todas las opciones) ==========
+
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
@@ -93,46 +97,49 @@ class FFmpegWrapper {
     final effectiveDuration = totalDurationMicros ?? defaultDurationMicros;
 
     if (totalDurationMicros == null) {
-      debugPrint('⚠️ No se pudo obtener la duración real del video. Se usará un progreso aproximado basado en 60 segundos.');
+      debugPrint('⚠️ No se pudo obtener la duración real del video. Se usará un progreso aproximado.');
     }
 
     List<String> arguments = [
       '-i', inputPath,
     ];
 
+    // ===== FILTROS DE VIDEO =====
     List<String> filters = [];
 
+    // Escalado de resolución (limitado a x4)
     if (settings.resolutionUpscale && originalWidth != null && originalHeight != null) {
       int targetW = settings.targetWidth;
       int targetH = settings.targetHeight;
-      
+
       if (targetW == 0 && targetH > 0) {
         targetW = (originalWidth * targetH / originalHeight).round();
       } else if (targetH == 0 && targetW > 0) {
         targetH = (originalHeight * targetW / originalWidth).round();
       }
-      
+
       double scaleW = targetW / originalWidth;
       double scaleH = targetH / originalHeight;
       double scaleFactor = scaleW > scaleH ? scaleW : scaleH;
-      
+
       if (scaleFactor > settings.maxScaleFactor) {
         scaleFactor = settings.maxScaleFactor.toDouble();
         targetW = (originalWidth * scaleFactor).round();
         targetH = (originalHeight * scaleFactor).round();
         debugPrint('⚠️ Factor de escala limitado a x${settings.maxScaleFactor}');
       }
-      
+
       filters.add('scale=$targetW:$targetH:flags=lanczos');
     }
 
+    // Interpolación de frames (limitada a 4x FPS original)
     if (settings.frameInterpolation && originalFps != null && originalFps > 0) {
       int maxTargetFps = originalFps * settings.maxScaleFactor;
       int finalTargetFps = settings.targetFps > maxTargetFps ? maxTargetFps : settings.targetFps;
-      
+
       if (finalTargetFps > originalFps) {
         filters.add('minterpolate=fps=$finalTargetFps:mi_mode=mci:me_mode=bidir:mc_mode=obmc:me=ds');
-        debugPrint('📊 Interpolando de ${originalFps}fps a ${finalTargetFps}fps (x${finalTargetFps/originalFps})');
+        debugPrint('📊 Interpolando de ${originalFps}fps a ${finalTargetFps}fps');
       }
     }
 
@@ -140,9 +147,9 @@ class FFmpegWrapper {
       arguments.addAll(['-vf', filters.join(',')]);
     }
 
-    // Configuración de video según modo seleccionado
+    // ===== CONFIGURACIÓN DE VIDEO =====
     if (settings.bitrateMode == BitrateMode.cbr) {
-      // CBR: bitrate fijo con maxrate y bufsize iguales
+      // CBR: bitrate constante
       arguments.addAll([
         '-b:v', '${settings.videoBitrate}k',
         '-maxrate', '${settings.videoBitrate}k',
@@ -151,7 +158,7 @@ class FFmpegWrapper {
 
       if (settings.hardwareAcceleration) {
         if (settings.videoCodec == 'libx264') {
-          arguments.addAll(['-c:v', 'h264_mediacodec', '-bitrate_mode', '0']); // 0 = CBR en mediacodec
+          arguments.addAll(['-c:v', 'h264_mediacodec', '-bitrate_mode', '0']);
         } else if (settings.videoCodec == 'libx265') {
           arguments.addAll(['-c:v', 'hevc_mediacodec', '-bitrate_mode', '0']);
         } else {
@@ -161,7 +168,7 @@ class FFmpegWrapper {
         arguments.addAll(['-c:v', settings.videoCodec]);
       }
     } else {
-      // CRF: modo original
+      // CRF: calidad constante
       arguments.addAll([
         '-c:v', settings.videoCodec,
         '-preset', settings.preset,
@@ -178,6 +185,7 @@ class FFmpegWrapper {
       }
     }
 
+    // ===== CONFIGURACIÓN DE AUDIO =====
     arguments.addAll([
       '-c:a', settings.audioCodec,
       '-b:a', '${settings.audioBitrate}k',
@@ -190,12 +198,14 @@ class FFmpegWrapper {
       arguments.addAll(['-ac', '2']);
     }
 
+    // ===== METADATOS =====
     if (!settings.preserveMetadata) {
       arguments.addAll(['-map_metadata', '-1']);
     }
 
     arguments.addAll(['-movflags', '+faststart', '-y', outputPath]);
 
+    // Convertir a string para executeAsync
     String command = arguments.join(' ');
 
     try {
@@ -252,6 +262,90 @@ class FFmpegWrapper {
       return false;
     }
   }
+
+  // ========== PROCESAMIENTO DE AUDIO CON RAMPA DE VELOCIDAD (para speed ramp) ==========
+  Future<bool> processAudioWithSpeedRamp({
+    required String inputPath,
+    required String outputPath,
+    required List<SpeedSegment> segments,
+    int? totalDurationMicros,
+    Function(double progress)? onProgress,
+    Function(String log)? onLog,
+  }) async {
+    if (_isProcessing) {
+      debugPrint('❌ Ya hay un procesamiento en curso');
+      return false;
+    }
+
+    _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Aplicando speed ramp...";
+
+    // Construir filtro setpts con condiciones
+    String setptsExpr = 'setpts=\'';
+    for (int i = 0; i < segments.length; i++) {
+      final seg = segments[i];
+      final startSec = seg.start.inMilliseconds / 1000.0;
+      final endSec = seg.end.inMilliseconds / 1000.0;
+      final speedFactor = 1.0 / seg.speed; // setpts usa el inverso de la velocidad
+      if (i > 0) setptsExpr += ':';
+      setptsExpr += 'if(between(T,$startSec,$endSec),PTS*$speedFactor';
+    }
+    // Para el resto del video, velocidad normal
+    setptsExpr += ',PTS' + ')' * segments.length + '\'';
+
+    final command = '-i "$inputPath" -af "$setptsExpr" -c:a copy -y "$outputPath"';
+
+    try {
+      debugPrint('⚙️ Speed ramp command: $command');
+
+      final completer = Completer<bool>();
+
+      _currentSession = await FFmpegKit.executeAsync(
+        command,
+        (session) {
+          session.getReturnCode().then((returnCode) {
+            final success = ReturnCode.isSuccess(returnCode);
+            if (success) {
+              _statusMessage = "✅ Completado";
+              _progress = 1.0;
+              onProgress?.call(1.0);
+              debugPrint('✅ Speed ramp exitoso: $outputPath');
+            } else {
+              _statusMessage = "❌ Error en speed ramp";
+              session.getOutput().then((output) {
+                debugPrint('❌ Error FFmpeg: $output');
+              });
+            }
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(success);
+          }).catchError((error) {
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(false);
+          });
+        },
+        (log) {
+          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
+          onLog?.call(log.getMessage());
+        },
+        (statistics) {
+          // No hay progreso fácil en este caso
+        },
+      );
+
+      return await completer.future;
+    } catch (e) {
+      _isProcessing = false;
+      _currentSession = null;
+      _statusMessage = "❌ Error: $e";
+      debugPrint('❌ Excepción: $e');
+      return false;
+    }
+  }
+
+  // ========== MÉTODOS AUXILIARES ==========
 
   Future<bool> executeCommandWithArgs(List<String> arguments) async {
     try {
