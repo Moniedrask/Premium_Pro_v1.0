@@ -4,11 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../services/media_processor.dart';
-import '../models/video_settings.dart';
+import '../models/video_settings.dart'; // Aquí ya está BitrateMode
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
-import '../models/bitrate_mode.dart';
+// Eliminar la línea: import '../models/bitrate_mode.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -447,7 +447,9 @@ class TimelineWidgetState extends State<TimelineWidget> {
                 DropdownMenuItem(value: BitrateMode.cbr, child: Text('CBR')),
               ],
               onChanged: processor.isProcessing ? null : (val) {
-                setState(() => _settings.bitrateMode = val!);
+                setState(() {
+                  if (val != null) _settings.bitrateMode = val;
+                });
               },
             ),
           ),
