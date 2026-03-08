@@ -57,7 +57,6 @@ class PremiumProApp extends StatelessWidget {
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settingsProvider, child) {
-          // Cargar presets de usuario al inicio
           WidgetsBinding.instance.addPostFrameCallback((_) {
             settingsProvider.loadUserPresets();
           });
@@ -122,10 +121,9 @@ class _HomeScreenState extends State<HomeScreen> {
     ImageEditorWidget(),
   ];
 
-  // Claves para acceder a los estados de los widgets
-  final _timelineKey = GlobalKey<_TimelineWidgetState>();
-  final _audioKey = GlobalKey<_AudioTimelineWidgetState>();
-  final _imageKey = GlobalKey<_ImageEditorWidgetState>();
+  final _timelineKey = GlobalKey<TimelineWidgetState>();
+  final _audioKey = GlobalKey<AudioTimelineWidgetState>();
+  final _imageKey = GlobalKey<ImageEditorWidgetState>();
 
   void _applyCompressionPreset(CompressionPreset preset) {
     switch (_currentIndex) {
