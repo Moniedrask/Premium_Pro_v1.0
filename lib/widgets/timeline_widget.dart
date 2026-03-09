@@ -6,7 +6,7 @@ import 'dart:io';
 import '../services/media_processor.dart';
 import '../models/video_settings.dart';
 import '../models/video_effect.dart';
-import '../widgets/filter_selector.dart';
+import '../widgets/video_effect_selector.dart'; // 👈 NUEVO IMPORT
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
@@ -24,7 +24,7 @@ class TimelineWidgetState extends State<TimelineWidget> {
   late VideoSettings _settings;
   bool _keepOriginalName = false;
 
-  // Lista de resoluciones predefinidas (con tipos mixtos)
+  // Lista de resoluciones predefinidas
   final List<Map<String, dynamic>> _presetResolutions = [
     {'name': '144p', 'width': 256, 'height': 144},
     {'name': '240p', 'width': 426, 'height': 240},
@@ -287,7 +287,7 @@ class TimelineWidgetState extends State<TimelineWidget> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Campos manuales para resolución (si se desea personalizar)
+                  // Campos manuales para resolución
                   Row(
                     children: [
                       Expanded(
@@ -398,7 +398,8 @@ class TimelineWidgetState extends State<TimelineWidget> {
                     'EFECTOS DE VIDEO',
                     style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
-                  FilterSelector(
+                  // 👇 USAR EL NUEVO SELECTOR DE VIDEO
+                  VideoEffectSelector(
                     currentFilter: _settings.effect?.type ?? VideoEffectType.none,
                     intensity: _settings.effect?.intensity ?? 0.5,
                     onChanged: (type, intensity) {
