@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart'; // ← IMPORTANTE
 import '../models/timeline_project.dart';
 import '../models/timeline_layer.dart';
 import '../services/timeline_exporter.dart';
@@ -54,7 +55,7 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
             id: id,
             name: name,
             start: Duration.zero,
-            duration: const Duration(seconds: 10), // placeholder
+            duration: const Duration(seconds: 10),
             filePath: path,
           );
           break;
@@ -129,7 +130,6 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
         layer: layer,
         onSave: (updated) {
           setState(() {
-            // Reemplazar la capa en la lista
             final index = _project.layers.indexWhere((l) => l.id == updated.id);
             if (index != -1) {
               _project.layers[index] = updated;
@@ -188,7 +188,6 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
       ),
       body: Column(
         children: [
-          // Botones para añadir capas
           Container(
             height: 60,
             color: Colors.grey[900],
@@ -202,7 +201,6 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
               ],
             ),
           ),
-          // Línea de tiempo
           Expanded(
             child: Container(
               color: Colors.grey[850],
@@ -218,7 +216,6 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
               ),
             ),
           ),
-          // Regla de tiempo
           Container(
             height: 40,
             color: Colors.grey[900],
@@ -264,7 +261,6 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
       ),
       child: Stack(
         children: [
-          // Barra de duración
           Positioned(
             left: layer.start.inMilliseconds * _zoom,
             width: layer.duration.inMilliseconds * _zoom,
@@ -282,7 +278,6 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
                       ),
                     ),
                   ),
-                  // Indicadores de fade
                   if (layer.fadeIn.inMilliseconds > 0)
                     const Icon(Icons.keyboard_arrow_right, size: 16, color: Colors.white70),
                   if (layer.fadeOut.inMilliseconds > 0)
