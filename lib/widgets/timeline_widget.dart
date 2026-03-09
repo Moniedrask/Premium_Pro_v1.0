@@ -24,6 +24,19 @@ class TimelineWidgetState extends State<TimelineWidget> {
   late VideoSettings _settings;
   bool _keepOriginalName = false;
 
+  // Lista de resoluciones predefinidas
+  final List<Map<String, int>> _presetResolutions = [
+    {'name': '144p', 'width': 256, 'height': 144},
+    {'name': '240p', 'width': 426, 'height': 240},
+    {'name': '360p', 'width': 640, 'height': 360},
+    {'name': '480p', 'width': 854, 'height': 480},
+    {'name': '720p', 'width': 1280, 'height': 720},
+    {'name': '1080p', 'width': 1920, 'height': 1080},
+    {'name': '1440p', 'width': 2560, 'height': 1440},
+    {'name': '4K', 'width': 3840, 'height': 2160},
+    {'name': '8K', 'width': 7680, 'height': 4320},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -247,6 +260,57 @@ class TimelineWidgetState extends State<TimelineWidget> {
                   const SizedBox(height: 10),
                   _buildHardwareAccelerationSwitch(processor),
                   const SizedBox(height: 10),
+
+                  // Selector de resolución predefinida
+                  const Text('Resolución de salida', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(height: 5),
+                  DropdownButtonFormField<Map<String, int>>(
+                    value: _presetResolutions.firstWhere(
+                      (r) => r['width'] == _settings.targetWidth && r['height'] == _settings.targetHeight,
+                      orElse: () => {'name': 'Personalizada', 'width': _settings.targetWidth, 'height': _settings.targetHeight},
+                    ),
+                    items: _presetResolutions.map((res) {
+                      return DropdownMenuItem(
+                        value: res,
+                        child: Text(res['name']!, style: const TextStyle(color: Colors.white)),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _settings.targetWidth = val['width']!;
+                          _settings.targetHeight = val['height']!;
+                        });
+                      }
+                    },
+                    decoration: const InputDecoration(labelText: 'Preset'),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Campos manuales para resolución (si se desea personalizar)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(labelText: 'Ancho (px)'),
+                          keyboardType: TextInputType.number,
+                          controller: TextEditingController(text: _settings.targetWidth.toString()),
+                          onChanged: (val) => setState(() => _settings.targetWidth = int.tryParse(val) ?? 1920),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(labelText: 'Alto (px)'),
+                          keyboardType: TextInputType.number,
+                          controller: TextEditingController(text: _settings.targetHeight.toString()),
+                          onChanged: (val) => setState(() => _settings.targetHeight = int.tryParse(val) ?? 1080),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
                   CheckboxListTile(
                     title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -290,31 +354,6 @@ class TimelineWidgetState extends State<TimelineWidget> {
                     secondary: Icon(Icons.zoom_out_map, color: globalSettings.accentColor),
                     activeColor: globalSettings.accentColor,
                   ),
-                  if (_settings.resolutionUpscale)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              decoration: const InputDecoration(labelText: 'Ancho objetivo (px)'),
-                              keyboardType: TextInputType.number,
-                              controller: TextEditingController(text: _settings.targetWidth.toString()),
-                              onChanged: (val) => setState(() => _settings.targetWidth = int.tryParse(val) ?? 1920),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              decoration: const InputDecoration(labelText: 'Alto objetivo (px)'),
-                              keyboardType: TextInputType.number,
-                              controller: TextEditingController(text: _settings.targetHeight.toString()),
-                              onChanged: (val) => setState(() => _settings.targetHeight = int.tryParse(val) ?? 1080),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   const SizedBox(height: 5),
                   CheckboxListTile(
                     title: const Text('Interpolar frames', style: TextStyle(color: Colors.white)),
@@ -492,9 +531,9 @@ class TimelineWidgetState extends State<TimelineWidget> {
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         Slider(
           value: _settings.videoBitrate.toDouble(),
-          min: 50,   // 👈 Cambiado de 500 a 50
+          min: 50,
           max: 15000,
-          divisions: 149, // Ajustado para mantener 150 pasos aprox
+          divisions: 149,
           activeColor: Colors.blueAccent,
           onChanged: processor.isProcessing ? null : (val) {
             setState(() => _settings.videoBitrate = val.round());
