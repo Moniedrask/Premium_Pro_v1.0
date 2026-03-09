@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'video_effect.dart';
 
 enum BitrateMode { crf, cbr }
 
@@ -17,17 +18,14 @@ class VideoSettings {
   int audioSampleRate;
   String audioChannels;
   
-  // Interpolación de frames (sin IA)
   bool frameInterpolation;
   int targetFps;
   
-  // Escalado de resolución (sin IA)
   bool resolutionUpscale;
   int targetWidth;
   int targetHeight;
   int maxScaleFactor;
   
-  // IA (opcional)
   bool aiInterpolation;
   int aiTargetFps;
   bool aiStabilization;
@@ -35,6 +33,10 @@ class VideoSettings {
   bool preserveMetadata;
   bool aiEnabled;
   bool saveAsDefault;
+
+  // Nuevos campos
+  VideoEffect? effect;
+  bool? stabilize;
 
   VideoSettings({
     this.videoCodec = 'libx264',
@@ -62,6 +64,8 @@ class VideoSettings {
     this.preserveMetadata = false,
     this.aiEnabled = false,
     this.saveAsDefault = false,
+    this.effect,
+    this.stabilize = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -90,6 +94,8 @@ class VideoSettings {
       'aiStabilization': aiStabilization,
       'preserveMetadata': preserveMetadata,
       'aiEnabled': aiEnabled,
+      'effect': effect?.toJson(),
+      'stabilize': stabilize,
     };
   }
 
@@ -119,6 +125,8 @@ class VideoSettings {
       aiStabilization: json['aiStabilization'] ?? false,
       preserveMetadata: json['preserveMetadata'] ?? false,
       aiEnabled: json['aiEnabled'] ?? false,
+      effect: json['effect'] != null ? VideoEffect.fromJson(json['effect']) : null,
+      stabilize: json['stabilize'] ?? false,
     );
   }
 
