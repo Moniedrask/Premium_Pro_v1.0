@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:ffmpeg_kit_flutter_minimal/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_minimal/return_code.dart';
 import 'package:ffmpeg_kit_flutter_minimal/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_minimal/statistics.dart';
 import 'package:ffmpeg_kit_flutter_minimal/ffprobe_kit.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/video_settings.dart';
+import '../models/video_effect.dart';
 import '../models/speed_segment.dart';
 
 class FFmpegWrapper {
@@ -26,6 +29,8 @@ class FFmpegWrapper {
     await FFmpegKitConfig.enableLogs();
     debugPrint('✅ FFmpeg Wrapper inicializado');
   }
+
+  // ========== MÉTODOS PARA OBTENER INFORMACIÓN ==========
 
   Future<int?> getVideoDuration(String path) async {
     try {
@@ -70,97 +75,7 @@ class FFmpegWrapper {
     return null;
   }
 
-Future<bool> applyVideoEffect({
-  required String inputPath,
-  required String outputPath,
-  required VideoEffect effect,
-}) async {
-  final filter = effect.ffmpegFilter;
-  if (filter.isEmpty) return false;
-
-  final args = [
-    '-i', inputPath,
-    '-vf', filter,
-    '-c:a', 'copy',
-    '-y', outputPath,
-  ];
-  return executeCommandWithArgs(args);
-}
-
-Future<bool> stabilizeVideo({
-  required String inputPath,
-  required String outputPath,
-}) async {
-  // Requiere dos pasos: detectar y estabilizar
-  final dir = await getTemporaryDirectory();
-  final trfFile = '${dir.path}/transform.trf';
-
-  // Paso 1: detectar
-  final detectArgs = [
-    '-i', inputPath,
-    '-vf', 'vidstabdetect=shakiness=5:accuracy=15:result=$trfFile',
-    '-f', 'null', '-',
-  ];
-  final detectSuccess = await executeCommandWithArgs(detectArgs);
-  if (!detectSuccess) return false;
-
-  // Paso 2: aplicar
-  final stabilizeArgs = [
-    '-i', inputPath,
-    '-vf', 'vidstabtransform=input=$trfFile:zoom=1:smoothing=30',
-    '-y', outputPath,
-  ];
-  return executeCommandWithArgs(stabilizeArgs);
-}
-
-Future<bool> applyAudioFade({
-  required String inputPath,
-  required String outputPath,
-  required Duration fadeIn,
-  required Duration fadeOut,
-}) async {
-  final filters = [];
-  if (fadeIn.inMilliseconds > 0) {
-    filters.add('afade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
-  }
-  if (fadeOut.inMilliseconds > 0) {
-    // Necesitamos la duración total para el fade out
-    // Por simplicidad, asumimos que se pasa aparte
-  }
-  if (filters.isEmpty) return false;
-
-  final args = [
-    '-i', inputPath,
-    '-af', filters.join(','),
-    '-c:v', 'copy',
-    '-y', outputPath,
-  ];
-  return executeCommandWithArgs(args);
-}
-
-Future<bool> applyVideoFade({
-  required String inputPath,
-  required String outputPath,
-  required Duration fadeIn,
-  required Duration fadeOut,
-}) async {
-  final filters = [];
-  if (fadeIn.inMilliseconds > 0) {
-    filters.add('fade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
-  }
-  if (fadeOut.inMilliseconds > 0) {
-    filters.add('fade=t=out:st=${fadeOut.inMilliseconds / 1000}:d=0');
-  }
-  if (filters.isEmpty) return false;
-
-  final args = [
-    '-i', inputPath,
-    '-vf', filters.join(','),
-    '-c:a', 'copy',
-    '-y', outputPath,
-  ];
-  return executeCommandWithArgs(args);
-}
+  // ========== PROCESAMIENTO DE VIDEO (con todas las opciones) ==========
 
   Future<bool> processVideo({
     required String inputPath,
@@ -193,8 +108,10 @@ Future<bool> applyVideoFade({
       '-i', inputPath,
     ];
 
+    // ===== FILTROS DE VIDEO =====
     List<String> filters = [];
 
+    // Escalado de resolución (limitado a 4x)
     if (settings.resolutionUpscale && originalWidth != null && originalHeight != null) {
       int targetW = settings.targetWidth;
       int targetH = settings.targetHeight;
@@ -219,6 +136,7 @@ Future<bool> applyVideoFade({
       filters.add('scale=$targetW:$targetH:flags=lanczos');
     }
 
+    // Interpolación de frames (limitada a 4x FPS original)
     if (settings.frameInterpolation && originalFps != null && originalFps > 0) {
       int maxTargetFps = originalFps * settings.maxScaleFactor;
       int finalTargetFps = settings.targetFps > maxTargetFps ? maxTargetFps : settings.targetFps;
@@ -229,10 +147,19 @@ Future<bool> applyVideoFade({
       }
     }
 
+    // Efectos de video (negativo, sepia, etc.)
+    if (settings.effect != null && settings.effect!.type != VideoEffectType.none) {
+      final effectFilter = settings.effect!.ffmpegFilter;
+      if (effectFilter.isNotEmpty) {
+        filters.add(effectFilter);
+      }
+    }
+
     if (filters.isNotEmpty) {
       arguments.addAll(['-vf', filters.join(',')]);
     }
 
+    // ===== CONFIGURACIÓN DE VIDEO =====
     if (settings.bitrateMode == BitrateMode.cbr) {
       arguments.addAll([
         '-b:v', '${settings.videoBitrate}k',
@@ -268,6 +195,7 @@ Future<bool> applyVideoFade({
       }
     }
 
+    // ===== CONFIGURACIÓN DE AUDIO =====
     arguments.addAll([
       '-c:a', settings.audioCodec,
       '-b:a', '${settings.audioBitrate}k',
@@ -280,12 +208,14 @@ Future<bool> applyVideoFade({
       arguments.addAll(['-ac', '2']);
     }
 
+    // ===== METADATOS =====
     if (!settings.preserveMetadata) {
       arguments.addAll(['-map_metadata', '-1']);
     }
 
     arguments.addAll(['-movflags', '+faststart', '-y', outputPath]);
 
+    // Convertir a string para executeAsync
     String command = arguments.join(' ');
 
     try {
@@ -343,6 +273,151 @@ Future<bool> applyVideoFade({
     }
   }
 
+  // ========== NUEVOS MÉTODOS ==========
+
+  /// Aplica un efecto de video (negativo, sepia, etc.) a un archivo.
+  Future<bool> applyVideoEffect({
+    required String inputPath,
+    required String outputPath,
+    required VideoEffect effect,
+  }) async {
+    final filter = effect.ffmpegFilter;
+    if (filter.isEmpty) return false;
+
+    final args = [
+      '-i', inputPath,
+      '-vf', filter,
+      '-c:a', 'copy',
+      '-y', outputPath,
+    ];
+    return executeCommandWithArgs(args);
+  }
+
+  /// Estabiliza un video usando el filtro vidstab.
+  Future<bool> stabilizeVideo({
+    required String inputPath,
+    required String outputPath,
+  }) async {
+    // Requiere dos pasos: detectar y estabilizar
+    final dir = await getTemporaryDirectory();
+    final trfFile = '${dir.path}/transform.trf';
+
+    // Paso 1: detectar
+    final detectArgs = [
+      '-i', inputPath,
+      '-vf', 'vidstabdetect=shakiness=5:accuracy=15:result=$trfFile',
+      '-f', 'null', '-',
+    ];
+    final detectSuccess = await executeCommandWithArgs(detectArgs);
+    if (!detectSuccess) return false;
+
+    // Paso 2: aplicar
+    final stabilizeArgs = [
+      '-i', inputPath,
+      '-vf', 'vidstabtransform=input=$trfFile:zoom=1:smoothing=30',
+      '-y', outputPath,
+    ];
+    return executeCommandWithArgs(stabilizeArgs);
+  }
+
+  /// Aplica fade in/out a un archivo de audio.
+  Future<bool> applyAudioFade({
+    required String inputPath,
+    required String outputPath,
+    required Duration fadeIn,
+    required Duration fadeOut,
+  }) async {
+    final filters = [];
+    if (fadeIn.inMilliseconds > 0) {
+      filters.add('afade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
+    }
+    if (fadeOut.inMilliseconds > 0) {
+      // Necesitamos la duración total; aquí se omite por simplicidad
+      // En una implementación real, se debería pasar la duración total
+    }
+    if (filters.isEmpty) return false;
+
+    final args = [
+      '-i', inputPath,
+      '-af', filters.join(','),
+      '-c:v', 'copy',
+      '-y', outputPath,
+    ];
+    return executeCommandWithArgs(args);
+  }
+
+  /// Aplica fade in/out a un archivo de video.
+  Future<bool> applyVideoFade({
+    required String inputPath,
+    required String outputPath,
+    required Duration fadeIn,
+    required Duration fadeOut,
+  }) async {
+    final filters = [];
+    if (fadeIn.inMilliseconds > 0) {
+      filters.add('fade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
+    }
+    if (fadeOut.inMilliseconds > 0) {
+      filters.add('fade=t=out:st=${fadeOut.inMilliseconds / 1000}:d=0');
+    }
+    if (filters.isEmpty) return false;
+
+    final args = [
+      '-i', inputPath,
+      '-vf', filters.join(','),
+      '-c:a', 'copy',
+      '-y', outputPath,
+    ];
+    return executeCommandWithArgs(args);
+  }
+
+  // ========== MÉTODOS AUXILIARES ==========
+
+  Future<bool> executeCommandWithArgs(List<String> arguments) async {
+    try {
+      final session = await FFmpegKit.executeWithArguments(arguments);
+      final returnCode = await session.getReturnCode();
+      return ReturnCode.isSuccess(returnCode);
+    } catch (e) {
+      debugPrint('❌ Error en comando con args: $e');
+      return false;
+    }
+  }
+
+  void cancel() {
+    _currentSession?.cancel();
+    _isProcessing = false;
+    _currentSession = null;
+    _statusMessage = "Cancelado";
+    debugPrint('⛔ Procesamiento cancelado por el usuario');
+  }
+
+  Future<bool> executeCommand(String command) async {
+    try {
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+      return ReturnCode.isSuccess(returnCode);
+    } catch (e) {
+      debugPrint('❌ Error en comando personalizado: $e');
+      return false;
+    }
+  }
+
+  Future<List<String>> getAvailableCodecs() async {
+    try {
+      final session = await FFmpegKit.execute('-codecs');
+      final output = await session.getOutput() ?? '';
+      return output.split('\n')
+          .where((line) => line.contains('V') && line.contains('DEV'))
+          .map((line) => line.split(' ').last.trim())
+          .toList();
+    } catch (e) {
+      debugPrint('❌ Error al obtener códecs: $e');
+      return [];
+    }
+  }
+
+  // ========== PROCESAMIENTO DE AUDIO CON RAMPA DE VELOCIDAD ==========
   Future<bool> processAudioWithSpeedRamp({
     required String inputPath,
     required String outputPath,
@@ -417,50 +492,6 @@ Future<bool> applyVideoFade({
       _statusMessage = "❌ Error: $e";
       debugPrint('❌ Excepción: $e');
       return false;
-    }
-  }
-
-  Future<bool> executeCommandWithArgs(List<String> arguments) async {
-    try {
-      final session = await FFmpegKit.executeWithArguments(arguments);
-      final returnCode = await session.getReturnCode();
-      return ReturnCode.isSuccess(returnCode);
-    } catch (e) {
-      debugPrint('❌ Error en comando con args: $e');
-      return false;
-    }
-  }
-
-  void cancel() {
-    _currentSession?.cancel();
-    _isProcessing = false;
-    _currentSession = null;
-    _statusMessage = "Cancelado";
-    debugPrint('⛔ Procesamiento cancelado por el usuario');
-  }
-
-  Future<bool> executeCommand(String command) async {
-    try {
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
-      return ReturnCode.isSuccess(returnCode);
-    } catch (e) {
-      debugPrint('❌ Error en comando personalizado: $e');
-      return false;
-    }
-  }
-
-  Future<List<String>> getAvailableCodecs() async {
-    try {
-      final session = await FFmpegKit.execute('-codecs');
-      final output = await session.getOutput() ?? '';
-      return output.split('\n')
-          .where((line) => line.contains('V') && line.contains('DEV'))
-          .map((line) => line.split(' ').last.trim())
-          .toList();
-    } catch (e) {
-      debugPrint('❌ Error al obtener códecs: $e');
-      return [];
     }
   }
 }
