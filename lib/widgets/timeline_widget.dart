@@ -4,13 +4,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../services/media_processor.dart';
-import '../models/video_settings.dart';
+import '../models/video_settings.dart'; // Aquí ya está BitrateMode
 import '../models/video_effect.dart';
 import '../widgets/filter_selector.dart';
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
-import '../models/bitrate_mode.dart';
+// Eliminar import '../models/bitrate_mode.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -361,7 +361,7 @@ class TimelineWidgetState extends State<TimelineWidget> {
                     style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   FilterSelector(
-                    currentFilter: _settings.effect?.type ?? FilterType.none,
+                    currentFilter: _settings.effect?.type ?? VideoEffectType.none,
                     intensity: _settings.effect?.intensity ?? 0.5,
                     onChanged: (type, intensity) {
                       setState(() {
@@ -494,8 +494,8 @@ class TimelineWidgetState extends State<TimelineWidget> {
         Slider(
           value: _settings.videoBitrate.toDouble(),
           min: 500,
-          max: 10000,
-          divisions: 38,
+          max: 15000,
+          divisions: 58,
           activeColor: Colors.blueAccent,
           onChanged: processor.isProcessing ? null : (val) {
             setState(() => _settings.videoBitrate = val.round());
