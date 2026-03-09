@@ -4,13 +4,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../services/media_processor.dart';
-import '../models/video_settings.dart'; // Aquí ya está BitrateMode
+import '../models/video_settings.dart';
 import '../models/video_effect.dart';
 import '../widgets/filter_selector.dart';
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
-// Eliminar import '../models/bitrate_mode.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -493,15 +492,15 @@ class TimelineWidgetState extends State<TimelineWidget> {
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         Slider(
           value: _settings.videoBitrate.toDouble(),
-          min: 500,
+          min: 50,   // 👈 Cambiado de 500 a 50
           max: 15000,
-          divisions: 58,
+          divisions: 149, // Ajustado para mantener 150 pasos aprox
           activeColor: Colors.blueAccent,
           onChanged: processor.isProcessing ? null : (val) {
             setState(() => _settings.videoBitrate = val.round());
           },
         ),
-        const Text('1000= Baja | 2500= Media | 5000+= Alta', style: TextStyle(color: Colors.grey, fontSize: 12)),
+        const Text('50-500= Baja | 1000-2500= Media | 5000+= Alta', style: TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }
