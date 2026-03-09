@@ -10,6 +10,7 @@ import '../services/hdr_service.dart';
 import '../models/image_settings.dart';
 import '../providers/settings_provider.dart';
 import '../models/app_settings.dart';
+import '../models/filter_type.dart'; // <-- IMPORTANTE
 import '../widgets/filter_selector.dart';
 import '../widgets/hdr_merger_widget.dart';
 
