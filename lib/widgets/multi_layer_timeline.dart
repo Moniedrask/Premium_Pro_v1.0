@@ -6,6 +6,7 @@ import '../models/timeline_layer.dart';
 import '../services/timeline_exporter.dart';
 import '../services/ffmpeg_wrapper.dart';
 import '../providers/settings_provider.dart';
+import 'layer_editor_dialog.dart';
 
 class MultiLayerTimeline extends StatefulWidget {
   const MultiLayerTimeline({super.key});
@@ -121,6 +122,24 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
     );
   }
 
+  Future<void> _editLayer(TimelineLayer layer) async {
+    await showDialog(
+      context: context,
+      builder: (_) => LayerEditorDialog(
+        layer: layer,
+        onSave: (updated) {
+          setState(() {
+            // Reemplazar la capa en la lista
+            final index = _project.layers.indexWhere((l) => l.id == updated.id);
+            if (index != -1) {
+              _project.layers[index] = updated;
+            }
+          });
+        },
+      ),
+    );
+  }
+
   Future<void> _exportProject() async {
     final ffmpeg = FFmpegWrapper();
     final dir = await getExternalStorageDirectory();
@@ -191,7 +210,10 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
                 itemCount: _project.layers.length,
                 itemBuilder: (ctx, index) {
                   final layer = _project.layers[index];
-                  return _buildLayerRow(layer, index);
+                  return GestureDetector(
+                    onTap: () => _editLayer(layer),
+                    child: _buildLayerRow(layer, index),
+                  );
                 },
               ),
             ),
@@ -251,11 +273,23 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      layer.name,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4.0),
+                      child: Text(
+                        layer.name,
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                  ),
+                  // Indicadores de fade
+                  if (layer.fadeIn.inMilliseconds > 0)
+                    const Icon(Icons.keyboard_arrow_right, size: 16, color: Colors.white70),
+                  if (layer.fadeOut.inMilliseconds > 0)
+                    const Icon(Icons.keyboard_arrow_left, size: 16, color: Colors.white70),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 16, color: Colors.white70),
+                    onPressed: () => _editLayer(layer),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 16, color: Colors.white),
@@ -269,7 +303,6 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
               ),
             ),
           ),
-          // Posición y duración editables
         ],
       ),
     );
@@ -301,9 +334,8 @@ class TimelineRulerPainter extends CustomPainter {
       ..color = Colors.white
       ..strokeWidth = 1;
 
-    // Dibujar marcas cada segundo
     for (int sec = 0; sec <= duration.inSeconds; sec++) {
-      final x = sec * 1000 * zoom; // 1000 ms por segundo
+      final x = sec * 1000 * zoom;
       if (x > size.width) break;
 
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
