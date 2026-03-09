@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum VideoEffectType { none, negative, blackAndWhite, sepia, blur, bokeh }
 
 class VideoEffect {
@@ -27,9 +29,8 @@ class VideoEffect {
       case VideoEffectType.sepia:
         return 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131';
       case VideoEffectType.blur:
-        return 'boxblur=${intensity * 10}:1';
+        return 'boxblur=${(intensity * 10).toInt()}:1';
       case VideoEffectType.bokeh:
-        // Simulación básica de bokeh con desenfoque gaussiano
         return 'gblur=sigma=${intensity * 5}';
       default:
         return '';
