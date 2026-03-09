@@ -34,10 +34,9 @@ class AudioProcessor extends ChangeNotifier {
       '-i', inputPath,
     ];
 
-    // Construir lista de filtros de audio
     List<String> audioFilters = [];
 
-    // Ecualizador paramétrico de 10 bandas
+    // Ecualizador
     if (equalizerGains != null && equalizerGains.length == 10) {
       const freqs = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
       const q = 1.0;
@@ -52,7 +51,7 @@ class AudioProcessor extends ChangeNotifier {
       }
     }
 
-    // Compresor dinámico
+    // Compresor
     if (compressorParams != null) {
       final threshold = compressorParams['threshold'] ?? -20;
       final ratio = compressorParams['ratio'] ?? 4;
@@ -67,7 +66,7 @@ class AudioProcessor extends ChangeNotifier {
       audioFilters.add('volume=${settings.normalizeTarget}dB');
     }
 
-    // Reducción de ruido con IA
+    // Reducción de ruido IA
     if (settings.removeNoise && settings.aiEnabled) {
       audioFilters.add('afftdn');
     }
@@ -77,17 +76,14 @@ class AudioProcessor extends ChangeNotifier {
       audioFilters.add('afade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
     }
     if (fadeOut != null && fadeOut.inMilliseconds > 0) {
-      // Nota: para fade out se necesita la duración total del audio.
-      // Aquí se omite por simplicidad; se podría pasar como parámetro adicional.
-      // audioFilters.add('afade=t=out:st=${totalDuration - fadeOut.inMilliseconds / 1000}:d=${fadeOut.inMilliseconds / 1000}');
+      // Nota: requiere duración total; aquí se omite
     }
 
-    // Aplicar todos los filtros de una vez
     if (audioFilters.isNotEmpty) {
       args.addAll(['-af', audioFilters.join(',')]);
     }
 
-    // Configuración del códec de audio
+    // Códec con profundidad de bits
     switch (settings.codec) {
       case 'aac':
         args.addAll(['-c:a', 'aac', '-b:a', '${settings.bitrate}k']);
@@ -99,17 +95,24 @@ class AudioProcessor extends ChangeNotifier {
         args.addAll(['-c:a', 'libopus', '-b:a', '${settings.bitrate}k']);
         break;
       case 'flac':
-        args.addAll(['-c:a', 'flac', '-compression_level', settings.compressionLevel.toString()]);
+        // FLAC: profundidad de bits se controla con -sample_fmt
+        final sampleFmt = settings.bitDepth == 32 ? 's32' : (settings.bitDepth == 24 ? 's24' : 's16');
+        args.addAll([
+          '-c:a', 'flac',
+          '-compression_level', settings.compressionLevel.toString(),
+          '-sample_fmt', sampleFmt,
+        ]);
         break;
       case 'wav':
-        args.addAll(['-c:a', 'pcm_s16le']);
+        // WAV: pcm_s16le, pcm_s24le, pcm_f32le
+        final codec = settings.bitDepth == 32 ? 'pcm_f32le' :
+                      settings.bitDepth == 24 ? 'pcm_s24le' : 'pcm_s16le';
+        args.addAll(['-c:a', codec]);
         break;
     }
 
-    // Frecuencia de muestreo
     args.addAll(['-ar', settings.sampleRate.toString()]);
 
-    // Configuración de canales
     if (settings.channels == 'mono') {
       args.addAll(['-ac', '1']);
     } else if (settings.channels == 'stereo') {
@@ -120,7 +123,6 @@ class AudioProcessor extends ChangeNotifier {
       args.addAll(['-ac', '8']);
     }
 
-    // Sobrescribir sin preguntar
     args.add('-y');
     args.add(outputPath);
 
