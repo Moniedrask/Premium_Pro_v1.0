@@ -47,9 +47,6 @@ android {
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
         multiDexEnabled = true
-
-        // ❌ Eliminado el bloque ndk { abiFilters ... } para evitar conflicto con splits
-        // La selección de arquitecturas la gestiona Flutter mediante --split-per-abi
     }
 
     signingConfigs {
