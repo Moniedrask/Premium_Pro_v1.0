@@ -75,6 +75,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
         removeNoise: preset.removeNoise,
         compressionLevel: preset.compressionLevel,
         aiEnabled: preset.aiEnabled,
+        bitDepth: preset.bitDepth,
       );
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -243,6 +244,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
                   const SizedBox(height: 10),
 
+                  // Selector de códec
                   DropdownButtonFormField<String>(
                     value: _settings.codec,
                     items: const [
@@ -258,6 +260,31 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     decoration: const InputDecoration(labelText: 'Códec'),
                   ),
 
+                  // Selector de profundidad de bits (solo para FLAC y WAV)
+                  if (_settings.codec == 'flac' || _settings.codec == 'wav')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Row(
+                        children: [
+                          const Text('Profundidad: ', style: TextStyle(color: Colors.white)),
+                          const SizedBox(width: 10),
+                          DropdownButton<int>(
+                            value: _settings.bitDepth,
+                            dropdownColor: const Color(0xFF111111),
+                            items: const [
+                              DropdownMenuItem(value: 16, child: Text('16 bits')),
+                              DropdownMenuItem(value: 24, child: Text('24 bits')),
+                              DropdownMenuItem(value: 32, child: Text('32 bits')),
+                            ],
+                            onChanged: processor.isProcessing ? null : (val) {
+                              setState(() => _settings.bitDepth = val!);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Bitrate (solo para códecs con pérdida)
                   if (_settings.codec != 'flac' && _settings.codec != 'wav')
                     Column(
                       children: [
@@ -275,6 +302,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                       ],
                     ),
 
+                  // Compresión FLAC
                   if (_settings.codec == 'flac')
                     Column(
                       children: [
@@ -293,9 +321,12 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     ),
 
                   const SizedBox(height: 10),
+                  // Frecuencia de muestreo (actualizada con 22050 y 32000)
                   DropdownButtonFormField<int>(
                     value: _settings.sampleRate,
                     items: const [
+                      DropdownMenuItem(value: 22050, child: Text('22.05 kHz')),
+                      DropdownMenuItem(value: 32000, child: Text('32 kHz')),
                       DropdownMenuItem(value: 44100, child: Text('44.1 kHz')),
                       DropdownMenuItem(value: 48000, child: Text('48 kHz')),
                       DropdownMenuItem(value: 96000, child: Text('96 kHz')),
@@ -308,6 +339,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
+                  // Canales
                   DropdownButtonFormField<String>(
                     value: _settings.channels,
                     items: const [
@@ -321,6 +353,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
+                  // Normalización
                   Row(
                     children: [
                       Checkbox(
@@ -333,6 +366,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     ],
                   ),
 
+                  // Reducción de ruido IA
                   if (aiManager.isModelAvailable)
                     Row(
                       children: [
@@ -347,6 +381,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     ),
 
                   const SizedBox(height: 10),
+                  // Botón para ecualizador
                   ElevatedButton.icon(
                     onPressed: processor.isProcessing ? null : () {
                       showDialog(
@@ -372,6 +407,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
+                  // Compresor
                   ExpansionTile(
                     title: const Text('Compresor dinámico', style: TextStyle(color: Colors.white)),
                     children: [
@@ -384,6 +420,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
+                  // Fade in/out
                   const Text(
                     'FADE IN/OUT',
                     style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 12),
@@ -409,6 +446,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
+                  // Checkbox "Mantener nombre original"
                   CheckboxListTile(
                     title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -423,6 +461,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     activeColor: globalSettings.accentColor,
                   ),
 
+                  // Checkbox "Guardar como permanente"
                   CheckboxListTile(
                     title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -438,6 +477,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 20),
+                  // Botones de acción
                   Row(
                     children: [
                       Expanded(
