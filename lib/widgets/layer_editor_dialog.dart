@@ -15,6 +15,8 @@ class _LayerEditorDialogState extends State<LayerEditorDialog> {
   late TextEditingController _startController;
   late TextEditingController _durationController;
   late TextEditingController _volumeController;
+  late TextEditingController _fadeInController;
+  late TextEditingController _fadeOutController;
 
   @override
   void initState() {
@@ -22,6 +24,8 @@ class _LayerEditorDialogState extends State<LayerEditorDialog> {
     _startController = TextEditingController(text: widget.layer.start.inMilliseconds.toString());
     _durationController = TextEditingController(text: widget.layer.duration.inMilliseconds.toString());
     _volumeController = TextEditingController(text: widget.layer.volume.toString());
+    _fadeInController = TextEditingController(text: widget.layer.fadeIn.inMilliseconds.toString());
+    _fadeOutController = TextEditingController(text: widget.layer.fadeOut.inMilliseconds.toString());
   }
 
   @override
@@ -47,6 +51,18 @@ class _LayerEditorDialogState extends State<LayerEditorDialog> {
                 decoration: const InputDecoration(labelText: 'Volumen (0-2)'),
                 keyboardType: TextInputType.number,
               ),
+            const Divider(),
+            const Text('Fade in/out', style: TextStyle(fontWeight: FontWeight.bold)),
+            TextField(
+              controller: _fadeInController,
+              decoration: const InputDecoration(labelText: 'Fade in (ms)'),
+              keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _fadeOutController,
+              decoration: const InputDecoration(labelText: 'Fade out (ms)'),
+              keyboardType: TextInputType.number,
+            ),
             // Otros campos según tipo...
           ],
         ),
@@ -63,6 +79,8 @@ class _LayerEditorDialogState extends State<LayerEditorDialog> {
             if (widget.layer.type == LayerType.audio || widget.layer.type == LayerType.video) {
               widget.layer.volume = double.tryParse(_volumeController.text) ?? 1.0;
             }
+            widget.layer.fadeIn = Duration(milliseconds: int.tryParse(_fadeInController.text) ?? 0);
+            widget.layer.fadeOut = Duration(milliseconds: int.tryParse(_fadeOutController.text) ?? 0);
             widget.onSave(widget.layer);
             Navigator.pop(context);
           },
