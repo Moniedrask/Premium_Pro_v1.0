@@ -1,14 +1,20 @@
+import '../widgets/filter_selector.dart';
+
 class ImageSettings {
-  String format;          // jpeg, png, webp, avif
-  int quality;            // 1-100 (para lossy)
-  int compressionLevel;   // 0-9 (para png)
-  bool preserveMetadata;  // conservar EXIF
-  int maxWidth;           // 0 = original
-  int maxHeight;          // 0 = original
-  bool aiUpscale;         // usar IA para escalado
-  int aiScale;            // 2, 4, 8, 16 (pero limitado a 4 en v1.0)
-  String filter;          // 'lanczos', 'bicubic', 'nearest'
+  String format;
+  int quality;
+  int compressionLevel;
+  bool preserveMetadata;
+  int maxWidth;
+  int maxHeight;
+  bool aiUpscale;
+  int aiScale;
+  String filter;
   bool aiEnabled;
+
+  // Nuevos campos
+  FilterType? filterType;
+  double? filterIntensity;
 
   ImageSettings({
     this.format = 'jpeg',
@@ -21,10 +27,9 @@ class ImageSettings {
     this.aiScale = 2,
     this.filter = 'lanczos',
     this.aiEnabled = false,
-  }) {
-    // Limitar aiScale a un máximo de 4 (según requerimiento)
-    if (aiScale > 4) aiScale = 4;
-  }
+    this.filterType = FilterType.none,
+    this.filterIntensity = 0.5,
+  });
 
   Map<String, dynamic> toJson() {
     return {
@@ -38,12 +43,12 @@ class ImageSettings {
       'aiScale': aiScale,
       'filter': filter,
       'aiEnabled': aiEnabled,
+      'filterType': filterType?.index,
+      'filterIntensity': filterIntensity,
     };
   }
 
   factory ImageSettings.fromJson(Map<String, dynamic> json) {
-    int aiScale = json['aiScale'] ?? 2;
-    if (aiScale > 4) aiScale = 4; // Limitar a x4
     return ImageSettings(
       format: json['format'] ?? 'jpeg',
       quality: json['quality'] ?? 85,
@@ -52,9 +57,11 @@ class ImageSettings {
       maxWidth: json['maxWidth'] ?? 0,
       maxHeight: json['maxHeight'] ?? 0,
       aiUpscale: json['aiUpscale'] ?? false,
-      aiScale: aiScale,
+      aiScale: json['aiScale'] ?? 2,
       filter: json['filter'] ?? 'lanczos',
       aiEnabled: json['aiEnabled'] ?? false,
+      filterType: json['filterType'] != null ? FilterType.values[json['filterType']] : FilterType.none,
+      filterIntensity: json['filterIntensity'] ?? 0.5,
     );
   }
 }
