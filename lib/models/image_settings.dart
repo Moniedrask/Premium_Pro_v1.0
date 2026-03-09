@@ -1,4 +1,4 @@
-import '../widgets/filter_selector.dart';
+import 'filter_type.dart';
 
 class ImageSettings {
   String format;
@@ -11,8 +11,6 @@ class ImageSettings {
   int aiScale;
   String filter;
   bool aiEnabled;
-
-  // Nuevos campos
   FilterType? filterType;
   double? filterIntensity;
 
