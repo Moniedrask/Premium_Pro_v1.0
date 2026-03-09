@@ -47,6 +47,12 @@ android {
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
         multiDexEnabled = true
+
+        // Limitar arquitecturas soportadas (solo las necesarias) [citation:3][citation:7]
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+            // Si quieres solo 64 bits (más moderno), usa: abiFilters 'arm64-v8a'
+        }
     }
 
     signingConfigs {
@@ -63,17 +69,30 @@ android {
             signingConfig = signingConfigs.debug
         }
         release {
-            // No se usa firma debug en release para evitar error de keystore en CI
+            // No se especifica signingConfig para evitar error de keystore en CI
             // signingConfig = signingConfigs.debug
-            minifyEnabled = false
-            shrinkResources = false
+
+            // ✅ ACTIVAR COMPRESIÓN Y ELIMINACIÓN DE RECURSOS [citation:2][citation:6]
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
+    // Evitar que errores de lint detengan la compilación [citation:3]
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
+    }
+
+    // Configuración para Android Gradle Plugin 8+ (evita empaquetado legacy) [citation:3]
+    packaging {
+        dex {
+            useLegacyPackaging true
+        }
+        jniLibs {
+            useLegacyPackaging true
+        }
     }
 }
 
@@ -81,15 +100,13 @@ flutter {
     source = "../.."
 }
 
-// Excluir dependencia remota de Arthenica (si existe)
+// Excluir dependencia remota de Arthenica (por si acaso)
 configurations.implementation {
     exclude group: "com.arthenica", module: "ffmpeg-kit-https"
 }
 
 dependencies {
-    // smart-exception desde Maven Central (funciona)
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-    // Tu AAR local (debe estar en libs/)
     implementation files('libs/full_binary-6.0-2.aar')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
