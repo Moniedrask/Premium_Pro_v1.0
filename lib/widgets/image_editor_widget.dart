@@ -6,9 +6,12 @@ import 'package:path_provider/path_provider.dart';
 import '../services/image_processor.dart';
 import '../services/ai_manager.dart';
 import '../services/trash_manager.dart';
+import '../services/hdr_service.dart';
 import '../models/image_settings.dart';
 import '../providers/settings_provider.dart';
 import '../models/app_settings.dart';
+import '../widgets/filter_selector.dart';
+import '../widgets/hdr_merger_widget.dart';
 
 class ImageEditorWidget extends StatefulWidget {
   const ImageEditorWidget({super.key});
@@ -22,6 +25,7 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
   String _selectedImageName = 'Ninguno';
   late ImageSettings _settings;
   bool _keepOriginalName = false;
+  List<String> _hdrImages = [];
 
   @override
   void initState() {
@@ -35,26 +39,6 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
     _settings = ImageSettings.fromJson(globalSettings.imageDefaults);
     _keepOriginalName = globalSettings.keepOriginalName;
     setState(() {});
-  }
-
-  void applyPreset(ImageSettings preset) {
-    setState(() {
-      _settings = ImageSettings(
-        format: preset.format,
-        quality: preset.quality,
-        compressionLevel: preset.compressionLevel,
-        preserveMetadata: preset.preserveMetadata,
-        maxWidth: preset.maxWidth,
-        maxHeight: preset.maxHeight,
-        aiUpscale: preset.aiUpscale,
-        aiScale: preset.aiScale,
-        filter: preset.filter,
-        aiEnabled: preset.aiEnabled,
-      );
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Preset aplicado a imagen'), backgroundColor: Colors.green),
-    );
   }
 
   double _getPadding(InterfaceDensity density) {
@@ -77,6 +61,28 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
       case CornerRoundness.rounded:
         return BorderRadius.circular(16);
     }
+  }
+
+  void applyPreset(ImageSettings preset) {
+    setState(() {
+      _settings = ImageSettings(
+        format: preset.format,
+        quality: preset.quality,
+        compressionLevel: preset.compressionLevel,
+        preserveMetadata: preset.preserveMetadata,
+        maxWidth: preset.maxWidth,
+        maxHeight: preset.maxHeight,
+        aiUpscale: preset.aiUpscale,
+        aiScale: preset.aiScale,
+        filter: preset.filter,
+        aiEnabled: preset.aiEnabled,
+        filterType: preset.filterType,
+        filterIntensity: preset.filterIntensity,
+      );
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preset aplicado a imagen'), backgroundColor: Colors.green),
+    );
   }
 
   Future<void> _deleteFile(String filePath) async {
@@ -157,6 +163,34 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
           }
         }
       }
+    }
+  }
+
+  Future<void> _mergeHDR() async {
+    if (_hdrImages.length < 2 || _hdrImages.length > 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona entre 2 y 3 imágenes para HDR'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final dir = await getExternalStorageDirectory();
+    if (dir == null) return;
+    final outputPath = '${dir.path}/PremiumPro/Images/hdr_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    final result = await HdrService.mergeImages(_hdrImages, outputPath: outputPath);
+    if (result != null && mounted) {
+      setState(() {
+        _selectedImagePath = result;
+        _selectedImageName = result.split('/').last;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Imagen HDR fusionada'), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ Error al fusionar HDR'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -324,6 +358,39 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
                       ],
                     ),
 
+                  const SizedBox(height: 10),
+                  const Text(
+                    'EFECTOS DE IMAGEN',
+                    style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  FilterSelector(
+                    currentFilter: _settings.filterType ?? FilterType.none,
+                    intensity: _settings.filterIntensity ?? 0.5,
+                    onChanged: (type, intensity) {
+                      setState(() {
+                        _settings.filterType = type;
+                        _settings.filterIntensity = intensity;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'HDR POR CAPAS',
+                    style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  HdrMergerWidget(
+                    onImagesSelected: (paths) {
+                      _hdrImages = paths;
+                    },
+                  ),
+                  if (_hdrImages.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: ElevatedButton(
+                        onPressed: _mergeHDR,
+                        child: const Text('Fusionar HDR'),
+                      ),
+                    ),
                   const SizedBox(height: 10),
                   CheckboxListTile(
                     title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
