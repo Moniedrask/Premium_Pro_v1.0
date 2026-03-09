@@ -38,6 +38,10 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     'knee': 0,
   };
 
+  // Fade in/out
+  int _fadeInMs = 0;
+  int _fadeOutMs = 0;
+
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
@@ -380,6 +384,31 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
+                  const Text(
+                    'FADE IN/OUT',
+                    style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(labelText: 'Fade in (ms)'),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) => _fadeInMs = int.tryParse(val) ?? 0,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(labelText: 'Fade out (ms)'),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) => _fadeOutMs = int.tryParse(val) ?? 0,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
                   CheckboxListTile(
                     title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -578,6 +607,8 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
         settings: _settings,
         equalizerGains: _equalizerGains,
         compressorParams: _compressorParams,
+        fadeIn: _fadeInMs > 0 ? Duration(milliseconds: _fadeInMs) : null,
+        fadeOut: _fadeOutMs > 0 ? Duration(milliseconds: _fadeOutMs) : null,
       );
 
       if (success && mounted) {
