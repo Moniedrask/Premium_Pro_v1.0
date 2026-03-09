@@ -1,4 +1,4 @@
-# Flutter specific rules
+# Flutter wrapper
 -keep class io.flutter.app.** { *; }
 -keep class io.flutter.plugin.**  { *; }
 -keep class io.flutter.util.**  { *; }
@@ -6,30 +6,23 @@
 -keep class io.flutter.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
 
-# FFmpegKit rules
+# FFmpegKit y smart-exception
 -keep class com.arthenica.ffmpegkit.** { *; }
+-keep class com.arthenica.smartexception.java.Exceptions { *; }
 -dontwarn com.arthenica.ffmpegkit.**
 
-# Smart exception (obligatorio para FFmpegKit)
--keep class com.arthenica.smartexception.java.Exceptions { *; }
-
-# Keep native methods
+# Mantener métodos nativos
 -keepclasseswithmembernames class * {
     native <methods>;
 }
 
-# Keep enum values
+# Mantener enums
 -keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
 
-# Keep Parcelable classes
--keep class * implements android.os.Parcelable {
-    public static final android.os.Parcelable$Creator *;
-}
-
-# Remove logging in release
+# Eliminar logs en release
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
     public static *** v(...);
