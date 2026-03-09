@@ -4,11 +4,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../services/media_processor.dart';
-import '../models/video_settings.dart'; // Aquí ya está BitrateMode
+import '../models/video_settings.dart';
+import '../models/video_effect.dart';
+import '../widgets/filter_selector.dart';
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
-// Eliminar la línea: import '../models/bitrate_mode.dart';
+import '../models/bitrate_mode.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({super.key});
@@ -164,6 +166,8 @@ class TimelineWidgetState extends State<TimelineWidget> {
         preserveMetadata: preset.preserveMetadata,
         aiEnabled: preset.aiEnabled,
         saveAsDefault: preset.saveAsDefault,
+        effect: preset.effect,
+        stabilize: preset.stabilize,
       );
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -351,6 +355,29 @@ class TimelineWidgetState extends State<TimelineWidget> {
                         ],
                       ),
                     ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'EFECTOS DE VIDEO',
+                    style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  FilterSelector(
+                    currentFilter: _settings.effect?.type ?? FilterType.none,
+                    intensity: _settings.effect?.intensity ?? 0.5,
+                    onChanged: (type, intensity) {
+                      setState(() {
+                        _settings.effect = VideoEffect(type: type, intensity: intensity);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 5),
+                  CheckboxListTile(
+                    title: const Text('Estabilizar video', style: TextStyle(color: Colors.white)),
+                    value: _settings.stabilize ?? false,
+                    onChanged: (val) {
+                      setState(() => _settings.stabilize = val ?? false);
+                    },
+                    secondary: Icon(Icons.video_stable, color: globalSettings.accentColor),
+                  ),
                   const SizedBox(height: 16),
                   _buildActionButtons(processor),
                 ],
