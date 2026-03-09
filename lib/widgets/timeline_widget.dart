@@ -24,8 +24,8 @@ class TimelineWidgetState extends State<TimelineWidget> {
   late VideoSettings _settings;
   bool _keepOriginalName = false;
 
-  // Lista de resoluciones predefinidas
-  final List<Map<String, int>> _presetResolutions = [
+  // Lista de resoluciones predefinidas (con tipos mixtos)
+  final List<Map<String, dynamic>> _presetResolutions = [
     {'name': '144p', 'width': 256, 'height': 144},
     {'name': '240p', 'width': 426, 'height': 240},
     {'name': '360p', 'width': 640, 'height': 360},
@@ -264,7 +264,7 @@ class TimelineWidgetState extends State<TimelineWidget> {
                   // Selector de resolución predefinida
                   const Text('Resolución de salida', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 5),
-                  DropdownButtonFormField<Map<String, int>>(
+                  DropdownButtonFormField<Map<String, dynamic>>(
                     value: _presetResolutions.firstWhere(
                       (r) => r['width'] == _settings.targetWidth && r['height'] == _settings.targetHeight,
                       orElse: () => {'name': 'Personalizada', 'width': _settings.targetWidth, 'height': _settings.targetHeight},
