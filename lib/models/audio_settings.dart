@@ -1,7 +1,7 @@
 class AudioSettings {
   String codec;          // aac, mp3, opus, flac, wav
   int bitrate;           // kbps (solo para lossy)
-  int sampleRate;        // Hz (44100, 48000, 96000, 192000)
+  int sampleRate;        // Hz (22050, 32000, 44100, 48000, 96000, 192000)
   String channels;       // mono, stereo, 5.1, 7.1
   bool normalize;        // normalizar volumen
   double normalizeTarget; // LUFS o pico
