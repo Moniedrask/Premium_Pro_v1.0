@@ -2,12 +2,8 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Repositorio local donde tienes tu AAR (si existe)
-        maven {
-            url = project(':app').file('repo').toURI().toString()
-        }
-        // JitPack ELIMINADO porque no lo necesitas y causa error 521
-        // maven { url 'https://jitpack.io' }
+        // Repositorio local (si usas Maven local, descomenta)
+        // maven { url = project(':app').file('repo').toURI().toString() }
     }
 }
 
