@@ -11,6 +11,8 @@ abstract class TimelineLayer {
   bool muted; // solo para audio/video
   double volume; // solo para audio
   double opacity; // para video/imagen/texto
+  Duration fadeIn; // duración del fade in al inicio (ms)
+  Duration fadeOut; // duración del fade out al final (ms)
 
   TimelineLayer({
     required this.id,
@@ -21,6 +23,8 @@ abstract class TimelineLayer {
     this.muted = false,
     this.volume = 1.0,
     this.opacity = 1.0,
+    this.fadeIn = Duration.zero,
+    this.fadeOut = Duration.zero,
   });
 
   Map<String, dynamic> toJson();
@@ -43,6 +47,8 @@ class VideoLayer extends TimelineLayer {
     super.muted = false,
     super.volume = 1.0,
     super.opacity = 1.0,
+    super.fadeIn,
+    super.fadeOut,
   }) : super(type: LayerType.video);
 
   @override
@@ -58,6 +64,8 @@ class VideoLayer extends TimelineLayer {
         'muted': muted,
         'volume': volume,
         'opacity': opacity,
+        'fadeIn': fadeIn.inMilliseconds,
+        'fadeOut': fadeOut.inMilliseconds,
       };
 
   static VideoLayer fromJson(Map<String, dynamic> json) {
@@ -72,6 +80,8 @@ class VideoLayer extends TimelineLayer {
       muted: json['muted'] ?? false,
       volume: json['volume'] ?? 1.0,
       opacity: json['opacity'] ?? 1.0,
+      fadeIn: Duration(milliseconds: json['fadeIn'] ?? 0),
+      fadeOut: Duration(milliseconds: json['fadeOut'] ?? 0),
     );
   }
 }
@@ -89,6 +99,8 @@ class AudioLayer extends TimelineLayer {
     this.effects = const [],
     super.muted = false,
     super.volume = 1.0,
+    super.fadeIn,
+    super.fadeOut,
   }) : super(type: LayerType.audio);
 
   @override
@@ -102,6 +114,8 @@ class AudioLayer extends TimelineLayer {
         'effects': [], // por implementar
         'muted': muted,
         'volume': volume,
+        'fadeIn': fadeIn.inMilliseconds,
+        'fadeOut': fadeOut.inMilliseconds,
       };
 
   static AudioLayer fromJson(Map<String, dynamic> json) {
@@ -113,6 +127,8 @@ class AudioLayer extends TimelineLayer {
       filePath: json['filePath'],
       muted: json['muted'] ?? false,
       volume: json['volume'] ?? 1.0,
+      fadeIn: Duration(milliseconds: json['fadeIn'] ?? 0),
+      fadeOut: Duration(milliseconds: json['fadeOut'] ?? 0),
     );
   }
 }
@@ -137,6 +153,8 @@ class TextLayer extends TimelineLayer {
     this.position = Offset.zero,
     this.rotation = 0,
     super.opacity = 1.0,
+    super.fadeIn,
+    super.fadeOut,
   }) : super(type: LayerType.text);
 
   @override
@@ -154,6 +172,8 @@ class TextLayer extends TimelineLayer {
         'positionDy': position.dy,
         'rotation': rotation,
         'opacity': opacity,
+        'fadeIn': fadeIn.inMilliseconds,
+        'fadeOut': fadeOut.inMilliseconds,
       };
 
   static TextLayer fromJson(Map<String, dynamic> json) {
@@ -169,6 +189,8 @@ class TextLayer extends TimelineLayer {
       position: Offset(json['positionDx'] ?? 0, json['positionDy'] ?? 0),
       rotation: json['rotation'] ?? 0,
       opacity: json['opacity'] ?? 1.0,
+      fadeIn: Duration(milliseconds: json['fadeIn'] ?? 0),
+      fadeOut: Duration(milliseconds: json['fadeOut'] ?? 0),
     );
   }
 }
@@ -189,6 +211,8 @@ class ImageLayer extends TimelineLayer {
     this.scale = 1.0,
     this.rotation = 0,
     super.opacity = 1.0,
+    super.fadeIn,
+    super.fadeOut,
   }) : super(type: LayerType.image);
 
   @override
@@ -204,6 +228,8 @@ class ImageLayer extends TimelineLayer {
         'scale': scale,
         'rotation': rotation,
         'opacity': opacity,
+        'fadeIn': fadeIn.inMilliseconds,
+        'fadeOut': fadeOut.inMilliseconds,
       };
 
   static ImageLayer fromJson(Map<String, dynamic> json) {
@@ -217,6 +243,8 @@ class ImageLayer extends TimelineLayer {
       scale: json['scale'] ?? 1.0,
       rotation: json['rotation'] ?? 0,
       opacity: json['opacity'] ?? 1.0,
+      fadeIn: Duration(milliseconds: json['fadeIn'] ?? 0),
+      fadeOut: Duration(milliseconds: json['fadeOut'] ?? 0),
     );
   }
 }
