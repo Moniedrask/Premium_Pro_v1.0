@@ -1,4 +1,7 @@
 import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'video_effect.dart';
+import 'audio_effect.dart';
 
 enum LayerType { video, audio, text, image }
 
@@ -6,13 +9,13 @@ abstract class TimelineLayer {
   String id;
   String name;
   LayerType type;
-  Duration start; // inicio en la línea de tiempo
-  Duration duration; // duración
-  bool muted; // solo para audio/video
-  double volume; // solo para audio
-  double opacity; // para video/imagen/texto
-  Duration fadeIn; // duración del fade in al inicio (ms)
-  Duration fadeOut; // duración del fade out al final (ms)
+  Duration start;
+  Duration duration;
+  bool muted;
+  double volume;
+  double opacity;
+  Duration fadeIn;
+  Duration fadeOut;
 
   TimelineLayer({
     required this.id,
@@ -28,13 +31,26 @@ abstract class TimelineLayer {
   });
 
   Map<String, dynamic> toJson();
-  factory TimelineLayer.fromJson(Map<String, dynamic> json);
+  factory TimelineLayer.fromJson(Map<String, dynamic> json) {
+    switch (json['type']) {
+      case 0:
+        return VideoLayer.fromJson(json);
+      case 1:
+        return AudioLayer.fromJson(json);
+      case 2:
+        return TextLayer.fromJson(json);
+      case 3:
+        return ImageLayer.fromJson(json);
+      default:
+        throw Exception('Tipo de capa desconocido');
+    }
+  }
 }
 
 class VideoLayer extends TimelineLayer {
   String filePath;
-  double speed; // factor de velocidad (0.1 a 16)
-  List<VideoEffect> effects; // efectos aplicados
+  double speed;
+  List<VideoEffect> effects;
 
   VideoLayer({
     required super.id,
@@ -88,7 +104,7 @@ class VideoLayer extends TimelineLayer {
 
 class AudioLayer extends TimelineLayer {
   String filePath;
-  List<AudioEffect> effects; // fade, eq, etc. (por definir)
+  List<AudioEffect> effects;
 
   AudioLayer({
     required super.id,
@@ -111,7 +127,7 @@ class AudioLayer extends TimelineLayer {
         'start': start.inMilliseconds,
         'duration': duration.inMilliseconds,
         'filePath': filePath,
-        'effects': [], // por implementar
+        'effects': effects.map((e) => e.toJson()).toList(),
         'muted': muted,
         'volume': volume,
         'fadeIn': fadeIn.inMilliseconds,
@@ -125,6 +141,7 @@ class AudioLayer extends TimelineLayer {
       start: Duration(milliseconds: json['start']),
       duration: Duration(milliseconds: json['duration']),
       filePath: json['filePath'],
+      effects: (json['effects'] as List?)?.map((e) => AudioEffect.fromJson(e)).toList() ?? [],
       muted: json['muted'] ?? false,
       volume: json['volume'] ?? 1.0,
       fadeIn: Duration(milliseconds: json['fadeIn'] ?? 0),
@@ -138,8 +155,8 @@ class TextLayer extends TimelineLayer {
   String fontFamily;
   double fontSize;
   Color color;
-  Offset position; // posición en el frame (0-1 normalizado)
-  double rotation; // grados
+  Offset position;
+  double rotation;
 
   TextLayer({
     required super.id,
