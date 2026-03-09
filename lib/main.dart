@@ -11,6 +11,7 @@ import 'widgets/timeline_widget.dart';
 import 'widgets/audio_timeline_widget.dart';
 import 'widgets/image_editor_widget.dart';
 import 'widgets/compression_dialog.dart';
+import 'widgets/multi_layer_timeline.dart'; // ← NUEVA IMPORTACIÓN
 import 'models/compression_preset.dart';
 
 void main() async {
@@ -94,6 +95,7 @@ class PremiumProApp extends StatelessWidget {
             ),
             routes: {
               '/home': (context) => const HomeScreen(),
+              '/timeline': (context) => const MultiLayerTimeline(), // ← NUEVA RUTA
             },
             home: settings.onboardingCompleted
                 ? const HomeScreen()
@@ -153,6 +155,14 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Premium Pro v1.0'),
         actions: [
+          // Botón para ir a la línea de tiempo multicapa
+          IconButton(
+            icon: Icon(Icons.timeline, color: settings.textColor),
+            onPressed: () {
+              Navigator.pushNamed(context, '/timeline');
+            },
+          ),
+          // Botón de ajustes existente
           IconButton(
             icon: Icon(Icons.settings, color: settings.textColor),
             onPressed: () {
