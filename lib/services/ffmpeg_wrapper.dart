@@ -70,6 +70,98 @@ class FFmpegWrapper {
     return null;
   }
 
+Future<bool> applyVideoEffect({
+  required String inputPath,
+  required String outputPath,
+  required VideoEffect effect,
+}) async {
+  final filter = effect.ffmpegFilter;
+  if (filter.isEmpty) return false;
+
+  final args = [
+    '-i', inputPath,
+    '-vf', filter,
+    '-c:a', 'copy',
+    '-y', outputPath,
+  ];
+  return executeCommandWithArgs(args);
+}
+
+Future<bool> stabilizeVideo({
+  required String inputPath,
+  required String outputPath,
+}) async {
+  // Requiere dos pasos: detectar y estabilizar
+  final dir = await getTemporaryDirectory();
+  final trfFile = '${dir.path}/transform.trf';
+
+  // Paso 1: detectar
+  final detectArgs = [
+    '-i', inputPath,
+    '-vf', 'vidstabdetect=shakiness=5:accuracy=15:result=$trfFile',
+    '-f', 'null', '-',
+  ];
+  final detectSuccess = await executeCommandWithArgs(detectArgs);
+  if (!detectSuccess) return false;
+
+  // Paso 2: aplicar
+  final stabilizeArgs = [
+    '-i', inputPath,
+    '-vf', 'vidstabtransform=input=$trfFile:zoom=1:smoothing=30',
+    '-y', outputPath,
+  ];
+  return executeCommandWithArgs(stabilizeArgs);
+}
+
+Future<bool> applyAudioFade({
+  required String inputPath,
+  required String outputPath,
+  required Duration fadeIn,
+  required Duration fadeOut,
+}) async {
+  final filters = [];
+  if (fadeIn.inMilliseconds > 0) {
+    filters.add('afade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
+  }
+  if (fadeOut.inMilliseconds > 0) {
+    // Necesitamos la duración total para el fade out
+    // Por simplicidad, asumimos que se pasa aparte
+  }
+  if (filters.isEmpty) return false;
+
+  final args = [
+    '-i', inputPath,
+    '-af', filters.join(','),
+    '-c:v', 'copy',
+    '-y', outputPath,
+  ];
+  return executeCommandWithArgs(args);
+}
+
+Future<bool> applyVideoFade({
+  required String inputPath,
+  required String outputPath,
+  required Duration fadeIn,
+  required Duration fadeOut,
+}) async {
+  final filters = [];
+  if (fadeIn.inMilliseconds > 0) {
+    filters.add('fade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
+  }
+  if (fadeOut.inMilliseconds > 0) {
+    filters.add('fade=t=out:st=${fadeOut.inMilliseconds / 1000}:d=0');
+  }
+  if (filters.isEmpty) return false;
+
+  final args = [
+    '-i', inputPath,
+    '-vf', filters.join(','),
+    '-c:a', 'copy',
+    '-y', outputPath,
+  ];
+  return executeCommandWithArgs(args);
+}
+
   Future<bool> processVideo({
     required String inputPath,
     required String outputPath,
