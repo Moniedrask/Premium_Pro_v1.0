@@ -13,8 +13,6 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        // JitPack eliminado
-        // maven { url 'https://jitpack.io' }
     }
 }
 
