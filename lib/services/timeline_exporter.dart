@@ -4,30 +4,31 @@ import '../models/timeline_project.dart';
 import '../models/timeline_layer.dart';
 
 class TimelineExporter {
-  /// Exporta un proyecto de línea de tiempo a un archivo de video.
-  /// Requiere que todas las capas tengan rutas de archivo válidas.
-  /// Nota: Esta implementación es simplificada. Para un exportador real,
-  /// se necesitaría sincronización precisa de tiempos, manejo de múltiples pistas de audio,
-  /// y composición avanzada. Los efectos de video en las capas no se aplican aquí.
   static Future<bool> exportProject(
     TimelineProject project,
     String outputPath, {
-    required dynamic ffmpeg, // FFmpegWrapper
+    required dynamic ffmpeg,
   }) async {
     List<String> args = [];
 
-    // 1. Añadir todas las entradas (archivos)
     Map<String, int> inputIndices = {};
     int inputIndex = 0;
+
+    // Añadir entradas y guardar índices
     for (var layer in project.layers) {
-      if (layer is VideoLayer || layer is AudioLayer || layer is ImageLayer) {
-        args.addAll(['-i', layer.filePath]);
+      String? filePath;
+      if (layer is VideoLayer) filePath = layer.filePath;
+      else if (layer is AudioLayer) filePath = layer.filePath;
+      else if (layer is ImageLayer) filePath = layer.filePath;
+      else continue;
+
+      if (filePath != null) {
+        args.addAll(['-i', filePath]);
         inputIndices[layer.id] = inputIndex;
         inputIndex++;
       }
     }
 
-    // 2. Construir filtro complejo para superponer capas
     List<String> filterParts = [];
     int outputCount = 0;
 
@@ -37,13 +38,10 @@ class TimelineExporter {
 
       String filter = '';
       if (layer is VideoLayer) {
-        // Escalar al tamaño del proyecto
         filter = '[$idx:v]scale=$project.width:$project.height';
-        // Aplicar speed
         if (layer.speed != 1.0) {
           filter += ',setpts=PTS/${layer.speed}';
         }
-        // Aplicar fades (usando la duración del layer)
         if (layer.fadeIn.inMilliseconds > 0) {
           double fadeInSec = layer.fadeIn.inMilliseconds / 1000.0;
           filter += ',fade=t=in:st=0:d=$fadeInSec';
@@ -69,7 +67,6 @@ class TimelineExporter {
         }
         filter += ',setpts=PTS+${layer.start.inMilliseconds/1000}/TB[img$outputCount]';
       } else if (layer is TextLayer) {
-        // Los textos se generan con drawtext
         filter = 'color=c=black@0.0:s=${project.width}x${project.height},format=rgba[bg$outputCount];'
             '[bg$outputCount]drawtext=text=\'${layer.text}\':fontcolor=white@${layer.opacity}:fontsize=${layer.fontSize}:x=${layer.position.dx * project.width}:y=${layer.position.dy * project.height}:fontfile=${layer.fontFamily}';
         if (layer.fadeIn.inMilliseconds > 0) {
@@ -84,19 +81,16 @@ class TimelineExporter {
         }
         filter += '[txt$outputCount]';
       }
+
       if (filter.isNotEmpty) {
         filterParts.add(filter);
         outputCount++;
       }
     }
 
-    // 3. Mezclar todas las capas (overlay)
     if (outputCount > 0) {
       String overlay = '';
       for (int i = 0; i < outputCount; i++) {
-        String label = (i == 0) ? 'v$i' : '[v$i]'; // los labels pueden ser v0, v1, etc.
-        // pero necesitamos saber qué labels se generaron realmente
-        // simplificamos: asumimos que los labels son v0, v1...
         if (i == 0) {
           overlay = '[v0]';
         } else {
@@ -106,13 +100,12 @@ class TimelineExporter {
       filterParts.add(overlay);
     }
 
-    // 4. Aplicar filtro complejo
     if (filterParts.isNotEmpty) {
       args.addAll(['-filter_complex', filterParts.join(';')]);
       args.addAll(['-map', '[vout]']);
     }
 
-    // 5. Configuración de audio (simplificado: tomar el primer audio, con fades)
+    // Audio: buscar la primera capa de audio no silenciada
     for (var layer in project.layers) {
       if (layer is AudioLayer && !layer.muted) {
         int idx = inputIndices[layer.id] ?? -1;
@@ -140,7 +133,6 @@ class TimelineExporter {
 
     args.addAll(['-y', outputPath]);
 
-    // Ejecutar comando
     try {
       final success = await ffmpeg.executeCommandWithArgs(args);
       return success;
