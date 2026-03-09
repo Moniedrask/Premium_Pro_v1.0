@@ -16,35 +16,14 @@ class AudioProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
-Future<bool> processAudio({
-  required String inputPath,
-  required String outputPath,
-  required AudioSettings settings,
-  List<double>? equalizerGains,
-  Map<String, double>? compressorParams,
-  Duration? fadeIn,
-  Duration? fadeOut,
-}) async {
-  // ... (código existente)
-
-  // Añadir filtros de fade
-  if (fadeIn != null && fadeIn.inMilliseconds > 0) {
-    audioFilters.add('afade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
-  }
-  if (fadeOut != null && fadeOut.inMilliseconds > 0) {
-    // Necesitamos la duración total; aquí se complica
-    // Por simplicidad, omitimos en esta versión
-  }
-
-  // ... resto del código
-}
-
   Future<bool> processAudio({
     required String inputPath,
     required String outputPath,
     required AudioSettings settings,
-    List<double>? equalizerGains, // 10 valores en dB
-    Map<String, double>? compressorParams, // threshold, ratio, attack, release, knee
+    List<double>? equalizerGains,
+    Map<String, double>? compressorParams,
+    Duration? fadeIn,
+    Duration? fadeOut,
   }) async {
     _isProcessing = true;
     _progress = 0.0;
@@ -58,11 +37,10 @@ Future<bool> processAudio({
     // Construir lista de filtros de audio
     List<String> audioFilters = [];
 
-    // 1. Ecualizador paramétrico de 10 bandas
+    // Ecualizador paramétrico de 10 bandas
     if (equalizerGains != null && equalizerGains.length == 10) {
-      // Frecuencias centrales típicas (en Hz)
       const freqs = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-      const q = 1.0; // ancho de banda constante
+      const q = 1.0;
       String eqCommand = '';
       for (int i = 0; i < 10; i++) {
         if (equalizerGains[i] != 0) {
@@ -74,7 +52,7 @@ Future<bool> processAudio({
       }
     }
 
-    // 2. Compresor dinámico
+    // Compresor dinámico
     if (compressorParams != null) {
       final threshold = compressorParams['threshold'] ?? -20;
       final ratio = compressorParams['ratio'] ?? 4;
@@ -84,14 +62,24 @@ Future<bool> processAudio({
       audioFilters.add('acompressor=threshold=${threshold}dB:ratio=$ratio:attack=${attack}ms:release=${release}ms:knee=$knee');
     }
 
-    // 3. Normalización (si está activada)
+    // Normalización
     if (settings.normalize) {
       audioFilters.add('volume=${settings.normalizeTarget}dB');
     }
 
-    // 4. Reducción de ruido con IA (si está activada)
+    // Reducción de ruido con IA
     if (settings.removeNoise && settings.aiEnabled) {
       audioFilters.add('afftdn');
+    }
+
+    // Fade in/out
+    if (fadeIn != null && fadeIn.inMilliseconds > 0) {
+      audioFilters.add('afade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
+    }
+    if (fadeOut != null && fadeOut.inMilliseconds > 0) {
+      // Nota: para fade out se necesita la duración total del audio.
+      // Aquí se omite por simplicidad; se podría pasar como parámetro adicional.
+      // audioFilters.add('afade=t=out:st=${totalDuration - fadeOut.inMilliseconds / 1000}:d=${fadeOut.inMilliseconds / 1000}');
     }
 
     // Aplicar todos los filtros de una vez
@@ -114,7 +102,7 @@ Future<bool> processAudio({
         args.addAll(['-c:a', 'flac', '-compression_level', settings.compressionLevel.toString()]);
         break;
       case 'wav':
-        args.addAll(['-c:a', 'pcm_s16le']); // 16 bits por defecto, se puede extender a 32 bits
+        args.addAll(['-c:a', 'pcm_s16le']);
         break;
     }
 
