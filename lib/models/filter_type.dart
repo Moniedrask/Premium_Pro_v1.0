@@ -1,0 +1,1 @@
+enum FilterType { none, negative, blackAndWhite, sepia, blur, bokeh }
