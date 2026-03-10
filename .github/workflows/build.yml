@@ -60,6 +60,39 @@ jobs:
           echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
           echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
 
+      # 🔍 Verificar que el alias exista en el keystore
+      - name: Verify keystore alias
+        env:
+          KEYSTORE_PATH: android/app/keystore.jks
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          EXPECTED_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ ! -f "$KEYSTORE_PATH" ]; then
+            echo "❌ Keystore file not found at $KEYSTORE_PATH"
+            exit 1
+          fi
+          # Listar alias y verificar si el esperado está presente
+          ALIAS_LIST=$(keytool -list -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASS" 2>&1 | grep -i "alias name" | awk '{print $NF}' | tr -d '\r')
+          if [ -z "$ALIAS_LIST" ]; then
+            echo "❌ No se pudieron leer alias del keystore. Verifica la contraseña."
+            exit 1
+          fi
+          echo "Aliases encontrados: $ALIAS_LIST"
+          # Verificar si el alias esperado está en la lista (case-insensitive)
+          FOUND=false
+          for alias in $ALIAS_LIST; do
+            if [ "${alias,,}" = "${EXPECTED_ALIAS,,}" ]; then
+              FOUND=true
+              break
+            fi
+          done
+          if [ "$FOUND" = false ]; then
+            echo "❌ El alias '$EXPECTED_ALIAS' no se encontró en el keystore. Aliases disponibles: $ALIAS_LIST"
+            exit 1
+          else
+            echo "✅ Alias '$EXPECTED_ALIAS' verificado correctamente."
+          fi
+
       - name: Accept Android Licenses
         run: |
           mkdir -p $HOME/.android
