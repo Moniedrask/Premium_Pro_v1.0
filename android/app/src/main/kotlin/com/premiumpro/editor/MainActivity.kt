@@ -2,6 +2,4 @@ package com.premiumpro.editor
 
 import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity: FlutterActivity() {
-    // Versión simple - el plugin se registra automáticamente
-}
+class MainActivity: FlutterActivity()
