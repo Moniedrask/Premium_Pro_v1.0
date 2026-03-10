@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'video_effect.dart';
+import 'speed_segment.dart';
 
 enum BitrateMode { crf, cbr }
 
@@ -34,9 +35,8 @@ class VideoSettings {
   bool aiEnabled;
   bool saveAsDefault;
 
-  // Nuevos campos
-  VideoEffect? effect;
-  bool? stabilize;
+  // ✅ NUEVO: Lista de segmentos de velocidad
+  List<SpeedSegment>? speedSegments;
 
   VideoSettings({
     this.videoCodec = 'libx264',
@@ -64,8 +64,7 @@ class VideoSettings {
     this.preserveMetadata = false,
     this.aiEnabled = false,
     this.saveAsDefault = false,
-    this.effect,
-    this.stabilize = false,
+    this.speedSegments,
   });
 
   Map<String, dynamic> toJson() {
@@ -94,8 +93,7 @@ class VideoSettings {
       'aiStabilization': aiStabilization,
       'preserveMetadata': preserveMetadata,
       'aiEnabled': aiEnabled,
-      'effect': effect?.toJson(),
-      'stabilize': stabilize,
+      'speedSegments': speedSegments?.map((s) => s.toJson()).toList(),
     };
   }
 
@@ -125,8 +123,7 @@ class VideoSettings {
       aiStabilization: json['aiStabilization'] ?? false,
       preserveMetadata: json['preserveMetadata'] ?? false,
       aiEnabled: json['aiEnabled'] ?? false,
-      effect: json['effect'] != null ? VideoEffect.fromJson(json['effect']) : null,
-      stabilize: json['stabilize'] ?? false,
+      speedSegments: (json['speedSegments'] as List?)?.map((s) => SpeedSegment.fromJson(s)).toList(),
     );
   }
 
