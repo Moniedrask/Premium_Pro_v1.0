@@ -56,6 +56,7 @@ Optimizado para dispositivos de bajos recursos, sin publicidad, gratuito y 100% 
 ## 📁 Estructura del Proyecto (Principales carpetas y archivos)
 
 ```
+
 Premium_Pro_v1.0/
 ├── .github/workflows/build.yml
 ├── android/
@@ -100,6 +101,7 @@ Premium_Pro_v1.0/
 └── README.md
 
 ---
+---
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -112,6 +114,7 @@ Premium_Pro_v1.0/
 - **Reproducción de Audio:** audioplayers
 - **Descarga de Modelos IA:** http + path_provider
 
+---
 ---
 
 ## 🚀 Instalación
@@ -144,6 +147,7 @@ flutter pub get
 # Compila APK release (dividido por ABI)
 flutter build apk --release --split-per-abi
 
+---
 ---
 
 ⚙️ Configuración
