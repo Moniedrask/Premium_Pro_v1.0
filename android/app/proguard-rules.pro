@@ -1,16 +1,25 @@
 # Flutter general
--keep class io.flutter.app.** { *; }
 -keep class io.flutter.plugin.**  { *; }
 -keep class io.flutter.util.**  { *; }
 -keep class io.flutter.view.**  { *; }
--keep class io.flutter.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
 
-# Google Play Core (necesario para SplitCompat y SplitInstall) 
-# Aunque excluimos las dependencias, estas reglas actúan como respaldo [citation:7]
--keep class com.google.android.play.core.splitcompat.** { *; }
--keep class com.google.android.play.core.splitinstall.** { *; }
--keep class com.google.android.play.core.tasks.** { *; }
+# ❌ NO USAR - Estas reglas causan conflictos con R8
+# -keep class io.flutter.app.** { *; }
+# -keep class io.flutter.** { *; }
+
+# Google Play Core (dontwarn es suficiente, las clases no se usan realmente)
+-dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallException
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallManager
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallManagerFactory
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallRequest$Builder
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallRequest
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallSessionState
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallStateUpdatedListener
+-dontwarn com.google.android.play.core.tasks.OnFailureListener
+-dontwarn com.google.android.play.core.tasks.OnSuccessListener
+-dontwarn com.google.android.play.core.tasks.Task
 
 # FFmpegKit y smart-exception
 -keep class com.arthenica.ffmpegkit.** { *; }
@@ -28,7 +37,7 @@
     public static ** valueOf(java.lang.String);
 }
 
-# Eliminar logs en release (opcional, reduce tamaño)
+# Eliminar logs en release (opcional)
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
     public static *** v(...);
