@@ -73,13 +73,11 @@ android {
         }
     }
 
-    // Evitar que errores de lint detengan la compilación
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
     }
 
-    // Configuración para Android Gradle Plugin 8+ (mejora empaquetado)
     packaging {
         dex {
             useLegacyPackaging true
@@ -97,6 +95,13 @@ flutter {
 // Excluir dependencia remota de Arthenica (por si acaso)
 configurations.implementation {
     exclude group: "com.arthenica", module: "ffmpeg-kit-https"
+}
+
+// ⚠️ EXCLUSIONES PARA PLAY CORE (evita conflictos con R8)
+configurations.all {
+    exclude group: "com.google.android.play", module: "core"
+    exclude group: "com.google.android.play", module: "review"
+    exclude group: "com.google.android.play", module: "app-update"
 }
 
 dependencies {
