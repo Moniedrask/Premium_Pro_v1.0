@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/speed_ramp.dart';
+import '../models/speed_segment.dart';
 
 class SpeedRampEditor extends StatefulWidget {
   final Duration totalDuration;
