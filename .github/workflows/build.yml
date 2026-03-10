@@ -42,7 +42,7 @@ jobs:
           TEMP_DIR=$(mktemp -d)
           cd $TEMP_DIR
           gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
-          find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/ffmpeg-kit-fix.aar \;
+          find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/ffmpeg-kit-fix.aar +
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
 
@@ -51,18 +51,17 @@ jobs:
         run: |
           mkdir -p android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2
           cp android/app/libs/ffmpeg-kit-fix.aar android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.aar
-          cat > android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.arthenica</groupId>
-  <artifactId>ffmpeg-kit-https</artifactId>
-  <version>6.0-2</version>
-  <packaging>aar</packaging>
-</project>
-EOF
+          # Crear archivo POM línea por línea (evita problemas con heredoc)
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '<project xmlns="http://maven.apache.org/POM/4.0.0"' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '  <modelVersion>4.0.0</modelVersion>' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '  <groupId>com.arthenica</groupId>' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '  <artifactId>ffmpeg-kit-https</artifactId>' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '  <version>6.0-2</version>' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '  <packaging>aar</packaging>' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
+          echo '</project>' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
           echo "✅ Repositorio Maven local creado en android/app/repo"
 
       # 🔐 Configurar keystore
