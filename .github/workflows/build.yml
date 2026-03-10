@@ -49,13 +49,8 @@ jobs:
       # 📦 Preparar repositorio Maven local (estructura manual)
       - name: Setup local Maven repository
         run: |
-          # Crear estructura de carpetas
           mkdir -p android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2
-          
-          # Copiar AAR con el nombre esperado
           cp android/app/libs/ffmpeg-kit-fix.aar android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.aar
-          
-          # Crear archivo POM mínimo
           cat > android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -70,13 +65,12 @@ jobs:
 EOF
           echo "✅ Repositorio Maven local creado en android/app/repo"
 
-      # 🔐 Configurar keystore
+      # 🔐 Configurar keystore (usando secretos)
       - name: Setup Android Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
-          echo "✅ Keystore creado en android/app/keystore.jks"
           ls -la android/app/keystore.jks || (echo "❌ No se pudo crear el keystore" && exit 1)
           echo "CM_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/app/keystore.jks" >> $GITHUB_ENV
           echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
