@@ -102,12 +102,21 @@ flutter {
     source = "../.."
 }
 
+// Excluir dependencia remota de Arthenica (por si acaso)
 configurations.implementation {
     exclude group: "com.arthenica", module: "ffmpeg-kit-https"
 }
 
+// Exclusiones para Play Core
+configurations.all {
+    exclude group: "com.google.android.play", module: "core"
+    exclude group: "com.google.android.play", module: "review"
+    exclude group: "com.google.android.play", module: "app-update"
+}
+
 dependencies {
     implementation 'com.arthenica:smart-exception-java:0.2.1'
+    // 👉 DEPENDENCIA DESDE REPOSITORIO LOCAL (NO usar files)
     implementation 'com.arthenica:ffmpeg-kit-https:6.0-2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
