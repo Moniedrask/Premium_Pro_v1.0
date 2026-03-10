@@ -4,11 +4,7 @@
 -keep class io.flutter.view.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
 
-# ❌ NO USAR - Estas reglas causan conflictos con R8
-# -keep class io.flutter.app.** { *; }
-# -keep class io.flutter.** { *; }
-
-# Google Play Core (dontwarn es suficiente, las clases no se usan realmente)
+# Google Play Core (dontwarn es suficiente)
 -dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
 -dontwarn com.google.android.play.core.splitinstall.SplitInstallException
 -dontwarn com.google.android.play.core.splitinstall.SplitInstallManager
@@ -37,7 +33,7 @@
     public static ** valueOf(java.lang.String);
 }
 
-# Eliminar logs en release (opcional)
+# Eliminar logs en release
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
     public static *** v(...);
