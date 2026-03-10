@@ -65,7 +65,7 @@ jobs:
 EOF
           echo "✅ Repositorio Maven local creado en android/app/repo"
 
-      # 🔐 Configurar keystore (usando secretos)
+      # 🔐 Configurar keystore
       - name: Setup Android Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
