@@ -100,4 +100,4 @@ EOF
         with:
           name: premium-pro-apk
           path: build/app/outputs/flutter-apk/*.apk
-          retention-days: 30 
+          retention-days: 30
