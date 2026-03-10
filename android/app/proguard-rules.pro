@@ -6,7 +6,8 @@
 -keep class io.flutter.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
 
-# Google Play Core (necesario para SplitCompat y SplitInstall)
+# Google Play Core (necesario para SplitCompat y SplitInstall) 
+# Aunque excluimos las dependencias, estas reglas actúan como respaldo [citation:7]
 -keep class com.google.android.play.core.splitcompat.** { *; }
 -keep class com.google.android.play.core.splitinstall.** { *; }
 -keep class com.google.android.play.core.tasks.** { *; }
