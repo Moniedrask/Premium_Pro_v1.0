@@ -2,8 +2,10 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Repositorio local (si usas Maven local, descomenta)
-        // maven { url = project(':app').file('repo').toURI().toString() }
+        // Repositorio local Maven (dentro del proyecto)
+        maven {
+            url = project(':app').file('repo').toURI().toString()
+        }
     }
 }
 
