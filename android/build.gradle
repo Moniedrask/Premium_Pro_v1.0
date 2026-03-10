@@ -2,7 +2,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Repositorio local Maven (dentro del proyecto)
+        // Repositorio local dentro del proyecto (creado en el workflow)
         maven {
             url = project(':app').file('repo').toURI().toString()
         }
