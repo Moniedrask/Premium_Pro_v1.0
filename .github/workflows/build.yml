@@ -46,6 +46,16 @@ jobs:
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
 
+      # 🔐 CONFIGURACIÓN DE FIRMA (Keystore desde Secrets)
+      - name: Setup Android Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
+          echo "✅ Keystore creado en android/app/keystore.jks"
+          ls -la android/app/keystore.jks || (echo "❌ No se pudo crear el keystore" && exit 1)
+          echo "CM_KEYSTORE_PATH=android/app/keystore.jks" >> $GITHUB_ENV
+
       - name: Accept Android Licenses
         run: |
           mkdir -p $HOME/.android
