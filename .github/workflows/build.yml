@@ -54,7 +54,11 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
           echo "✅ Keystore creado en android/app/keystore.jks"
           ls -la android/app/keystore.jks || (echo "❌ No se pudo crear el keystore" && exit 1)
-          echo "CM_KEYSTORE_PATH=android/app/keystore.jks" >> $GITHUB_ENV
+          # Establecer variables de entorno para Gradle (rutas absolutas)
+          echo "CM_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/app/keystore.jks" >> $GITHUB_ENV
+          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
 
       - name: Accept Android Licenses
         run: |
