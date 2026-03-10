@@ -1,5 +1,5 @@
 name: premium_pro
-description: Editor Multimedia Profesional v1.0 - Estable, Sin Publicidad, OLED.
+description: Editor Multimedia Profesional v1.0
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   ffmpeg_kit_flutter_minimal: 6.0.8
   provider: ^6.1.5+1
-  file_picker: 10.3.3
+  file_picker: ^10.3.3
   path_provider: ^2.1.5
   shared_preferences: ^2.5.4
   http: ^1.6.0
