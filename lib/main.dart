@@ -11,7 +11,7 @@ import 'widgets/timeline_widget.dart';
 import 'widgets/audio_timeline_widget.dart';
 import 'widgets/image_editor_widget.dart';
 import 'widgets/compression_dialog.dart';
-import 'widgets/multi_layer_timeline.dart'; // ← NUEVA IMPORTACIÓN
+import 'widgets/multi_layer_timeline.dart';
 import 'models/compression_preset.dart';
 
 void main() async {
@@ -21,33 +21,60 @@ void main() async {
   final audioProcessor = AudioProcessor();
   final imageProcessor = ImageProcessor();
 
-  await Future.wait([
-    videoProcessor.init(),
-    audioProcessor.init(),
-    imageProcessor.init(),
-  ]);
+  String? initError;
+  try {
+    await Future.wait([
+      videoProcessor.init(),
+      audioProcessor.init(),
+      imageProcessor.init(),
+    ]);
+  } catch (e, stack) {
+    initError = 'Error de inicialización:\n$e\n\n$stack';
+    debugPrint(initError);
+  }
 
-  runApp(PremiumProApp(
+  runApp(MyApp(
     videoProcessor: videoProcessor,
     audioProcessor: audioProcessor,
     imageProcessor: imageProcessor,
+    initError: initError,
   ));
 }
 
-class PremiumProApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
   final MediaProcessor videoProcessor;
   final AudioProcessor audioProcessor;
   final ImageProcessor imageProcessor;
+  final String? initError;
 
-  const PremiumProApp({
+  const MyApp({
     super.key,
     required this.videoProcessor,
     required this.audioProcessor,
     required this.imageProcessor,
+    this.initError,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Si hay error de inicio, mostrar pantalla de error
+    if (initError != null) {
+      return MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SelectableText(
+                initError!,
+                style: const TextStyle(color: Colors.red, fontSize: 14),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MediaProcessor>.value(value: videoProcessor),
@@ -58,6 +85,7 @@ class PremiumProApp extends StatelessWidget {
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settingsProvider, child) {
+          // Cargar presets después del primer frame
           WidgetsBinding.instance.addPostFrameCallback((_) {
             settingsProvider.loadUserPresets();
           });
@@ -95,7 +123,7 @@ class PremiumProApp extends StatelessWidget {
             ),
             routes: {
               '/home': (context) => const HomeScreen(),
-              '/timeline': (context) => const MultiLayerTimeline(), // ← NUEVA RUTA
+              '/timeline': (context) => const MultiLayerTimeline(),
             },
             home: settings.onboardingCompleted
                 ? const HomeScreen()
@@ -155,14 +183,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Premium Pro v1.0'),
         actions: [
-          // Botón para ir a la línea de tiempo multicapa
           IconButton(
             icon: Icon(Icons.timeline, color: settings.textColor),
-            onPressed: () {
-              Navigator.pushNamed(context, '/timeline');
-            },
+            onPressed: () => Navigator.pushNamed(context, '/timeline'),
           ),
-          // Botón de ajustes existente
           IconButton(
             icon: Icon(Icons.settings, color: settings.textColor),
             onPressed: () {
