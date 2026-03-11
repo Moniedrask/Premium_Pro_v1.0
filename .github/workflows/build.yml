@@ -42,8 +42,11 @@ jobs:
           TEMP_DIR=$(mktemp -d)
           cd $TEMP_DIR
           gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
-          # Buscar el archivo .aar y moverlo (usamos -exec + para evitar problemas de shell)
-          find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/ffmpeg-kit-fix.aar +
+          # Usar bucle for para mover el archivo (evita problemas de sintaxis con find)
+          for f in $(find . -name "*.aar"); do
+            mv "$f" $GITHUB_WORKSPACE/android/app/libs/ffmpeg-kit-fix.aar
+            break # Solo esperamos un archivo
+          done
           cd $GITHUB_WORKSPACE
           rm -rf $TEMP_DIR
 
@@ -52,7 +55,7 @@ jobs:
         run: |
           mkdir -p android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2
           cp android/app/libs/ffmpeg-kit-fix.aar android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.aar
-          # Crear archivo POM con echo (evita heredoc en YAML)
+          # Crear archivo POM con echo (sin heredoc)
           echo '<?xml version="1.0" encoding="UTF-8"?>' > android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
           echo '<project xmlns="http://maven.apache.org/POM/4.0.0"' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
           echo '         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' >> android/app/repo/com/arthenica/ffmpeg-kit-https/6.0-2/ffmpeg-kit-https-6.0-2.pom
