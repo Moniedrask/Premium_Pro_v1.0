@@ -9,6 +9,7 @@ import '../models/video_effect.dart';
 import '../models/speed_segment.dart';
 import '../widgets/video_effect_selector.dart';
 import '../widgets/speed_ramp_editor.dart';
+import '../widgets/tooltip_with_preview.dart';
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
@@ -471,6 +472,203 @@ class TimelineWidgetState extends State<TimelineWidget> {
                     },
                     secondary: Icon(Icons.video_stable, color: globalSettings.accentColor),
                   ),
+                  const SizedBox(height: 10),
+
+                  // ── TRANSICIONES ──────────────────────────────────────
+                  const Text(
+                    'TRANSICIÓN ENTRE CLIPS',
+                    style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  TooltipWithPreview(
+                    title: 'Transición entre clips',
+                    description: 'Aplica una transición visual entre dos clips usando el filtro xfade de FFmpeg. '
+                        'Selecciona el tipo y la duración. Se aplica al exportar desde la pantalla de Línea de tiempo multicapa.',
+                    child: DropdownButtonFormField<TransitionType>(
+                      value: _settings.transitionType,
+                      dropdownColor: const Color(0xFF111111),
+                      items: const [
+                        DropdownMenuItem(value: TransitionType.none, child: Text('Sin transición', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: TransitionType.fade, child: Text('Fade (fundido)', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: TransitionType.dissolve, child: Text('Dissolve (disolución)', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: TransitionType.wipeLeft, child: Text('Wipe izquierda', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: TransitionType.wipeRight, child: Text('Wipe derecha', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: TransitionType.slideLeft, child: Text('Slide izquierda', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: TransitionType.slideRight, child: Text('Slide derecha', style: TextStyle(color: Colors.white))),
+                      ],
+                      onChanged: processor.isProcessing ? null : (val) {
+                        setState(() => _settings.transitionType = val ?? TransitionType.none);
+                      },
+                      decoration: const InputDecoration(labelText: 'Tipo de transición'),
+                    ),
+                  ),
+                  if (_settings.transitionType != TransitionType.none)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 6),
+                        Text('Duración: ${_settings.transitionDurationSeconds.toStringAsFixed(1)} s',
+                            style: const TextStyle(color: Colors.white)),
+                        Slider(
+                          value: _settings.transitionDurationSeconds,
+                          min: 0.1,
+                          max: 3.0,
+                          divisions: 29,
+                          onChanged: processor.isProcessing ? null : (val) {
+                            setState(() => _settings.transitionDurationSeconds = val);
+                          },
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 10),
+
+                  // ── COLOR GRADING ─────────────────────────────────────
+                  const Text(
+                    'COLOR GRADING',
+                    style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  TooltipWithPreview(
+                    title: 'Color Grading',
+                    description: 'Aplica una corrección de color al video usando el filtro curves de FFmpeg. '
+                        'No requiere archivos LUT externos. '
+                        'Warm sube los rojos, Cold sube los azules, Vintage da un aspecto envejecido, '
+                        'Teal & Orange es el look cinematográfico más popular, Vivid aumenta saturación y contraste.',
+                    child: DropdownButtonFormField<ColorGradingPreset>(
+                      value: _settings.colorGrading,
+                      dropdownColor: const Color(0xFF111111),
+                      items: const [
+                        DropdownMenuItem(value: ColorGradingPreset.none, child: Text('Sin corrección', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: ColorGradingPreset.warm, child: Text('Cálido (Warm)', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: ColorGradingPreset.cold, child: Text('Frío (Cold)', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: ColorGradingPreset.vintage, child: Text('Vintage', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: ColorGradingPreset.highContrast, child: Text('Alto contraste', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: ColorGradingPreset.fadedFilm, child: Text('Faded Film', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: ColorGradingPreset.teal, child: Text('Teal & Orange', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: ColorGradingPreset.vivid, child: Text('Vivid', style: TextStyle(color: Colors.white))),
+                      ],
+                      onChanged: processor.isProcessing ? null : (val) {
+                        setState(() => _settings.colorGrading = val ?? ColorGradingPreset.none);
+                      },
+                      decoration: const InputDecoration(labelText: 'Preset de color'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // ── TEXTO ANIMADO ─────────────────────────────────────
+                  const Text(
+                    'TEXTO ANIMADO',
+                    style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  CheckboxListTile(
+                    title: TooltipWithPreview(
+                      title: 'Texto animado',
+                      description: 'Superpone texto sobre el video usando el filtro drawtext de FFmpeg. '
+                          'Puedes configurar el contenido, tamaño, color, posición y el intervalo de tiempo en que aparece. '
+                          'La opción Fade in hace que el texto aparezca gradualmente en 0.5 segundos.',
+                      child: const Text('Activar texto sobre video', style: TextStyle(color: Colors.white)),
+                    ),
+                    value: _settings.enableTextOverlay,
+                    onChanged: processor.isProcessing ? null : (val) {
+                      setState(() => _settings.enableTextOverlay = val ?? false);
+                    },
+                    activeColor: globalSettings.accentColor,
+                    secondary: Icon(Icons.title, color: globalSettings.accentColor),
+                  ),
+                  if (_settings.enableTextOverlay) ...[
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Texto',
+                        labelStyle: TextStyle(color: Colors.grey),
+                        border: OutlineInputBorder(),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                      controller: TextEditingController(text: _settings.textOverlayContent)
+                        ..selection = TextSelection.collapsed(offset: _settings.textOverlayContent.length),
+                      onChanged: (val) => setState(() => _settings.textOverlayContent = val),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Tamaño: ${_settings.textOverlayFontSize}px',
+                                style: const TextStyle(color: Colors.white)),
+                            Slider(
+                              value: _settings.textOverlayFontSize.toDouble(),
+                              min: 16, max: 128, divisions: 28,
+                              onChanged: (val) => setState(() => _settings.textOverlayFontSize = val.round()),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _settings.textOverlayColor,
+                          dropdownColor: const Color(0xFF111111),
+                          items: const [
+                            DropdownMenuItem(value: 'white', child: Text('Blanco', style: TextStyle(color: Colors.white))),
+                            DropdownMenuItem(value: 'yellow', child: Text('Amarillo', style: TextStyle(color: Colors.white))),
+                            DropdownMenuItem(value: 'red', child: Text('Rojo', style: TextStyle(color: Colors.white))),
+                            DropdownMenuItem(value: 'cyan', child: Text('Cian', style: TextStyle(color: Colors.white))),
+                            DropdownMenuItem(value: 'black', child: Text('Negro', style: TextStyle(color: Colors.white))),
+                          ],
+                          onChanged: (val) => setState(() => _settings.textOverlayColor = val ?? 'white'),
+                          decoration: const InputDecoration(labelText: 'Color'),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Posición X: ${(_settings.textOverlayX * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(color: Colors.white70)),
+                          Slider(value: _settings.textOverlayX, min: 0, max: 1, divisions: 20,
+                              onChanged: (val) => setState(() => _settings.textOverlayX = val)),
+                        ],
+                      )),
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Posición Y: ${(_settings.textOverlayY * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(color: Colors.white70)),
+                          Slider(value: _settings.textOverlayY, min: 0, max: 1, divisions: 20,
+                              onChanged: (val) => setState(() => _settings.textOverlayY = val)),
+                        ],
+                      )),
+                    ]),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Expanded(child: TextField(
+                        decoration: const InputDecoration(labelText: 'Inicio (seg)'),
+                        keyboardType: TextInputType.number,
+                        controller: TextEditingController(text: _settings.textOverlayStartSec.toStringAsFixed(1)),
+                        onChanged: (val) => setState(() => _settings.textOverlayStartSec = double.tryParse(val) ?? 0.0),
+                      )),
+                      const SizedBox(width: 8),
+                      Expanded(child: TextField(
+                        decoration: const InputDecoration(labelText: 'Fin (seg)'),
+                        keyboardType: TextInputType.number,
+                        controller: TextEditingController(text: _settings.textOverlayEndSec.toStringAsFixed(1)),
+                        onChanged: (val) => setState(() => _settings.textOverlayEndSec = double.tryParse(val) ?? 5.0),
+                      )),
+                    ]),
+                    CheckboxListTile(
+                      title: const Text('Fade in del texto', style: TextStyle(color: Colors.white)),
+                      value: _settings.textOverlayFadeIn,
+                      onChanged: (val) => setState(() => _settings.textOverlayFadeIn = val ?? false),
+                      activeColor: globalSettings.accentColor,
+                      secondary: const Icon(Icons.animation, color: Colors.greenAccent),
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
                   _buildActionButtons(processor),
                 ],
