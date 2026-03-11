@@ -6,8 +6,8 @@ plugins {
 
 android {
     namespace "com.premiumpro.editor"
-    compileSdk flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    compileSdk 35
+    ndkVersion "27.2.12479018"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -21,18 +21,18 @@ android {
     defaultConfig {
         applicationId "com.premiumpro.editor"
         minSdk 26
-        targetSdk flutter.targetSdkVersion
-        versionCode flutter.versionCode
-        versionName flutter.versionName
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
         multiDexEnabled true
     }
 
     signingConfigs {
         release {
             storeFile file(System.getenv("CM_KEYSTORE_PATH") ?: "keystore.jks")
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            keyAlias System.getenv("ANDROID_KEY_ALIAS")
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: ""
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""
         }
     }
 
@@ -41,7 +41,11 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
         }
     }
 
@@ -55,16 +59,29 @@ android {
     }
 
     packagingOptions {
-        pickFirst "lib/armeabi-v7a/libffmpegkit.so"
-        pickFirst "lib/arm64-v8a/libffmpegkit.so"
-        pickFirst "lib/x86_64/libffmpegkit.so"
+        pickFirst 'lib/armeabi-v7a/libavcodec.so'
+        pickFirst 'lib/arm64-v8a/libavcodec.so'
+        pickFirst 'lib/x86_64/libavcodec.so'
+        pickFirst 'lib/armeabi-v7a/libavformat.so'
+        pickFirst 'lib/arm64-v8a/libavformat.so'
+        pickFirst 'lib/x86_64/libavformat.so'
+        pickFirst 'lib/armeabi-v7a/libavutil.so'
+        pickFirst 'lib/arm64-v8a/libavutil.so'
+        pickFirst 'lib/x86_64/libavutil.so'
+        pickFirst 'lib/armeabi-v7a/libswresample.so'
+        pickFirst 'lib/arm64-v8a/libswresample.so'
+        pickFirst 'lib/x86_64/libswresample.so'
+        pickFirst 'lib/armeabi-v7a/libswscale.so'
+        pickFirst 'lib/arm64-v8a/libswscale.so'
+        pickFirst 'lib/x86_64/libswscale.so'
     }
 }
 
 flutter {
-    source "../.."
+    source '../..'
 }
 
 dependencies {
-    implementation "androidx.multidex:multidex:2.0.1"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.20"
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
