@@ -30,15 +30,15 @@ class ImageProcessor extends ChangeNotifier {
       '-i', inputPath,
     ];
 
-    // Escalado
+    // Escalado con interpolación correcta de strings
     if (settings.maxWidth > 0 || settings.maxHeight > 0) {
       String scale;
       if (settings.maxWidth > 0 && settings.maxHeight > 0) {
-        scale = 'scale=$settings.maxWidth:$settings.maxHeight';
+        scale = 'scale=${settings.maxWidth}:${settings.maxHeight}';
       } else if (settings.maxWidth > 0) {
-        scale = 'scale=$settings.maxWidth:-1';
+        scale = 'scale=${settings.maxWidth}:-1';
       } else {
-        scale = 'scale=-1:$settings.maxHeight';
+        scale = 'scale=-1:${settings.maxHeight}';
       }
       String swsFlags;
       switch (settings.filter) {
@@ -66,7 +66,7 @@ class ImageProcessor extends ChangeNotifier {
         args.addAll(['-c:v', 'libwebp', '-q:v', settings.quality.toString()]);
         break;
       case 'avif':
-        args.addAll(['-c:v', 'libaom-av1', '-crf', settings.quality.toString()]); // aproximado
+        args.addAll(['-c:v', 'libaom-av1', '-crf', settings.quality.toString()]);
         break;
     }
 
