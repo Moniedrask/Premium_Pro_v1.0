@@ -6,7 +6,9 @@ import 'dart:io';
 import '../services/media_processor.dart';
 import '../models/video_settings.dart';
 import '../models/video_effect.dart';
-import '../widgets/video_effect_selector.dart'; // 👈 NUEVO IMPORT
+import '../models/speed_segment.dart';
+import '../widgets/video_effect_selector.dart';
+import '../widgets/speed_ramp_editor.dart';
 import '../providers/settings_provider.dart';
 import '../services/trash_manager.dart';
 import '../models/app_settings.dart';
@@ -180,6 +182,7 @@ class TimelineWidgetState extends State<TimelineWidget> {
         saveAsDefault: preset.saveAsDefault,
         effect: preset.effect,
         stabilize: preset.stabilize,
+        speedSegments: preset.speedSegments,
       );
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -311,6 +314,58 @@ class TimelineWidgetState extends State<TimelineWidget> {
                   ),
                   const SizedBox(height: 10),
 
+                  // ✅ BOTÓN PARA SPEED RAMP
+                  ElevatedButton.icon(
+                    onPressed: _selectedVideoPath == null || processor.isProcessing ? null : () async {
+                      // Obtener duración del video seleccionado
+                      final durationMicros = await processor.getVideoDuration(_selectedVideoPath!);
+                      if (durationMicros == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No se pudo obtener la duración del video'), backgroundColor: Colors.red),
+                        );
+                        return;
+                      }
+                      final duration = Duration(microseconds: durationMicros);
+                      // Mostrar editor
+                      await showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          backgroundColor: const Color(0xFF111111),
+                          title: const Text('Speed Ramp', style: TextStyle(color: Colors.white)),
+                          content: SizedBox(
+                            width: double.maxFinite,
+                            child: SpeedRampEditor(
+                              totalDuration: duration,
+                              initialSegments: _settings.speedSegments ?? [],
+                              onChanged: (segments) {
+                                setState(() {
+                                  _settings.speedSegments = segments;
+                                });
+                              },
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cerrar', style: TextStyle(color: Colors.blueAccent)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.speed),
+                    label: const Text('Configurar Speed Ramp'),
+                  ),
+                  if (_settings.speedSegments != null && _settings.speedSegments!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 4),
+                      child: Text(
+                        '${_settings.speedSegments!.length} segmento(s) configurado(s)',
+                        style: const TextStyle(color: Colors.green, fontSize: 12),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+
                   CheckboxListTile(
                     title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -398,7 +453,6 @@ class TimelineWidgetState extends State<TimelineWidget> {
                     'EFECTOS DE VIDEO',
                     style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
-                  // 👇 USAR EL NUEVO SELECTOR DE VIDEO
                   VideoEffectSelector(
                     currentFilter: _settings.effect?.type ?? VideoEffectType.none,
                     intensity: _settings.effect?.intensity ?? 0.5,
@@ -755,15 +809,26 @@ class TimelineWidgetState extends State<TimelineWidget> {
       debugPrint('📁 Output: $outputPath');
       debugPrint('⚙️ Config: ${_settings.videoCodec} | ${_settings.videoBitrate} kbps | ${_settings.preset} | CRF ${_settings.crf} | HW Accel: ${_settings.hardwareAcceleration}');
 
-      final bool success = await processor.processVideo(
-        inputPath: _selectedVideoPath!,
-        outputPath: outputPath,
-        settings: _settings,
-        totalDurationMicros: durationMicros,
-        originalFps: originalFps,
-        originalWidth: originalWidth,
-        originalHeight: originalHeight,
-      );
+      final bool success;
+      // ✅ Si hay segmentos de speed ramp, usar el método especial
+      if (_settings.speedSegments != null && _settings.speedSegments!.isNotEmpty) {
+        success = await processor.processVideoWithSpeedRamp(
+          inputPath: _selectedVideoPath!,
+          outputPath: outputPath,
+          segments: _settings.speedSegments!,
+          totalDurationMicros: durationMicros,
+        );
+      } else {
+        success = await processor.processVideo(
+          inputPath: _selectedVideoPath!,
+          outputPath: outputPath,
+          settings: _settings,
+          totalDurationMicros: durationMicros,
+          originalFps: originalFps,
+          originalWidth: originalWidth,
+          originalHeight: originalHeight,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
