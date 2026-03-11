@@ -15,10 +15,10 @@ class SpeedSegment {
   });
 
   Map<String, dynamic> toJson() => {
-    'start': start.inMilliseconds,
-    'end': end.inMilliseconds,
-    'speed': speed,
-  };
+        'start': start.inMilliseconds,
+        'end': end.inMilliseconds,
+        'speed': speed,
+      };
 
   factory SpeedSegment.fromJson(Map<String, dynamic> json) {
     return SpeedSegment(
