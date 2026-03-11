@@ -38,6 +38,10 @@ class VideoSettings {
   // ✅ NUEVO: Lista de segmentos de velocidad
   List<SpeedSegment>? speedSegments;
 
+  // Efectos
+  VideoEffect? effect;
+  bool? stabilize;
+
   VideoSettings({
     this.videoCodec = 'libx264',
     this.bitrateMode = BitrateMode.crf,
@@ -65,6 +69,8 @@ class VideoSettings {
     this.aiEnabled = false,
     this.saveAsDefault = false,
     this.speedSegments,
+    this.effect,
+    this.stabilize = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -94,6 +100,8 @@ class VideoSettings {
       'preserveMetadata': preserveMetadata,
       'aiEnabled': aiEnabled,
       'speedSegments': speedSegments?.map((s) => s.toJson()).toList(),
+      'effect': effect?.toJson(),
+      'stabilize': stabilize,
     };
   }
 
@@ -124,6 +132,8 @@ class VideoSettings {
       preserveMetadata: json['preserveMetadata'] ?? false,
       aiEnabled: json['aiEnabled'] ?? false,
       speedSegments: (json['speedSegments'] as List?)?.map((s) => SpeedSegment.fromJson(s)).toList(),
+      effect: json['effect'] != null ? VideoEffect.fromJson(json['effect']) : null,
+      stabilize: json['stabilize'] ?? false,
     );
   }
 
