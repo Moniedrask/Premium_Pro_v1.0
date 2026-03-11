@@ -2,19 +2,10 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // Repositorio local Maven (dentro del proyecto) - DEBE IR PRIMERO
         maven {
-            url = project(':app').file('repo').toURI().toString()
+            url = uri("${project(':app').projectDir}/repo")
         }
     }
-}
-
-rootProject.buildDir = '../build'
-subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
-    project.evaluationDependsOn(':app')
 }
 
 tasks.register("clean", Delete) {
