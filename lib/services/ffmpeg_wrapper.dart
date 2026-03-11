@@ -270,7 +270,7 @@ class FFmpegWrapper {
     }
   }
 
-  // ========== SPEED RAMP (NUEVO) ==========
+  // ========== SPEED RAMP ==========
 
   Future<bool> processVideoWithSpeedRamp({
     required String inputPath,
@@ -289,20 +289,23 @@ class FFmpegWrapper {
     _progress = 0.0;
     _statusMessage = "Aplicando speed ramp...";
 
-    const int defaultDurationMicros = 60 * 1000000;
-    final effectiveDuration = totalDurationMicros ?? defaultDurationMicros;
-
-    // Construir filtro setpts con condiciones
-    String setptsExpr = 'setpts=\'';
-    for (int i = 0; i < segments.length; i++) {
-      final seg = segments[i];
-      final startSec = seg.start.inMilliseconds / 1000.0;
-      final endSec = seg.end.inMilliseconds / 1000.0;
-      final speedFactor = 1.0 / seg.speed;
-      if (i > 0) setptsExpr += ':';
-      setptsExpr += 'if(between(T,$startSec,$endSec),PTS*$speedFactor';
+    // Construir filtro setpts con condiciones anidadas correctamente
+    // Formato correcto: if(between(T,s,e),PTS*f,if(between(T,...),PTS*f,PTS))
+    String setptsExpr;
+    if (segments.isEmpty) {
+      setptsExpr = 'setpts=PTS';
+    } else {
+      // Construir expresión anidada de adentro hacia afuera
+      String inner = 'PTS';
+      for (int i = segments.length - 1; i >= 0; i--) {
+        final seg = segments[i];
+        final startSec = seg.start.inMilliseconds / 1000.0;
+        final endSec = seg.end.inMilliseconds / 1000.0;
+        final speedFactor = (1.0 / seg.speed).toStringAsFixed(6);
+        inner = 'if(between(T,$startSec,$endSec),PTS*$speedFactor,$inner)';
+      }
+      setptsExpr = 'setpts=\'$inner\'';
     }
-    setptsExpr += ',PTS' + ')' * segments.length + '\'';
 
     final command = '-i "$inputPath" -vf "$setptsExpr" -c:a copy -y "$outputPath"';
 
@@ -341,8 +344,7 @@ class FFmpegWrapper {
           onLog?.call(log.getMessage());
         },
         (statistics) {
-          // Podríamos calcular progreso si conociéramos la duración efectiva
-          // Por simplicidad, no se implementa progreso aquí
+          // Progreso básico (no disponible sin duración efectiva de salida)
         },
       );
 
