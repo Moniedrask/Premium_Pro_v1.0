@@ -1,20 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
-
-/// Representa un segmento de velocidad en la línea de tiempo
-class SpeedSegment {
-  Duration start;
-  Duration end;
-  double speed; // 0.1 a 16.0
-  Color color;
-
-  SpeedSegment({
-    required this.start,
-    required this.end,
-    this.speed = 1.0,
-    this.color = Colors.blueAccent,
-  });
-}
+import '../models/speed_segment.dart';
 
 class SpeedRampWidget extends StatefulWidget {
   final Duration totalDuration;
@@ -51,7 +36,6 @@ class _SpeedRampWidgetState extends State<SpeedRampWidget> {
   }
 
   void _addSegment() {
-    // Añadir un segmento al final
     final last = _segments.last;
     final newStart = last.end;
     final newEnd = widget.totalDuration;
@@ -136,7 +120,7 @@ class _SpeedRampWidgetState extends State<SpeedRampWidget> {
           ),
         ),
         // Scrollbar
-        Container(
+        SizedBox(
           height: 20,
           child: Scrollbar(
             controller: _scrollController,
