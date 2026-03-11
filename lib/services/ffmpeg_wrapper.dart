@@ -75,7 +75,7 @@ class FFmpegWrapper {
     return null;
   }
 
-  // ========== PROCESAMIENTO DE VIDEO (con todas las opciones) ==========
+  // ========== PROCESAMIENTO DE VIDEO NORMAL ==========
 
   Future<bool> processVideo({
     required String inputPath,
@@ -108,7 +108,6 @@ class FFmpegWrapper {
       '-i', inputPath,
     ];
 
-    // ===== FILTROS DE VIDEO =====
     List<String> filters = [];
 
     // Escalado de resolución (limitado a 4x)
@@ -147,7 +146,7 @@ class FFmpegWrapper {
       }
     }
 
-    // Efectos de video (negativo, sepia, etc.)
+    // Efectos de video
     if (settings.effect != null && settings.effect!.type != VideoEffectType.none) {
       final effectFilter = settings.effect!.ffmpegFilter;
       if (effectFilter.isNotEmpty) {
@@ -159,7 +158,7 @@ class FFmpegWrapper {
       arguments.addAll(['-vf', filters.join(',')]);
     }
 
-    // ===== CONFIGURACIÓN DE VIDEO =====
+    // Configuración de video (bitrate, códec, etc.)
     if (settings.bitrateMode == BitrateMode.cbr) {
       arguments.addAll([
         '-b:v', '${settings.videoBitrate}k',
@@ -195,7 +194,7 @@ class FFmpegWrapper {
       }
     }
 
-    // ===== CONFIGURACIÓN DE AUDIO =====
+    // Configuración de audio
     arguments.addAll([
       '-c:a', settings.audioCodec,
       '-b:a', '${settings.audioBitrate}k',
@@ -208,14 +207,12 @@ class FFmpegWrapper {
       arguments.addAll(['-ac', '2']);
     }
 
-    // ===== METADATOS =====
     if (!settings.preserveMetadata) {
       arguments.addAll(['-map_metadata', '-1']);
     }
 
     arguments.addAll(['-movflags', '+faststart', '-y', outputPath]);
 
-    // Convertir a string para executeAsync
     String command = arguments.join(' ');
 
     try {
@@ -273,102 +270,90 @@ class FFmpegWrapper {
     }
   }
 
-  // ========== NUEVOS MÉTODOS ==========
+  // ========== SPEED RAMP (NUEVO) ==========
 
-  /// Aplica un efecto de video (negativo, sepia, etc.) a un archivo.
-  Future<bool> applyVideoEffect({
+  Future<bool> processVideoWithSpeedRamp({
     required String inputPath,
     required String outputPath,
-    required VideoEffect effect,
+    required List<SpeedSegment> segments,
+    int? totalDurationMicros,
+    Function(double progress)? onProgress,
+    Function(String log)? onLog,
   }) async {
-    final filter = effect.ffmpegFilter;
-    if (filter.isEmpty) return false;
-
-    final args = [
-      '-i', inputPath,
-      '-vf', filter,
-      '-c:a', 'copy',
-      '-y', outputPath,
-    ];
-    return executeCommandWithArgs(args);
-  }
-
-  /// Estabiliza un video usando el filtro vidstab.
-  Future<bool> stabilizeVideo({
-    required String inputPath,
-    required String outputPath,
-  }) async {
-    // Requiere dos pasos: detectar y estabilizar
-    final dir = await getTemporaryDirectory();
-    final trfFile = '${dir.path}/transform.trf';
-
-    // Paso 1: detectar
-    final detectArgs = [
-      '-i', inputPath,
-      '-vf', 'vidstabdetect=shakiness=5:accuracy=15:result=$trfFile',
-      '-f', 'null', '-',
-    ];
-    final detectSuccess = await executeCommandWithArgs(detectArgs);
-    if (!detectSuccess) return false;
-
-    // Paso 2: aplicar
-    final stabilizeArgs = [
-      '-i', inputPath,
-      '-vf', 'vidstabtransform=input=$trfFile:zoom=1:smoothing=30',
-      '-y', outputPath,
-    ];
-    return executeCommandWithArgs(stabilizeArgs);
-  }
-
-  /// Aplica fade in/out a un archivo de audio.
-  Future<bool> applyAudioFade({
-    required String inputPath,
-    required String outputPath,
-    required Duration fadeIn,
-    required Duration fadeOut,
-  }) async {
-    final filters = [];
-    if (fadeIn.inMilliseconds > 0) {
-      filters.add('afade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
+    if (_isProcessing) {
+      debugPrint('❌ Ya hay un procesamiento en curso');
+      return false;
     }
-    if (fadeOut.inMilliseconds > 0) {
-      // Necesitamos la duración total; aquí se omite por simplicidad
-      // En una implementación real, se debería pasar la duración total
-    }
-    if (filters.isEmpty) return false;
 
-    final args = [
-      '-i', inputPath,
-      '-af', filters.join(','),
-      '-c:v', 'copy',
-      '-y', outputPath,
-    ];
-    return executeCommandWithArgs(args);
-  }
+    _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Aplicando speed ramp...";
 
-  /// Aplica fade in/out a un archivo de video.
-  Future<bool> applyVideoFade({
-    required String inputPath,
-    required String outputPath,
-    required Duration fadeIn,
-    required Duration fadeOut,
-  }) async {
-    final filters = [];
-    if (fadeIn.inMilliseconds > 0) {
-      filters.add('fade=t=in:st=0:d=${fadeIn.inMilliseconds / 1000}');
-    }
-    if (fadeOut.inMilliseconds > 0) {
-      filters.add('fade=t=out:st=${fadeOut.inMilliseconds / 1000}:d=0');
-    }
-    if (filters.isEmpty) return false;
+    const int defaultDurationMicros = 60 * 1000000;
+    final effectiveDuration = totalDurationMicros ?? defaultDurationMicros;
 
-    final args = [
-      '-i', inputPath,
-      '-vf', filters.join(','),
-      '-c:a', 'copy',
-      '-y', outputPath,
-    ];
-    return executeCommandWithArgs(args);
+    // Construir filtro setpts con condiciones
+    String setptsExpr = 'setpts=\'';
+    for (int i = 0; i < segments.length; i++) {
+      final seg = segments[i];
+      final startSec = seg.start.inMilliseconds / 1000.0;
+      final endSec = seg.end.inMilliseconds / 1000.0;
+      final speedFactor = 1.0 / seg.speed;
+      if (i > 0) setptsExpr += ':';
+      setptsExpr += 'if(between(T,$startSec,$endSec),PTS*$speedFactor';
+    }
+    setptsExpr += ',PTS' + ')' * segments.length + '\'';
+
+    final command = '-i "$inputPath" -vf "$setptsExpr" -c:a copy -y "$outputPath"';
+
+    try {
+      debugPrint('⚙️ Speed ramp command: $command');
+
+      final completer = Completer<bool>();
+
+      _currentSession = await FFmpegKit.executeAsync(
+        command,
+        (session) {
+          session.getReturnCode().then((returnCode) {
+            final success = ReturnCode.isSuccess(returnCode);
+            if (success) {
+              _statusMessage = "✅ Completado";
+              _progress = 1.0;
+              onProgress?.call(1.0);
+              debugPrint('✅ Speed ramp exitoso: $outputPath');
+            } else {
+              _statusMessage = "❌ Error en speed ramp";
+              session.getOutput().then((output) {
+                debugPrint('❌ Error FFmpeg: $output');
+              });
+            }
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(success);
+          }).catchError((error) {
+            _isProcessing = false;
+            _currentSession = null;
+            completer.complete(false);
+          });
+        },
+        (log) {
+          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
+          onLog?.call(log.getMessage());
+        },
+        (statistics) {
+          // Podríamos calcular progreso si conociéramos la duración efectiva
+          // Por simplicidad, no se implementa progreso aquí
+        },
+      );
+
+      return await completer.future;
+    } catch (e) {
+      _isProcessing = false;
+      _currentSession = null;
+      _statusMessage = "❌ Error: $e";
+      debugPrint('❌ Excepción: $e');
+      return false;
+    }
   }
 
   // ========== MÉTODOS AUXILIARES ==========
@@ -414,84 +399,6 @@ class FFmpegWrapper {
     } catch (e) {
       debugPrint('❌ Error al obtener códecs: $e');
       return [];
-    }
-  }
-
-  // ========== PROCESAMIENTO DE AUDIO CON RAMPA DE VELOCIDAD ==========
-  Future<bool> processAudioWithSpeedRamp({
-    required String inputPath,
-    required String outputPath,
-    required List<SpeedSegment> segments,
-    int? totalDurationMicros,
-    Function(double progress)? onProgress,
-    Function(String log)? onLog,
-  }) async {
-    if (_isProcessing) {
-      debugPrint('❌ Ya hay un procesamiento en curso');
-      return false;
-    }
-
-    _isProcessing = true;
-    _progress = 0.0;
-    _statusMessage = "Aplicando speed ramp...";
-
-    String setptsExpr = 'setpts=\'';
-    for (int i = 0; i < segments.length; i++) {
-      final seg = segments[i];
-      final startSec = seg.start.inMilliseconds / 1000.0;
-      final endSec = seg.end.inMilliseconds / 1000.0;
-      final speedFactor = 1.0 / seg.speed;
-      if (i > 0) setptsExpr += ':';
-      setptsExpr += 'if(between(T,$startSec,$endSec),PTS*$speedFactor';
-    }
-    setptsExpr += ',PTS' + ')' * segments.length + '\'';
-
-    final command = '-i "$inputPath" -af "$setptsExpr" -c:a copy -y "$outputPath"';
-
-    try {
-      debugPrint('⚙️ Speed ramp command: $command');
-
-      final completer = Completer<bool>();
-
-      _currentSession = await FFmpegKit.executeAsync(
-        command,
-        (session) {
-          session.getReturnCode().then((returnCode) {
-            final success = ReturnCode.isSuccess(returnCode);
-            if (success) {
-              _statusMessage = "✅ Completado";
-              _progress = 1.0;
-              onProgress?.call(1.0);
-              debugPrint('✅ Speed ramp exitoso: $outputPath');
-            } else {
-              _statusMessage = "❌ Error en speed ramp";
-              session.getOutput().then((output) {
-                debugPrint('❌ Error FFmpeg: $output');
-              });
-            }
-            _isProcessing = false;
-            _currentSession = null;
-            completer.complete(success);
-          }).catchError((error) {
-            _isProcessing = false;
-            _currentSession = null;
-            completer.complete(false);
-          });
-        },
-        (log) {
-          debugPrint('📝 FFmpeg log: ${log.getMessage()}');
-          onLog?.call(log.getMessage());
-        },
-        (statistics) {},
-      );
-
-      return await completer.future;
-    } catch (e) {
-      _isProcessing = false;
-      _currentSession = null;
-      _statusMessage = "❌ Error: $e";
-      debugPrint('❌ Excepción: $e');
-      return false;
     }
   }
 }
