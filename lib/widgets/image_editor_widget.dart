@@ -479,18 +479,130 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
     );
   }
 
+  // Estado para dibujo libre
+  final List<List<Offset>> _strokes = [];
+  List<Offset> _currentStroke = [];
+  bool _drawingMode = false;
+  Color _brushColor = Colors.red;
+  double _brushSize = 4.0;
+
   Widget _buildImageView() {
     if (_selectedImagePath == null) {
       return const Center(
         child: Text('Selecciona una imagen', style: TextStyle(color: Colors.grey)),
       );
     }
-    return Center(
-      child: Image.file(
-        File(_selectedImagePath!),
-        fit: BoxFit.contain,
-        errorBuilder: (ctx, error, stack) => const Text('Error al cargar imagen'),
-      ),
+    return Stack(
+      children: [
+        // Imagen con zoom interactivo (pinch zoom + pan)
+        InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 8.0,
+          child: Center(
+            child: Image.file(
+              File(_selectedImagePath!),
+              fit: BoxFit.contain,
+              errorBuilder: (ctx, error, stack) =>
+                  const Text('Error al cargar imagen', style: TextStyle(color: Colors.red)),
+            ),
+          ),
+        ),
+        // Capa de dibujo libre encima de la imagen
+        if (_drawingMode)
+          Positioned.fill(
+            child: GestureDetector(
+              onPanStart: (details) {
+                setState(() {
+                  _currentStroke = [details.localPosition];
+                });
+              },
+              onPanUpdate: (details) {
+                setState(() {
+                  _currentStroke = List.from(_currentStroke)
+                    ..add(details.localPosition);
+                });
+              },
+              onPanEnd: (_) {
+                setState(() {
+                  if (_currentStroke.length > 1) {
+                    _strokes.add(List.from(_currentStroke));
+                  }
+                  _currentStroke = [];
+                });
+              },
+              child: CustomPaint(
+                painter: _DrawingPainter(
+                  strokes: _strokes,
+                  currentStroke: _currentStroke,
+                  color: _brushColor,
+                  strokeWidth: _brushSize,
+                ),
+              ),
+            ),
+          ),
+        // Controles del pincel
+        if (_drawingMode)
+          Positioned(
+            bottom: 8,
+            left: 0,
+            right: 0,
+            child: Container(
+              color: Colors.black87,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                children: [
+                  const Text('Tamaño:', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  Expanded(
+                    child: Slider(
+                      value: _brushSize,
+                      min: 1,
+                      max: 20,
+                      onChanged: (val) => setState(() => _brushSize = val),
+                    ),
+                  ),
+                  ...([Colors.red, Colors.white, Colors.yellow, Colors.black]
+                      .map((c) => GestureDetector(
+                            onTap: () => setState(() => _brushColor = c),
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: _brushColor == c ? Colors.blueAccent : Colors.transparent,
+                                    width: 2),
+                              ),
+                            ),
+                          ))
+                      .toList()),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.undo, color: Colors.white70, size: 18),
+                    onPressed: () {
+                      if (_strokes.isNotEmpty) setState(() => _strokes.removeLast());
+                    },
+                    tooltip: 'Deshacer trazo',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Botón para activar/desactivar modo dibujo
+        Positioned(
+          top: 8,
+          left: 8,
+          child: FloatingActionButton.small(
+            heroTag: 'draw_fab',
+            backgroundColor: _drawingMode ? Colors.blueAccent : Colors.grey[800],
+            onPressed: () => setState(() => _drawingMode = !_drawingMode),
+            child: Icon(_drawingMode ? Icons.brush : Icons.brush_outlined,
+                color: Colors.white),
+            tooltip: _drawingMode ? 'Desactivar pincel' : 'Activar pincel',
+          ),
+        ),
+      ],
     );
   }
 
@@ -554,4 +666,50 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
       }
     }
   }
+}
+
+/// Pinta los trazos de pincel libre sobre la imagen.
+class _DrawingPainter extends CustomPainter {
+  final List<List<Offset>> strokes;
+  final List<Offset> currentStroke;
+  final Color color;
+  final double strokeWidth;
+
+  _DrawingPainter({
+    required this.strokes,
+    required this.currentStroke,
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    for (final stroke in strokes) {
+      _drawStroke(canvas, stroke, paint);
+    }
+    _drawStroke(canvas, currentStroke, paint);
+  }
+
+  void _drawStroke(Canvas canvas, List<Offset> points, Paint paint) {
+    if (points.length < 2) return;
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_DrawingPainter old) =>
+      old.strokes != strokes ||
+      old.currentStroke != currentStroke ||
+      old.color != color ||
+      old.strokeWidth != strokeWidth;
 }
