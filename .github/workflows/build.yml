@@ -15,63 +15,45 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Flutter
+      - name: Setup Flutter 3.27.4
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.1'
+          flutter-version: '3.27.4'
           channel: 'stable'
           cache: true
 
-      - name: Clean and Install Dependencies
+      - name: Accept Android Licenses
+        run: yes | flutter doctor --android-licenses || true
+
+      - name: Install dependencies
         run: |
           flutter clean
-          rm -rf android/.gradle
           flutter pub get
 
-      # 📥 Descargar AAR desde Google Drive
-      - name: Download ffmpeg-kit-fix.aar from Google Drive
-        run: |
-          mkdir -p android/app/libs
-          pip install gdown
-          TEMP_DIR=$(mktemp -d)
-          cd $TEMP_DIR
-          gdown --fuzzy https://drive.google.com/drive/folders/1o-2jJKMguzQ4-JOOCkginqoE7CAcPy4d -O ./ --folder
-          # Buscar el archivo .aar y moverlo directamente
-          find . -name "*.aar" -exec mv {} $GITHUB_WORKSPACE/android/app/libs/ffmpeg-kit-fix.aar \;
-          cd $GITHUB_WORKSPACE
-          rm -rf $TEMP_DIR
-
-      # 🔐 Configurar keystore
       - name: Setup Android Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
           ls -la android/app/keystore.jks || (echo "❌ No se pudo crear el keystore" && exit 1)
           echo "CM_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/app/keystore.jks" >> $GITHUB_ENV
-          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> $GITHUB_ENV
+          echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> $GITHUB_ENV
+          echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> $GITHUB_ENV
 
-      - name: Accept Android Licenses
-        run: |
-          mkdir -p $HOME/.android
-          echo "count=0" > $HOME/.android/android-sdk-licenses
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" >> $HOME/.android/android-sdk-licenses
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $HOME/.android/android-sdk-licenses
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> $HOME/.android/android-sdk-licenses
+      - name: Build APKs (split per ABI)
+        run: flutter build apk --release --split-per-abi
 
-      - name: Build APKs
-        run: |
-          flutter build apk --release --split-per-abi
-
-      - name: Upload Artifact
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: premium-pro-apk
