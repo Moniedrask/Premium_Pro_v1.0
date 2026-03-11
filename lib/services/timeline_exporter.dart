@@ -32,7 +32,7 @@ class TimelineExporter {
     List<String> filterParts = [];
     int outputCount = 0;
 
-    // 2. Construir filtros para cada capa
+    // 2. Construir filtros para cada capa (interpolación correcta con ${})
     for (var layer in project.layers) {
       int idx = inputIndices[layer.id] ?? -1;
       if (idx == -1) continue;
@@ -40,24 +40,24 @@ class TimelineExporter {
       String filter = '';
 
       if (layer is VideoLayer) {
-        // Escalar al tamaño del proyecto
-        filter = '[$idx:v]scale=$project.width:$project.height';
-        
+        // Usar interpolación correcta ${project.width} y ${project.height}
+        filter = '[$idx:v]scale=${project.width}:${project.height}';
+
         // Aplicar efectos de video si existen
         if (layer.effects.isNotEmpty) {
           for (var effect in layer.effects) {
             final effectFilter = effect.ffmpegFilter;
             if (effectFilter.isNotEmpty) {
-              filter += ",$effectFilter";
+              filter += ',$effectFilter';
             }
           }
         }
-        
+
         // Aplicar velocidad
         if (layer.speed != 1.0) {
           filter += ',setpts=PTS/${layer.speed}';
         }
-        
+
         // Aplicar fades
         if (layer.fadeIn.inMilliseconds > 0) {
           double fadeInSec = layer.fadeIn.inMilliseconds / 1000.0;
@@ -69,12 +69,12 @@ class TimelineExporter {
           double startOut = totalSec - fadeOutSec;
           filter += ',fade=t=out:st=$startOut:d=$fadeOutSec';
         }
-        
+
         filter += '[v$outputCount]';
-      } 
+      }
       else if (layer is ImageLayer) {
-        filter = '[$idx:v]scale=$project.width:$project.height,format=rgba';
-        
+        filter = '[$idx:v]scale=${project.width}:${project.height},format=rgba';
+
         if (layer.fadeIn.inMilliseconds > 0) {
           double fadeInSec = layer.fadeIn.inMilliseconds / 1000.0;
           filter += ',fade=t=in:st=0:d=$fadeInSec';
@@ -85,12 +85,12 @@ class TimelineExporter {
           double startOut = totalSec - fadeOutSec;
           filter += ',fade=t=out:st=$startOut:d=$fadeOutSec';
         }
-        filter += ',setpts=PTS+${layer.start.inMilliseconds/1000}/TB[img$outputCount]';
-      } 
+        filter += ',setpts=PTS+${layer.start.inMilliseconds / 1000}/TB[img$outputCount]';
+      }
       else if (layer is TextLayer) {
         filter = 'color=c=black@0.0:s=${project.width}x${project.height},format=rgba[bg$outputCount];'
             '[bg$outputCount]drawtext=text=\'${layer.text}\':fontcolor=white@${layer.opacity}:fontsize=${layer.fontSize}:x=${(layer.position.dx * project.width).toInt()}:y=${(layer.position.dy * project.height).toInt()}';
-        
+
         if (layer.fadeIn.inMilliseconds > 0) {
           double fadeInSec = layer.fadeIn.inMilliseconds / 1000.0;
           filter += ',fade=t=in:st=0:d=$fadeInSec';
@@ -111,16 +111,16 @@ class TimelineExporter {
     }
 
     // 3. Mezclar todas las capas (overlay)
-    if (outputCount > 0) {
-      String overlay = '';
-      for (int i = 0; i < outputCount; i++) {
-        if (i == 0) {
-          overlay = '[v0]';
-        } else {
-          overlay = '[$overlay][v$i]overlay=format=auto:shortest=1[vout]';
-        }
+    if (outputCount > 1) {
+      String current = '[v0]';
+      for (int i = 1; i < outputCount; i++) {
+        String next = i < outputCount - 1 ? '[vtmp$i]' : '[vout]';
+        filterParts.add('$current[v$i]overlay=format=auto:shortest=1$next');
+        current = '[vtmp$i]';
       }
-      filterParts.add(overlay);
+    } else if (outputCount == 1) {
+      // Si solo hay una capa de video, renombrar a vout
+      filterParts.add('[v0]copy[vout]');
     }
 
     // 4. Aplicar filtro complejo si hay
@@ -129,14 +129,13 @@ class TimelineExporter {
       args.addAll(['-map', '[vout]']);
     }
 
-    // 5. Manejo de audio (tomar primera pista no silenciada y aplicar efectos)
+    // 5. Manejo de audio
     for (var layer in project.layers) {
       if (layer is AudioLayer && !layer.muted) {
         int idx = inputIndices[layer.id] ?? -1;
         if (idx != -1) {
           List<String> audioFilters = [];
-          
-          // Aplicar efectos de audio si existen
+
           if (layer.effects.isNotEmpty) {
             for (var effect in layer.effects) {
               final effectFilter = effect.toFFmpegFilter();
@@ -145,8 +144,7 @@ class TimelineExporter {
               }
             }
           }
-          
-          // Aplicar fades de capa
+
           if (layer.fadeIn.inMilliseconds > 0) {
             double fadeInSec = layer.fadeIn.inMilliseconds / 1000.0;
             audioFilters.add('afade=t=in:st=0:d=$fadeInSec');
@@ -157,8 +155,7 @@ class TimelineExporter {
             double startOut = totalSec - fadeOutSec;
             audioFilters.add('afade=t=out:st=$startOut:d=$fadeOutSec');
           }
-          
-          // Aplicar volumen
+
           if (layer.volume != 1.0) {
             audioFilters.add('volume=${layer.volume}');
           }
@@ -166,9 +163,9 @@ class TimelineExporter {
           if (audioFilters.isNotEmpty) {
             args.addAll(['-af', audioFilters.join(',')]);
           }
-          
+
           args.addAll(['-map', '$idx:a']);
-          break; // Solo tomamos la primera pista de audio
+          break;
         }
       }
     }
