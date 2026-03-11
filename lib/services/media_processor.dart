@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'ffmpeg_wrapper.dart';
 import '../models/video_settings.dart';
+import '../models/speed_segment.dart';
 
 class MediaProcessor extends ChangeNotifier {
   final FFmpegWrapper _ffmpeg = FFmpegWrapper();
@@ -16,21 +17,12 @@ class MediaProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
-  /// Obtiene la duración del video a través del wrapper
   Future<int?> getVideoDuration(String path) async {
     return await _ffmpeg.getVideoDuration(path);
   }
 
-  /// Obtiene los FPS del video a través del wrapper
   Future<int?> getVideoFps(String path) async {
     return await _ffmpeg.getVideoFps(path);
-  }
-
-  /// Obtiene las dimensiones del video (ancho y alto)
-  /// Por ahora retorna valores predeterminados, pero se puede implementar con FFprobe
-  Future<Map<String, int>> getVideoDimensions(String path) async {
-    // TODO: Implementar obtención real de dimensiones usando FFprobe
-    return {'width': 1920, 'height': 1080};
   }
 
   Future<bool> processVideo({
@@ -55,6 +47,42 @@ class MediaProcessor extends ChangeNotifier {
       originalFps: originalFps,
       originalWidth: originalWidth,
       originalHeight: originalHeight,
+      onProgress: (progress) {
+        _progress = progress;
+        _statusMessage = "Procesando ${(progress * 100).toStringAsFixed(0)}%";
+        notifyListeners();
+      },
+    );
+
+    _isProcessing = false;
+    if (success) {
+      _statusMessage = "Completado";
+      _progress = 1.0;
+    } else {
+      _statusMessage = "Error";
+      _progress = 0.0;
+    }
+    notifyListeners();
+    return success;
+  }
+
+  // ========== SPEED RAMP ==========
+  Future<bool> processVideoWithSpeedRamp({
+    required String inputPath,
+    required String outputPath,
+    required List<SpeedSegment> segments,
+    int? totalDurationMicros,
+  }) async {
+    _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Aplicando speed ramp...";
+    notifyListeners();
+
+    final success = await _ffmpeg.processVideoWithSpeedRamp(
+      inputPath: inputPath,
+      outputPath: outputPath,
+      segments: segments,
+      totalDurationMicros: totalDurationMicros,
       onProgress: (progress) {
         _progress = progress;
         _statusMessage = "Procesando ${(progress * 100).toStringAsFixed(0)}%";
