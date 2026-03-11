@@ -17,7 +17,7 @@ class CompressionDialog extends StatefulWidget {
 
 class _CompressionDialogState extends State<CompressionDialog> {
   late CompressionPreset _selectedPreset;
-  String _selectedCategory = 'Predefinidos';
+  String _selectedCategory = 'Predefinidos'; // 'Predefinidos' o 'Usuario'
 
   @override
   void initState() {
@@ -41,10 +41,8 @@ class _CompressionDialogState extends State<CompressionDialog> {
       ),
       content: SizedBox(
         width: double.maxFinite,
-        // Usar altura fija para evitar Expanded dentro de Column con mainAxisSize.min
-        height: 300,
         child: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -62,11 +60,8 @@ class _CompressionDialogState extends State<CompressionDialog> {
                     if (val != null) {
                       setState(() {
                         _selectedCategory = val;
-                        final list = val == 'Predefinidos'
-                            ? CompressionPreset.defaults
-                            : userPresets;
-                        if (list.isNotEmpty) {
-                          _selectedPreset = list.first;
+                        if (allPresets.isNotEmpty) {
+                          _selectedPreset = allPresets.first;
                         }
                       });
                     }
@@ -77,7 +72,7 @@ class _CompressionDialogState extends State<CompressionDialog> {
             const SizedBox(height: 16),
             Expanded(
               child: ListView.builder(
-                shrinkWrap: false,
+                shrinkWrap: true,
                 itemCount: allPresets.length,
                 itemBuilder: (ctx, index) {
                   final preset = allPresets[index];
@@ -120,6 +115,25 @@ class _CompressionDialogState extends State<CompressionDialog> {
         ),
       ),
       actions: [
+        // Estimación de tamaño
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
+          child: Builder(builder: (ctx) {
+            // Asumimos 60 segundos como referencia si no hay archivo cargado
+            final sizeMB = _selectedPreset.videoSettings.videoBitrate > 0
+                ? ((_selectedPreset.videoSettings.videoBitrate +
+                            _selectedPreset.audioSettings.bitrate) *
+                        1000 *
+                        60) /
+                    8 /
+                    (1024 * 1024)
+                : 0.0;
+            return Text(
+              'Tamaño estimado (60s): ${sizeMB.toStringAsFixed(1)} MB',
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
+            );
+          }),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
