@@ -53,6 +53,10 @@ android {
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
         multiDexEnabled = true
+        // 👉 Forzar inclusión de librerías nativas para arquitecturas específicas
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
     }
 
     signingConfigs {
@@ -102,12 +106,12 @@ flutter {
     source = "../.."
 }
 
-// ❌ IMPORTANTE: Excluir la dependencia remota de Arthenica (ya que usamos local)
+// Excluir dependencia remota de Arthenica (por si acaso)
 configurations.implementation {
     exclude group: "com.arthenica", module: "ffmpeg-kit-https"
 }
 
-// Exclusiones para Play Core (evita conflictos con R8)
+// Exclusiones para Play Core
 configurations.all {
     exclude group: "com.google.android.play", module: "core"
     exclude group: "com.google.android.play", module: "review"
@@ -116,8 +120,8 @@ configurations.all {
 
 dependencies {
     implementation 'com.arthenica:smart-exception-java:0.2.1'
-    // ✅ DEPENDENCIA DESDE REPOSITORIO LOCAL (NO files)
-    implementation 'com.arthenica:ffmpeg-kit-https:6.0-2'
+    // 👉 DEPENDENCIA DIRECTA AL ARCHIVO AAR (asegura inclusión)
+    implementation files('libs/ffmpeg-kit-fix.aar')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20"
     implementation "androidx.multidex:multidex:2.0.1"
 }
