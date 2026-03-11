@@ -17,7 +17,7 @@ class CompressionDialog extends StatefulWidget {
 
 class _CompressionDialogState extends State<CompressionDialog> {
   late CompressionPreset _selectedPreset;
-  String _selectedCategory = 'Predefinidos'; // 'Predefinidos' o 'Usuario'
+  String _selectedCategory = 'Predefinidos';
 
   @override
   void initState() {
@@ -41,8 +41,10 @@ class _CompressionDialogState extends State<CompressionDialog> {
       ),
       content: SizedBox(
         width: double.maxFinite,
+        // Usar altura fija para evitar Expanded dentro de Column con mainAxisSize.min
+        height: 300,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -60,8 +62,11 @@ class _CompressionDialogState extends State<CompressionDialog> {
                     if (val != null) {
                       setState(() {
                         _selectedCategory = val;
-                        if (allPresets.isNotEmpty) {
-                          _selectedPreset = allPresets.first;
+                        final list = val == 'Predefinidos'
+                            ? CompressionPreset.defaults
+                            : userPresets;
+                        if (list.isNotEmpty) {
+                          _selectedPreset = list.first;
                         }
                       });
                     }
@@ -72,7 +77,7 @@ class _CompressionDialogState extends State<CompressionDialog> {
             const SizedBox(height: 16),
             Expanded(
               child: ListView.builder(
-                shrinkWrap: true,
+                shrinkWrap: false,
                 itemCount: allPresets.length,
                 itemBuilder: (ctx, index) {
                   final preset = allPresets[index];
