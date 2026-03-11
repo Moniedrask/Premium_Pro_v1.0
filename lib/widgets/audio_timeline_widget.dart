@@ -544,25 +544,56 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(_selectedAudioName, style: const TextStyle(color: Colors.white)),
-        const SizedBox(height: 20),
+        Text(_selectedAudioName,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 8),
+        // Visualización de forma de onda usando CustomPainter
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: CustomPaint(
+              painter: _WaveformPainter(
+                progress: _duration.inMilliseconds > 0
+                    ? _position.inMilliseconds / _duration.inMilliseconds
+                    : 0.0,
+              ),
+              child: Container(),
+            ),
+          ),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             IconButton(
-              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.blueAccent, size: 48),
+              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.blueAccent, size: 40),
               onPressed: _togglePlayback,
             ),
           ],
         ),
-        Slider(
-          value: _position.inMilliseconds.toDouble(),
-          min: 0,
-          max: _duration.inMilliseconds.toDouble(),
-          onChanged: (val) => _player.seek(Duration(milliseconds: val.round())),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 2.0,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+            ),
+            child: Slider(
+              value: _position.inMilliseconds.toDouble().clamp(
+                  0.0, _duration.inMilliseconds.toDouble().clamp(1, double.infinity)),
+              min: 0,
+              max: _duration.inMilliseconds.toDouble().clamp(1, double.infinity),
+              onChanged: (val) =>
+                  _player.seek(Duration(milliseconds: val.round())),
+            ),
+          ),
         ),
-        Text('${_formatDuration(_position)} / ${_formatDuration(_duration)}',
-            style: const TextStyle(color: Colors.grey)),
+        Text(
+          '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
+          style: const TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+        const SizedBox(height: 4),
       ],
     );
   }
@@ -685,4 +716,66 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     final seconds = twoDigits(d.inSeconds.remainder(60));
     return '$minutes:$seconds';
   }
+}
+
+/// Dibuja una forma de onda simulada (barras de amplitud variable)
+/// que avanza con la reproducción. La amplitud se genera con una
+/// función senoidal combinada para dar aspecto natural de onda de audio.
+class _WaveformPainter extends CustomPainter {
+  final double progress; // 0.0 a 1.0
+
+  _WaveformPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final int barCount = (size.width / 4).floor();
+    final double barWidth = 2.0;
+    final double gap = (size.width - barWidth * barCount) / barCount;
+
+    final paintPlayed = Paint()
+      ..color = Colors.blueAccent
+      ..strokeWidth = barWidth
+      ..strokeCap = StrokeCap.round;
+
+    final paintUnplayed = Paint()
+      ..color = Colors.blueGrey.withOpacity(0.5)
+      ..strokeWidth = barWidth
+      ..strokeCap = StrokeCap.round;
+
+    final double midY = size.height / 2;
+
+    for (int i = 0; i < barCount; i++) {
+      // Amplitud seudoaleatoria pero determinista (basada en índice)
+      final double t = i / barCount;
+      final double amp = (0.3 +
+              0.35 * (0.5 + 0.5 * _sin(t * 31.4)) +
+              0.2 * (0.5 + 0.5 * _sin(t * 17.7 + 1.1)) +
+              0.15 * (0.5 + 0.5 * _sin(t * 53.2 + 2.3))) *
+          size.height *
+          0.45;
+
+      final double x = i * (barWidth + gap) + barWidth / 2;
+      final paint = (i / barCount) < progress ? paintPlayed : paintUnplayed;
+      canvas.drawLine(Offset(x, midY - amp), Offset(x, midY + amp), paint);
+    }
+  }
+
+  double _sin(double x) {
+    // Aproximación de sin usando fórmula de Taylor (sin importar dart:math)
+    // Usamos dart:math directamente
+    return (x % (2 * 3.14159265358979323846)).abs() < 0.001
+        ? 0
+        : _sinImpl(x);
+  }
+
+  double _sinImpl(double x) {
+    // Rango reducido
+    double v = x % (2 * 3.14159265358979);
+    if (v > 3.14159265358979) v -= 2 * 3.14159265358979;
+    double v2 = v * v;
+    return v * (1 - v2 / 6 * (1 - v2 / 20 * (1 - v2 / 42)));
+  }
+
+  @override
+  bool shouldRepaint(_WaveformPainter old) => old.progress != progress;
 }
