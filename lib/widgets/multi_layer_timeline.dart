@@ -204,11 +204,19 @@ class _MultiLayerTimelineState extends State<MultiLayerTimeline> {
           Expanded(
             child: Container(
               color: Colors.grey[850],
-              child: ListView.builder(
+              child: ReorderableListView.builder(
                 itemCount: _project.layers.length,
+                onReorder: (oldIndex, newIndex) {
+                  setState(() {
+                    if (newIndex > oldIndex) newIndex--;
+                    final layer = _project.layers.removeAt(oldIndex);
+                    _project.layers.insert(newIndex, layer);
+                  });
+                },
                 itemBuilder: (ctx, index) {
                   final layer = _project.layers[index];
                   return GestureDetector(
+                    key: ValueKey(layer.id),
                     onTap: () => _editLayer(layer),
                     child: _buildLayerRow(layer, index),
                   );
