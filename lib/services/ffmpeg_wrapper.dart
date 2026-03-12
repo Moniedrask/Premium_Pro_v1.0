@@ -26,8 +26,16 @@ class FFmpegWrapper {
   String get statusMessage => _statusMessage;
 
   Future<void> init() async {
-    await FFmpegKitConfig.enableLogs();
-    debugPrint('✅ FFmpeg Wrapper inicializado');
+    // enableLogs puede fallar en release si el canal nativo no se registró
+    // correctamente (MissingPluginException). El fallo de logging NO debe
+    // bloquear el arranque de la app: FFmpeg sigue siendo funcional.
+    try {
+      await FFmpegKitConfig.enableLogs();
+      debugPrint('✅ FFmpeg Wrapper inicializado con logging');
+    } catch (e) {
+      debugPrint('⚠️ FFmpegKitConfig.enableLogs falló (logging desactivado): $e');
+      // La app continúa — los comandos FFmpeg funcionan sin logging activo.
+    }
   }
 
   // ========== INFORMACIÓN DEL MEDIO ==========
