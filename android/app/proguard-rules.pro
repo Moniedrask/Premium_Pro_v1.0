@@ -1,11 +1,28 @@
 # ─────────────────────────────────────────────────────────────
-# Flutter embedding (CRÍTICO – sin esto R8 elimina FlutterPlugin
-# y aparece MissingPluginException en release)
+# Flutter embedding (CRÍTICO)
+# Sin esto R8 elimina io.flutter.embedding.engine.plugins.FlutterPlugin
+# y todos los plugins (ffmpeg_kit, file_picker, shared_preferences, etc.)
+# producen MissingPluginException en release.
 # ─────────────────────────────────────────────────────────────
 -keep class io.flutter.** { *; }
 
 # ─────────────────────────────────────────────────────────────
-# Kotlin Metadata (necesario para reflexión de Kotlin en runtime)
+# CRÍTICO: Preservar TODAS las implementaciones de FlutterPlugin.
+# R8 elimina las clases concretas que implementan esta interfaz
+# porque no ve referencias directas desde Java (se instancian
+# por reflexión desde GeneratedPluginRegistrant).
+# ─────────────────────────────────────────────────────────────
+-keep class * extends io.flutter.embedding.engine.plugins.FlutterPlugin { *; }
+-keep class * implements io.flutter.embedding.engine.plugins.FlutterPlugin { *; }
+
+# ─────────────────────────────────────────────────────────────
+# GeneratedPluginRegistrant — generado por Flutter, registra
+# todos los plugins. No debe ofuscarse ni eliminarse.
+# ─────────────────────────────────────────────────────────────
+-keep class **.GeneratedPluginRegistrant { *; }
+
+# ─────────────────────────────────────────────────────────────
+# Kotlin Metadata
 # ─────────────────────────────────────────────────────────────
 -keepattributes *Annotation*
 -keepattributes RuntimeVisibleAnnotations
@@ -14,7 +31,7 @@
 -keepattributes Signature
 
 # ─────────────────────────────────────────────────────────────
-# FFmpegKit – canal nativo flutter.arthenica.com/ffmpeg_kit
+# FFmpegKit — canal flutter.arthenica.com/ffmpeg_kit
 # ─────────────────────────────────────────────────────────────
 -keep class com.arthenica.ffmpegkit.** { *; }
 -keep class com.arthenica.smartexception.** { *; }
@@ -26,7 +43,7 @@
 -keep class com.premiumpro.editor.** { *; }
 
 # ─────────────────────────────────────────────────────────────
-# AndroidX y Google Play
+# AndroidX
 # ─────────────────────────────────────────────────────────────
 -dontwarn com.google.android.play.core.**
 -keep class androidx.** { *; }
@@ -40,7 +57,7 @@
 }
 
 # ─────────────────────────────────────────────────────────────
-# Enums (serialización)
+# Enums
 # ─────────────────────────────────────────────────────────────
 -keepclassmembers enum * {
     public static **[] values();
@@ -48,15 +65,14 @@
 }
 
 # ─────────────────────────────────────────────────────────────
-# R.class (recursos)
+# R.class
 # ─────────────────────────────────────────────────────────────
 -keepclassmembers class **.R$* {
     public static <fields>;
 }
 
 # ─────────────────────────────────────────────────────────────
-# Eliminar logs en release (no eliminar en debug para no romper
-# el tracing de Flutter)
+# Eliminar logs en release
 # ─────────────────────────────────────────────────────────────
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
