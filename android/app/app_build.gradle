@@ -84,4 +84,4 @@ flutter {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.20"
     implementation 'androidx.multidex:multidex:2.0.1'
-}
+} 
