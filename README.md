@@ -55,7 +55,6 @@ Optimizado para dispositivos de bajos recursos, sin publicidad, gratuito y 100% 
 
 ## 📁 Estructura del Proyecto (Principales carpetas y archivos)
 
-```
 ```markdown
 Premium_Pro_v1.0/
 ├── .github/workflows/build.yml
