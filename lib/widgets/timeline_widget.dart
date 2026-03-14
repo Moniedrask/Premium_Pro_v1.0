@@ -1337,8 +1337,8 @@ class TimelineWidgetState extends State<TimelineWidget> {
     final value = ctrl.value;
     final pos = value.position;
     final dur = value.duration;
-    final maxMs =
-        dur.inMilliseconds.toDouble().clamp(1, double.infinity);
+    final double maxMs =
+        dur.inMilliseconds.toDouble().clamp(1.0, double.infinity);
 
     return Column(
       children: [
@@ -1370,7 +1370,7 @@ class TimelineWidgetState extends State<TimelineWidget> {
             ),
             child: Slider(
               value: pos.inMilliseconds.toDouble().clamp(0.0, maxMs),
-              min: 0,
+              min: 0.0,
               max: maxMs,
               activeColor: Colors.blueAccent,
               inactiveColor: Colors.blueGrey.withOpacity(0.4),
