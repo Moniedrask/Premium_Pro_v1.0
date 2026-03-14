@@ -16,6 +16,7 @@ class AudioProcessor extends ChangeNotifier {
     await _ffmpeg.init();
   }
 
+  // ── Pista única ────────────────────────────────────────────────────────
   Future<bool> processAudio({
     required String inputPath,
     required String outputPath,
@@ -95,7 +96,6 @@ class AudioProcessor extends ChangeNotifier {
         args.addAll(['-c:a', 'libopus', '-b:a', '${settings.bitrate}k']);
         break;
       case 'flac':
-        // FLAC: profundidad de bits se controla con -sample_fmt
         final sampleFmt = settings.bitDepth == 32 ? 's32' : (settings.bitDepth == 24 ? 's24' : 's16');
         args.addAll([
           '-c:a', 'flac',
@@ -104,7 +104,6 @@ class AudioProcessor extends ChangeNotifier {
         ]);
         break;
       case 'wav':
-        // WAV: pcm_s16le, pcm_s24le, pcm_f32le
         final codec = settings.bitDepth == 32 ? 'pcm_f32le' :
                       settings.bitDepth == 24 ? 'pcm_s24le' : 'pcm_s16le';
         args.addAll(['-c:a', codec]);
@@ -133,6 +132,108 @@ class AudioProcessor extends ChangeNotifier {
       return success;
     } catch (e) {
       _statusMessage = "Error: $e";
+      return false;
+    } finally {
+      _isProcessing = false;
+      notifyListeners();
+    }
+  }
+
+  // ── Multipista ─────────────────────────────────────────────────────────
+  ///
+  /// Mezcla y exporta varias pistas de audio.
+  ///
+  /// [tracks] — lista de mapas con las claves:
+  ///   - 'path'     (String)  ruta al archivo de audio
+  ///   - 'volume'   (double)  ganancia (0.0-2.0, 1.0 = sin cambio)
+  ///   - 'offsetMs' (int)     retraso en ms desde el inicio del proyecto
+  ///
+  /// Si la lista tiene un solo elemento se redirige a [processAudio] normal.
+  Future<bool> processMultitrack({
+    required List<Map<String, dynamic>> tracks,
+    required String outputPath,
+    required AudioSettings settings,
+  }) async {
+    if (tracks.isEmpty) return false;
+
+    // Pista única → flujo normal sin overhead
+    if (tracks.length == 1) {
+      return processAudio(
+        inputPath: tracks[0]['path'] as String,
+        outputPath: outputPath,
+        settings: settings,
+      );
+    }
+
+    _isProcessing = true;
+    _progress = 0.0;
+    _statusMessage = "Mezclando ${tracks.length} pistas...";
+    notifyListeners();
+
+    // Construir argumentos de entrada
+    final List<String> args = [];
+    for (final t in tracks) {
+      args.addAll(['-i', t['path'] as String]);
+    }
+
+    // filter_complex: adelay + volume por pista, luego amix
+    // Formato de adelay: 'delayMs|delayMs' (un valor por canal: L|R)
+    final StringBuffer fc = StringBuffer();
+    final List<String> labels = [];
+    for (int i = 0; i < tracks.length; i++) {
+      final int offsetMs = (tracks[i]['offsetMs'] as int?) ?? 0;
+      final double volume = (tracks[i]['volume'] as double?) ?? 1.0;
+      final label = '[a$i]';
+      // adelay con offset, volume para ganancia
+      fc.write('[$i:a]adelay=${offsetMs}|${offsetMs},volume=${volume.toStringAsFixed(3)}$label;');
+      labels.add(label);
+    }
+    // amix: normalize=0 para no dividir por número de entradas automáticamente
+    fc.write('${labels.join('')}amix=inputs=${tracks.length}:duration=longest:normalize=0[out]');
+
+    args.addAll(['-filter_complex', fc.toString(), '-map', '[out]']);
+
+    // Códec de salida
+    switch (settings.codec) {
+      case 'aac':
+        args.addAll(['-c:a', 'aac', '-b:a', '${settings.bitrate}k']);
+        break;
+      case 'mp3':
+        args.addAll(['-c:a', 'libmp3lame', '-b:a', '${settings.bitrate}k']);
+        break;
+      case 'opus':
+        args.addAll(['-c:a', 'libopus', '-b:a', '${settings.bitrate}k']);
+        break;
+      case 'flac':
+        final sampleFmt = settings.bitDepth == 32 ? 's32' : (settings.bitDepth == 24 ? 's24' : 's16');
+        args.addAll(['-c:a', 'flac', '-compression_level', settings.compressionLevel.toString(), '-sample_fmt', sampleFmt]);
+        break;
+      case 'wav':
+        final codec = settings.bitDepth == 32 ? 'pcm_f32le' :
+                      settings.bitDepth == 24 ? 'pcm_s24le' : 'pcm_s16le';
+        args.addAll(['-c:a', codec]);
+        break;
+    }
+
+    args.addAll(['-ar', settings.sampleRate.toString()]);
+    if (settings.channels == 'mono') {
+      args.addAll(['-ac', '1']);
+    } else if (settings.channels == 'stereo') {
+      args.addAll(['-ac', '2']);
+    }
+
+    args.addAll(['-y', outputPath]);
+
+    debugPrint('⚙️ Multipista FFmpeg args: ${args.join(' ')}');
+
+    try {
+      final success = await _ffmpeg.executeCommandWithArgs(args);
+      _progress = 1.0;
+      _statusMessage = success ? "Completado" : "Error";
+      return success;
+    } catch (e) {
+      _statusMessage = "Error: $e";
+      debugPrint('❌ processMultitrack: $e');
       return false;
     } finally {
       _isProcessing = false;
