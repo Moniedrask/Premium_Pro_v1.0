@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../services/image_processor.dart';
 import '../services/ai_manager.dart';
 import '../services/trash_manager.dart';
@@ -10,7 +12,7 @@ import '../services/hdr_service.dart';
 import '../models/image_settings.dart';
 import '../providers/settings_provider.dart';
 import '../models/app_settings.dart';
-import '../models/filter_type.dart'; // <-- IMPORTANTE
+import '../models/filter_type.dart';
 import '../widgets/filter_selector.dart';
 import '../widgets/hdr_merger_widget.dart';
 
@@ -27,6 +29,8 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
   late ImageSettings _settings;
   bool _keepOriginalName = false;
   List<String> _hdrImages = [];
+  // Color del texto overlay (para el picker libre)
+  Color _textOverlayColor = Colors.white;
 
   @override
   void initState() {
@@ -62,6 +66,14 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
       case CornerRoundness.rounded:
         return BorderRadius.circular(16);
     }
+  }
+
+  /// Carga una imagen externamente (llamado desde ImageEditorScreen).
+  void loadFile(String path) {
+    setState(() {
+      _selectedImagePath = path;
+      _selectedImageName = path.split('/').last;
+    });
   }
 
   void applyPreset(ImageSettings preset) {
@@ -207,8 +219,9 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
 
     return Column(
       children: [
-        Expanded(
-          flex: 2,
+        // ── Vista de imagen (altura fija — evita bug de pantalla negra con teclado)
+        SizedBox(
+          height: 220,
           child: Stack(
             children: [
               Container(
@@ -233,7 +246,6 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
           ),
         ),
         Expanded(
-          flex: 3,
           child: Container(
             padding: EdgeInsets.all(paddingValue * 2),
             color: const Color(0xFF000000),
@@ -374,6 +386,147 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
                       });
                     },
                   ),
+                  // ── TEXTO SOBRE IMAGEN ────────────────────────────
+                  const SizedBox(height: 10),
+                  const Text(
+                    'TEXTO SOBRE IMAGEN',
+                    style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  CheckboxListTile(
+                    title: const Text('Añadir texto a la imagen', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Superpone texto con FFmpeg drawtext',
+                        style: TextStyle(color: Colors.grey, fontSize: 11)),
+                    value: _settings.enableTextOverlay,
+                    onChanged: processor.isProcessing ? null : (val) =>
+                        setState(() => _settings.enableTextOverlay = val ?? false),
+                    activeColor: globalSettings.accentColor,
+                    secondary: const Icon(Icons.title, color: Colors.greenAccent),
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                  if (_settings.enableTextOverlay) ...[
+                    // Campo de texto
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Texto a mostrar',
+                        hintText: 'Ej: Mi foto premium',
+                        hintStyle: TextStyle(color: Colors.white24),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                      controller: TextEditingController(text: _settings.textOverlayContent)
+                        ..selection = TextSelection.collapsed(offset: _settings.textOverlayContent.length),
+                      onChanged: (val) => setState(() => _settings.textOverlayContent = val),
+                    ),
+                    const SizedBox(height: 8),
+                    // Tamaño + Color
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                const Text('Tamaño: ', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                GestureDetector(
+                                  onTap: () async {
+                                    final ctrl = TextEditingController(text: _settings.textOverlayFontSize.toString());
+                                    final val = await showDialog<int>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        backgroundColor: const Color(0xFF111111),
+                                        title: const Text('Tamaño fuente (px)', style: TextStyle(color: Colors.white)),
+                                        content: TextField(
+                                          controller: ctrl,
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                          style: const TextStyle(color: Colors.white, fontSize: 20),
+                                          autofocus: true,
+                                          decoration: const InputDecoration(hintText: '12–256'),
+                                        ),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              final v = int.tryParse(ctrl.text);
+                                              if (v != null && v >= 12 && v <= 256) Navigator.pop(ctx, v);
+                                            },
+                                            child: const Text('OK'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (val != null) setState(() => _settings.textOverlayFontSize = val);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                                    ),
+                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                      Text('${_settings.textOverlayFontSize} px',
+                                          style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+                                      const SizedBox(width: 3),
+                                      const Icon(Icons.edit, size: 11, color: Colors.blueAccent),
+                                    ]),
+                                  ),
+                                ),
+                              ]),
+                              Slider(
+                                value: _settings.textOverlayFontSize.toDouble().clamp(12, 256),
+                                min: 12,
+                                max: 256,
+                                divisions: 30,
+                                activeColor: globalSettings.accentColor,
+                                onChanged: (v) => setState(() => _settings.textOverlayFontSize = v.round()),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(children: [
+                          const Text('Color', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () => _showImageTextColorPicker(),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: _textOverlayColor,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white30, width: 2),
+                              ),
+                              child: const Icon(Icons.colorize, size: 22, color: Colors.black54),
+                            ),
+                          ),
+                        ]),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Posición X/Y
+                    Row(children: [
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('X: ${(_settings.textOverlayX * 100).toStringAsFixed(0)}%',
+                            style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        Slider(
+                          value: _settings.textOverlayX, min: 0, max: 1, divisions: 20,
+                          onChanged: (v) => setState(() => _settings.textOverlayX = v),
+                        ),
+                      ])),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Y: ${(_settings.textOverlayY * 100).toStringAsFixed(0)}%',
+                            style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        Slider(
+                          value: _settings.textOverlayY, min: 0, max: 1, divisions: 20,
+                          onChanged: (v) => setState(() => _settings.textOverlayY = v),
+                        ),
+                      ])),
+                    ]),
+                  ],
+                  // ─────────────────────────────────────────────────────
+
                   const SizedBox(height: 10),
                   const Text(
                     'HDR POR CAPAS',
@@ -457,6 +610,46 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showImageTextColorPicker() {
+    Color tempColor = _textOverlayColor;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF111111),
+        title: const Text('Color del texto', style: TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: tempColor,
+            onColorChanged: (c) => tempColor = c,
+            enableAlpha: false,
+            pickerAreaHeightPercent: 0.7,
+            labelTypes: const [ColorLabelType.hex, ColorLabelType.rgb],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _textOverlayColor = tempColor;
+                _settings.textOverlayColorHex =
+                    '#${tempColor.red.toRadixString(16).padLeft(2, '0')}'
+                    '${tempColor.green.toRadixString(16).padLeft(2, '0')}'
+                    '${tempColor.blue.toRadixString(16).padLeft(2, '0')}';
+              });
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent),
+            child: const Text('Aplicar', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
