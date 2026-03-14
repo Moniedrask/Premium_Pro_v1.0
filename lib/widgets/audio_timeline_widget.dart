@@ -13,6 +13,23 @@ import '../providers/settings_provider.dart';
 import '../models/app_settings.dart';
 import 'equalizer_widget.dart';
 
+// ── Modelo interno de pista adicional ─────────────────────────────────────
+class _AudioTrack {
+  String path;
+  String name;
+  double volume;   // 0.0-2.0, 1.0 = sin cambio
+  int offsetMs;    // retraso en milisegundos
+  bool enabled;
+
+  _AudioTrack({
+    required this.path,
+    required this.name,
+    this.volume = 1.0,
+    this.offsetMs = 0,
+    this.enabled = true,
+  });
+}
+
 class AudioTimelineWidget extends StatefulWidget {
   const AudioTimelineWidget({super.key});
 
@@ -42,10 +59,14 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
   int _fadeInMs = 0;
   int _fadeOutMs = 0;
 
+  // ── Reproductor de la pista principal ─────────────────────────────────
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+
+  // ── Pistas adicionales (multipista) ──────────────────────────────────
+  final List<_AudioTrack> _extraTracks = [];
 
   @override
   void initState() {
@@ -62,6 +83,28 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     _settings = AudioSettings.fromJson(globalSettings.audioDefaults);
     _keepOriginalName = globalSettings.keepOriginalName;
     setState(() {});
+  }
+
+  /// Carga un archivo de audio externamente (llamado desde AudioEditorScreen).
+  Future<void> loadFile(String path) async {
+    final name = path.split('/').last;
+    setState(() {
+      _selectedAudioPath = path;
+      _selectedAudioName = name;
+    });
+    try {
+      await _player.setSourceDeviceFile(path);
+    } catch (e) {
+      debugPrint('❌ Error cargando audio: $e');
+    }
+  }
+
+  /// Pausa la reproducción (llamado por AudioEditorScreen cuando app va a background).
+  void pausePlayback() {
+    if (_isPlaying) {
+      _player.pause();
+      setState(() => _isPlaying = false);
+    }
   }
 
   void applyPreset(AudioSettings preset) {
@@ -91,23 +134,17 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
 
   double _getPadding(InterfaceDensity density) {
     switch (density) {
-      case InterfaceDensity.compact:
-        return 4.0;
-      case InterfaceDensity.normal:
-        return 8.0;
-      case InterfaceDensity.comfortable:
-        return 12.0;
+      case InterfaceDensity.compact:    return 4.0;
+      case InterfaceDensity.normal:     return 8.0;
+      case InterfaceDensity.comfortable: return 12.0;
     }
   }
 
   BorderRadius _getBorderRadius(CornerRoundness roundness) {
     switch (roundness) {
-      case CornerRoundness.square:
-        return BorderRadius.zero;
-      case CornerRoundness.light:
-        return BorderRadius.circular(8);
-      case CornerRoundness.rounded:
-        return BorderRadius.circular(16);
+      case CornerRoundness.square:  return BorderRadius.zero;
+      case CornerRoundness.light:   return BorderRadius.circular(8);
+      case CornerRoundness.rounded: return BorderRadius.circular(16);
     }
   }
 
@@ -200,12 +237,14 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
     final globalSettings = settingsProvider.settings;
 
     final paddingValue = _getPadding(globalSettings.density);
+    // ignore: unused_local_variable
     final borderRadius = _getBorderRadius(globalSettings.roundness);
 
     return Column(
       children: [
-        Expanded(
-          flex: 2,
+        // ── Reproductor de audio (altura fija — evita bug de pantalla negra con teclado)
+        SizedBox(
+          height: 180,
           child: Stack(
             children: [
               Container(
@@ -230,7 +269,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
           ),
         ),
         Expanded(
-          flex: 3,
           child: Container(
             padding: EdgeInsets.all(paddingValue * 2),
             color: const Color(0xFF000000),
@@ -248,11 +286,11 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   DropdownButtonFormField<String>(
                     value: _settings.codec,
                     items: const [
-                      DropdownMenuItem(value: 'aac', child: Text('AAC')),
-                      DropdownMenuItem(value: 'mp3', child: Text('MP3')),
+                      DropdownMenuItem(value: 'aac',  child: Text('AAC')),
+                      DropdownMenuItem(value: 'mp3',  child: Text('MP3')),
                       DropdownMenuItem(value: 'opus', child: Text('Opus')),
                       DropdownMenuItem(value: 'flac', child: Text('FLAC')),
-                      DropdownMenuItem(value: 'wav', child: Text('WAV')),
+                      DropdownMenuItem(value: 'wav',  child: Text('WAV')),
                     ],
                     onChanged: processor.isProcessing ? null : (val) {
                       setState(() => _settings.codec = val!);
@@ -260,7 +298,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     decoration: const InputDecoration(labelText: 'Códec'),
                   ),
 
-                  // Selector de profundidad de bits (solo para FLAC y WAV)
+                  // Profundidad de bits (solo FLAC y WAV)
                   if (_settings.codec == 'flac' || _settings.codec == 'wav')
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
@@ -284,7 +322,7 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                       ),
                     ),
 
-                  // Bitrate (solo para códecs con pérdida)
+                  // Bitrate (solo códecs con pérdida)
                   if (_settings.codec != 'flac' && _settings.codec != 'wav')
                     Column(
                       children: [
@@ -321,15 +359,14 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     ),
 
                   const SizedBox(height: 10),
-                  // Frecuencia de muestreo (actualizada con 22050 y 32000)
                   DropdownButtonFormField<int>(
                     value: _settings.sampleRate,
                     items: const [
-                      DropdownMenuItem(value: 22050, child: Text('22.05 kHz')),
-                      DropdownMenuItem(value: 32000, child: Text('32 kHz')),
-                      DropdownMenuItem(value: 44100, child: Text('44.1 kHz')),
-                      DropdownMenuItem(value: 48000, child: Text('48 kHz')),
-                      DropdownMenuItem(value: 96000, child: Text('96 kHz')),
+                      DropdownMenuItem(value: 22050,  child: Text('22.05 kHz')),
+                      DropdownMenuItem(value: 32000,  child: Text('32 kHz')),
+                      DropdownMenuItem(value: 44100,  child: Text('44.1 kHz')),
+                      DropdownMenuItem(value: 48000,  child: Text('48 kHz')),
+                      DropdownMenuItem(value: 96000,  child: Text('96 kHz')),
                       DropdownMenuItem(value: 192000, child: Text('192 kHz')),
                     ],
                     onChanged: processor.isProcessing ? null : (val) {
@@ -339,11 +376,10 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
-                  // Canales
                   DropdownButtonFormField<String>(
                     value: _settings.channels,
                     items: const [
-                      DropdownMenuItem(value: 'mono', child: Text('Mono')),
+                      DropdownMenuItem(value: 'mono',   child: Text('Mono')),
                       DropdownMenuItem(value: 'stereo', child: Text('Estéreo')),
                     ],
                     onChanged: processor.isProcessing ? null : (val) {
@@ -353,7 +389,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
-                  // Normalización
                   Row(
                     children: [
                       Checkbox(
@@ -366,7 +401,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     ],
                   ),
 
-                  // Reducción de ruido IA
                   if (aiManager.isModelAvailable)
                     Row(
                       children: [
@@ -381,7 +415,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     ),
 
                   const SizedBox(height: 10),
-                  // Botón para ecualizador
                   ElevatedButton.icon(
                     onPressed: processor.isProcessing ? null : () {
                       showDialog(
@@ -407,7 +440,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
-                  // Compresor
                   ExpansionTile(
                     title: const Text('Compresor dinámico', style: TextStyle(color: Colors.white)),
                     children: [
@@ -420,7 +452,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 10),
-                  // Fade in/out
                   const Text(
                     'FADE IN/OUT',
                     style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 12),
@@ -445,8 +476,12 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     ],
                   ),
 
+                  // ── PISTAS DE AUDIO (multipista) ─────────────────────────
+                  const SizedBox(height: 16),
+                  _buildMultitrackSection(processor),
+                  // ─────────────────────────────────────────────────────────
+
                   const SizedBox(height: 10),
-                  // Checkbox "Mantener nombre original"
                   CheckboxListTile(
                     title: const Text('Mantener nombre original', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Si está activado, no se añadirá timestamp', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -461,7 +496,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                     activeColor: globalSettings.accentColor,
                   ),
 
-                  // Checkbox "Guardar como permanente"
                   CheckboxListTile(
                     title: const Text('Guardar como permanente', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Esta configuración se usará por defecto en futuras exportaciones', style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -477,7 +511,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                   ),
 
                   const SizedBox(height: 20),
-                  // Botones de acción
                   Row(
                     children: [
                       Expanded(
@@ -493,7 +526,9 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
                           onPressed: processor.isProcessing || _selectedAudioPath == null
                               ? null
                               : () => _exportAudio(processor),
-                          child: const Text('EXPORTAR'),
+                          child: Text(_extraTracks.any((t) => t.enabled)
+                              ? 'MEZCLAR Y EXPORTAR'
+                              : 'EXPORTAR'),
                         ),
                       ),
                     ],
@@ -515,6 +550,253 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
       ],
     );
   }
+
+  // ── Sección de multipista ────────────────────────────────────────────────
+  Widget _buildMultitrackSection(AudioProcessor processor) {
+    final hasExtra = _extraTracks.isNotEmpty;
+    return ExpansionTile(
+      initiallyExpanded: hasExtra,
+      leading: const Icon(Icons.layers, color: Colors.tealAccent),
+      title: Row(
+        children: [
+          const Text('PISTAS DE AUDIO', style: TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(width: 8),
+          if (hasExtra)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.tealAccent.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${_extraTracks.length + 1} pistas',
+                style: const TextStyle(color: Colors.tealAccent, fontSize: 11),
+              ),
+            ),
+        ],
+      ),
+      children: [
+        // Pista principal (siempre presente)
+        if (_selectedAudioPath != null)
+          _buildTrackTile(
+            index: 0,
+            name: _selectedAudioName,
+            isMain: true,
+            volume: 1.0,      // La pista principal no tiene slider de volumen aquí (se controla con el reproductor)
+            offsetMs: 0,
+            enabled: true,
+            onVolumeChange: null,
+            onOffsetChange: null,
+            onToggle: null,
+            onRemove: null,
+          )
+        else
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text('Carga un audio principal primero', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ),
+
+        // Pistas adicionales
+        ...List.generate(_extraTracks.length, (i) {
+          final track = _extraTracks[i];
+          return _buildTrackTile(
+            index: i + 1,
+            name: track.name,
+            isMain: false,
+            volume: track.volume,
+            offsetMs: track.offsetMs,
+            enabled: track.enabled,
+            onVolumeChange: processor.isProcessing ? null : (v) => setState(() => track.volume = v),
+            onOffsetChange: processor.isProcessing ? null : (ms) => setState(() => track.offsetMs = ms),
+            onToggle: processor.isProcessing ? null : (v) => setState(() => track.enabled = v),
+            onRemove: processor.isProcessing ? null : () => setState(() => _extraTracks.removeAt(i)),
+          );
+        }),
+
+        // Botón añadir pista
+        if (_selectedAudioPath != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: ElevatedButton.icon(
+              onPressed: processor.isProcessing ? null : _addExtraTrack,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Añadir pista'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A2A1A),
+                foregroundColor: Colors.tealAccent,
+                side: const BorderSide(color: Colors.tealAccent, width: 1),
+              ),
+            ),
+          ),
+
+        if (hasExtra)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text(
+              'ℹ️  Las pistas se mezclan con FFmpeg amix. El offset desplaza la pista hacia adelante.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 11),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTrackTile({
+    required int index,
+    required String name,
+    required bool isMain,
+    required double volume,
+    required int offsetMs,
+    required bool enabled,
+    required void Function(double)? onVolumeChange,
+    required void Function(int)? onOffsetChange,
+    required void Function(bool)? onToggle,
+    required VoidCallback? onRemove,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isMain ? const Color(0xFF0A1A2A) : const Color(0xFF0A1A0A),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isMain ? Colors.blueAccent.withOpacity(0.4) : Colors.tealAccent.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Cabecera de la pista
+          Row(
+            children: [
+              Icon(
+                isMain ? Icons.star : Icons.music_note,
+                size: 14,
+                color: isMain ? Colors.blueAccent : Colors.tealAccent,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Pista ${index + 1}${isMain ? ' (principal)' : ''}: $name',
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Toggle habilitado/deshabilitado (solo pistas adicionales)
+              if (!isMain && onToggle != null)
+                Switch(
+                  value: enabled,
+                  onChanged: onToggle,
+                  activeColor: Colors.tealAccent,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              // Eliminar pista
+              if (!isMain && onRemove != null)
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18, color: Colors.redAccent),
+                  tooltip: 'Eliminar pista',
+                  onPressed: onRemove,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+            ],
+          ),
+
+          // Controles de volumen y offset (solo pistas adicionales habilitadas)
+          if (!isMain && enabled) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const SizedBox(width: 4),
+                const Icon(Icons.volume_up, size: 14, color: Colors.white54),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Slider(
+                    value: volume,
+                    min: 0.0,
+                    max: 2.0,
+                    divisions: 40,
+                    activeColor: Colors.tealAccent,
+                    inactiveColor: Colors.tealAccent.withOpacity(0.2),
+                    onChanged: onVolumeChange,
+                  ),
+                ),
+                SizedBox(
+                  width: 38,
+                  child: Text(
+                    '${(volume * 100).round()}%',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const SizedBox(width: 4),
+                const Icon(Icons.timer, size: 14, color: Colors.white54),
+                const SizedBox(width: 6),
+                const Text('Offset:', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 90,
+                  height: 36,
+                  child: TextField(
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: '$offsetMs ms',
+                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (val) {
+                      final ms = int.tryParse(val);
+                      if (ms != null && ms >= 0 && onOffsetChange != null) {
+                        onOffsetChange(ms);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text('ms', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addExtraTrack() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+        allowMultiple: false,
+      );
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _extraTracks.add(_AudioTrack(
+            path: result.files.single.path!,
+            name: result.files.single.name,
+          ));
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Pista añadida: ${result.files.single.name}'),
+              backgroundColor: Colors.teal,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error añadiendo pista: $e');
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildProcessingView(AudioProcessor processor) {
     return Column(
@@ -548,7 +830,6 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             style: const TextStyle(color: Colors.white, fontSize: 13),
             overflow: TextOverflow.ellipsis),
         const SizedBox(height: 8),
-        // Visualización de forma de onda usando CustomPainter
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -672,15 +953,40 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
         outputPath = '$outputDir/audio_$timestamp.$ext';
       }
 
-      final success = await processor.processAudio(
-        inputPath: _selectedAudioPath!,
-        outputPath: outputPath,
-        settings: _settings,
-        equalizerGains: _equalizerGains,
-        compressorParams: _compressorParams,
-        fadeIn: _fadeInMs > 0 ? Duration(milliseconds: _fadeInMs) : null,
-        fadeOut: _fadeOutMs > 0 ? Duration(milliseconds: _fadeOutMs) : null,
-      );
+      // Pistas adicionales habilitadas
+      final enabledExtra = _extraTracks.where((t) => t.enabled).toList();
+
+      final bool success;
+
+      if (enabledExtra.isEmpty) {
+        // ── Pista única — flujo normal ──────────────────────────────
+        success = await processor.processAudio(
+          inputPath: _selectedAudioPath!,
+          outputPath: outputPath,
+          settings: _settings,
+          equalizerGains: _equalizerGains,
+          compressorParams: _compressorParams,
+          fadeIn: _fadeInMs > 0 ? Duration(milliseconds: _fadeInMs) : null,
+          fadeOut: _fadeOutMs > 0 ? Duration(milliseconds: _fadeOutMs) : null,
+        );
+      } else {
+        // ── Multipista — mezcla con amix ─────────────────────────────
+        final List<Map<String, dynamic>> tracks = [
+          // Pista principal: volumen 1.0, offset 0
+          {'path': _selectedAudioPath!, 'volume': 1.0, 'offsetMs': 0},
+          // Pistas adicionales
+          ...enabledExtra.map((t) => {
+            'path': t.path,
+            'volume': t.volume,
+            'offsetMs': t.offsetMs,
+          }),
+        ];
+        success = await processor.processMultitrack(
+          tracks: tracks,
+          outputPath: outputPath,
+          settings: _settings,
+        );
+      }
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -745,7 +1051,6 @@ class _WaveformPainter extends CustomPainter {
     final double midY = size.height / 2;
 
     for (int i = 0; i < barCount; i++) {
-      // Amplitud seudoaleatoria pero determinista (basada en índice)
       final double t = i / barCount;
       final double amp = (0.3 +
               0.35 * (0.5 + 0.5 * _sin(t * 31.4)) +
@@ -761,15 +1066,12 @@ class _WaveformPainter extends CustomPainter {
   }
 
   double _sin(double x) {
-    // Aproximación de sin usando fórmula de Taylor (sin importar dart:math)
-    // Usamos dart:math directamente
     return (x % (2 * 3.14159265358979323846)).abs() < 0.001
         ? 0
         : _sinImpl(x);
   }
 
   double _sinImpl(double x) {
-    // Rango reducido
     double v = x % (2 * 3.14159265358979);
     if (v > 3.14159265358979) v -= 2 * 3.14159265358979;
     double v2 = v * v;
