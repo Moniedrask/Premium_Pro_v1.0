@@ -862,9 +862,9 @@ class AudioTimelineWidgetState extends State<AudioTimelineWidget> {
             ),
             child: Slider(
               value: _position.inMilliseconds.toDouble().clamp(
-                  0.0, _duration.inMilliseconds.toDouble().clamp(1, double.infinity)),
-              min: 0,
-              max: _duration.inMilliseconds.toDouble().clamp(1, double.infinity),
+                  0.0, _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity)),
+              min: 0.0,
+              max: _duration.inMilliseconds.toDouble().clamp(1.0, double.infinity),
               onChanged: (val) =>
                   _player.seek(Duration(milliseconds: val.round())),
             ),
