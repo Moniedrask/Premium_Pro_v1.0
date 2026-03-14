@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Color;
 
 /// Monitorea el uso de RAM del dispositivo leyendo /proc/meminfo en Android.
 /// Actualiza cada 3 segundos mientras esté activo.
