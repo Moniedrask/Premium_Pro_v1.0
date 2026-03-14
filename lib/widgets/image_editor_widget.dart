@@ -474,9 +474,9 @@ class ImageEditorWidgetState extends State<ImageEditorWidget> {
                                 ),
                               ]),
                               Slider(
-                                value: _settings.textOverlayFontSize.toDouble().clamp(12, 256),
-                                min: 12,
-                                max: 256,
+                                value: _settings.textOverlayFontSize.toDouble().clamp(12.0, 256.0),
+                                min: 12.0,
+                                max: 256.0,
                                 divisions: 30,
                                 activeColor: globalSettings.accentColor,
                                 onChanged: (v) => setState(() => _settings.textOverlayFontSize = v.round()),
