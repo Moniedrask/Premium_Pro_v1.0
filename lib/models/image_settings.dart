@@ -14,6 +14,15 @@ class ImageSettings {
   FilterType? filterType;
   double? filterIntensity;
 
+  // ── Texto sobre imagen (drawtext FFmpeg) ─────────────────────────────
+  bool enableTextOverlay;
+  String textOverlayContent;
+  int textOverlayFontSize;
+  /// Color en formato hex #RRGGBB — compatible con el filtro drawtext de FFmpeg
+  String textOverlayColorHex;
+  double textOverlayX;  // posición relativa 0.0-1.0
+  double textOverlayY;  // posición relativa 0.0-1.0
+
   ImageSettings({
     this.format = 'jpeg',
     this.quality = 85,
@@ -27,6 +36,12 @@ class ImageSettings {
     this.aiEnabled = false,
     this.filterType = FilterType.none,
     this.filterIntensity = 0.5,
+    this.enableTextOverlay = false,
+    this.textOverlayContent = '',
+    this.textOverlayFontSize = 48,
+    this.textOverlayColorHex = '#FFFFFF',
+    this.textOverlayX = 0.5,
+    this.textOverlayY = 0.9,
   });
 
   Map<String, dynamic> toJson() {
@@ -43,6 +58,12 @@ class ImageSettings {
       'aiEnabled': aiEnabled,
       'filterType': filterType?.index,
       'filterIntensity': filterIntensity,
+      'enableTextOverlay': enableTextOverlay,
+      'textOverlayContent': textOverlayContent,
+      'textOverlayFontSize': textOverlayFontSize,
+      'textOverlayColorHex': textOverlayColorHex,
+      'textOverlayX': textOverlayX,
+      'textOverlayY': textOverlayY,
     };
   }
 
@@ -58,8 +79,16 @@ class ImageSettings {
       aiScale: json['aiScale'] ?? 2,
       filter: json['filter'] ?? 'lanczos',
       aiEnabled: json['aiEnabled'] ?? false,
-      filterType: json['filterType'] != null ? FilterType.values[json['filterType']] : FilterType.none,
-      filterIntensity: json['filterIntensity'] ?? 0.5,
+      filterType: json['filterType'] != null
+          ? FilterType.values[json['filterType']]
+          : FilterType.none,
+      filterIntensity: (json['filterIntensity'] ?? 0.5).toDouble(),
+      enableTextOverlay: json['enableTextOverlay'] ?? false,
+      textOverlayContent: json['textOverlayContent'] ?? '',
+      textOverlayFontSize: json['textOverlayFontSize'] ?? 48,
+      textOverlayColorHex: json['textOverlayColorHex'] ?? '#FFFFFF',
+      textOverlayX: (json['textOverlayX'] ?? 0.5).toDouble(),
+      textOverlayY: (json['textOverlayY'] ?? 0.9).toDouble(),
     );
   }
 }
